@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelLabel } from '$lib/utils/modelDirectory';
 	import { getContext, onMount } from 'svelte';
 	import { LinkPreview } from 'bits-ui';
 	import { getFolderById, getSharedFolderChats } from '$lib/apis/folders';
@@ -21,8 +22,8 @@
 	let total: number | null = null;
 	let loading = true;
 
-	$: modelNames = (details?.data?.model_ids ?? []).map(
-		(id) => $models.find((model) => model.id === id)?.name ?? id
+	$: modelNames = (details?.data?.model_ids ?? []).map((id) =>
+		modelLabel($models.find((model) => model.id === id) || { id })
 	);
 	$: files = details?.data?.files ?? [];
 

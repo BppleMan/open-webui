@@ -387,6 +387,7 @@
 				const responseMessage = {
 					...message,
 					id: responseMessageId,
+					oi_source_message_id: message.id,
 					parentId: parentId,
 					childrenIds: [],
 					files: undefined,

@@ -54,7 +54,9 @@
 	import 'tippy.js/dist/tippy.css';
 
 	import { executeToolServer, getBackendConfig, getModels, getVersion } from '$lib/apis';
-	import { getSessionUser, updateUserTimezone, userSignOut } from '$lib/apis/auths';
+	import { getSessionUser, updateUserTimezone } from '$lib/apis/auths';
+	import { renewSession, sessionRecoveryRequired, tokenExpiry } from '$lib/utils/session';
+	import SessionRecovery from '$lib/components/auth/SessionRecovery.svelte';
 	import { getAllTags } from '$lib/apis/chats';
 	import { chatCompletion } from '$lib/apis/openai';
 	import { isTemporaryChatId } from '$lib/utils/chatId';
@@ -122,8 +124,9 @@
 	const bc = new BroadcastChannel('active-tab-channel');
 
 	let loaded = false;
+	let sessionBootstrapError = false;
+	let cleanupSession = () => {};
 	let tokenTimer = null;
-	let isAuthRedirectInProgress = false;
 
 	let showRefresh = false;
 
@@ -960,7 +963,6 @@
 		}
 	};
 
-	const TOKEN_EXPIRY_BUFFER = 60; // seconds
 	const resolveFetchUrl = (input) => {
 		if (input instanceof Request) {
 			return new URL(input.url, window.location.origin);
@@ -995,50 +997,31 @@
 	};
 
 	const clearExpiredSession = () => {
-		if (isAuthRedirectInProgress) {
-			return;
-		}
-
-		isAuthRedirectInProgress = true;
-		if (tokenTimer) {
-			clearInterval(tokenTimer);
-			tokenTimer = null;
-		}
-		user.set(null);
-		localStorage.removeItem('token');
-		// Clear the OAuth token cookie so /auth doesn't auto-login and redirect-loop
-		document.cookie = 'token=; Max-Age=0; path=/';
-		userSignOut().catch((error) => {
-			console.error('Error signing out expired session:', error);
-		});
-		toast.error($i18n.t('Session expired. Please sign in again.'));
-		isAuthRedirectInProgress = false;
+		// Preserve the mounted editor and all local drafts. Only an explicit sign-out clears state.
+		if (!$page.url.pathname.startsWith('/auth') && $user) sessionRecoveryRequired.set(true);
 	};
 
 	const isCurrentSessionUnauthorized = async (originalFetch) => {
+		const attempted = localStorage.getItem('token');
 		return originalFetch(`${WEBUI_API_BASE_URL}/auths/`, {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
-				Authorization: `Bearer ${localStorage.token}`
+				Authorization: `Bearer ${attempted}`
 			},
 			credentials: 'include'
 		})
-			.then((res) => res.status === 401)
+			.then((res) => res.status === 401 && localStorage.getItem('token') === attempted)
 			.catch(() => false);
 	};
 
 	const checkTokenExpiry = async () => {
-		const exp = $user?.expires_at; // token expiry time in unix timestamp
-		const now = Math.floor(Date.now() / 1000); // current time in unix timestamp
-
-		if (!exp) {
-			// If no expiry time is set, do nothing
+		if (!$user || $page.url.pathname.startsWith('/auth') || document.visibilityState === 'hidden')
 			return;
-		}
-
-		if (now >= exp - TOKEN_EXPIRY_BUFFER) {
-			clearExpiredSession();
+		const exp = tokenExpiry(localStorage.getItem('token') || '');
+		if (exp && Date.now() / 1000 >= exp - 15 * 60) {
+			const session = await renewSession();
+			if (session) await user.set(session);
 		}
 	};
 
@@ -1143,11 +1126,13 @@
 
 	onMount(async () => {
 		const originalFetch = window.fetch.bind(window);
-		window.fetch = async (input, init) => {
+		/** @type {typeof window.fetch} */
+		const sessionFetch = async (input, init) => {
 			const response = await originalFetch(input, init);
 
 			if (
 				response.status === 401 &&
+				!resolveFetchUrl(input).pathname.startsWith('/api/v1/auths') &&
 				localStorage.token &&
 				isAuthenticatedBackendFetch(input, init) &&
 				(await isCurrentSessionUnauthorized(originalFetch))
@@ -1158,6 +1143,49 @@
 			return response;
 		};
 
+		window.fetch = sessionFetch;
+
+		const restoreSession = async () => {
+			const token = localStorage.getItem('token');
+			if (!token) return;
+			const session = await getSessionUser(token).catch(() => null);
+			if (!session || localStorage.getItem('token') !== token) return;
+			if ($user && $user.id !== session.id) {
+				window.location.reload();
+				return;
+			}
+			await user.set(session);
+			sessionRecoveryRequired.set(false);
+			if (!loaded) window.location.reload();
+		};
+		/** @param {StorageEvent} event */
+		const sessionStorageHandler = (event) => {
+			if (event.key === 'token') {
+				if (event.newValue) restoreSession();
+				else if (!$page.url.pathname.startsWith('/auth')) sessionRecoveryRequired.set(true);
+			}
+		};
+		/** @param {MessageEvent} event */
+		const sessionMessageHandler = (event) => {
+			if (event.origin === window.location.origin && event.data?.type === 'oi:reauthenticated')
+				restoreSession();
+		};
+		const sessionVisibilityHandler = () => {
+			if (document.visibilityState === 'visible') {
+				restoreSession();
+				checkTokenExpiry();
+			}
+		};
+		window.addEventListener('storage', sessionStorageHandler);
+		window.addEventListener('message', sessionMessageHandler);
+		document.addEventListener('visibilitychange', sessionVisibilityHandler);
+		cleanupSession = () => {
+			window.removeEventListener('storage', sessionStorageHandler);
+			window.removeEventListener('message', sessionMessageHandler);
+			document.removeEventListener('visibilitychange', sessionVisibilityHandler);
+			if (window.fetch === sessionFetch) window.fetch = originalFetch;
+			if (tokenTimer) clearInterval(tokenTimer);
+		};
 		window.addEventListener('message', windowMessageEventHandler);
 
 		let touchstartY = 0;
@@ -1358,9 +1386,13 @@
 				if (localStorage.token) {
 					// Get Session User Info
 					const sessionUser = await getSessionUser(localStorage.token).catch((error) => {
-						toast.error(`${error}`);
+						if (error?.status !== 401) sessionBootstrapError = true;
 						return null;
 					});
+					if (sessionBootstrapError) {
+						document.getElementById('splash-screen')?.remove();
+						return;
+					}
 
 					if (sessionUser) {
 						await user.set(sessionUser);
@@ -1385,15 +1417,20 @@
 								})
 								.catch(() => {});
 						}
+					} else if (!$page.url.pathname.startsWith('/auth')) {
+						document.getElementById('splash-screen')?.remove();
+						sessionRecoveryRequired.set(true);
+						return;
 					} else {
-						localStorage.removeItem('token');
 						await user.set(null);
 					}
 				}
 			}
 		} else {
-			// Redirect to /error when Backend Not Detected
-			await goto(`/error`);
+			// A transient backend failure must not replace the conversation URL.
+			sessionBootstrapError = true;
+			document.getElementById('splash-screen')?.remove();
+			return;
 		}
 
 		await tick();
@@ -1459,6 +1496,7 @@
 	}
 
 	onDestroy(() => {
+		cleanupSession();
 		bc.close();
 	});
 </script>
@@ -1533,3 +1571,18 @@
 		}
 	}}
 />
+
+{#if sessionBootstrapError}
+	<div
+		class="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 bg-white dark:bg-gray-900"
+	>
+		<p>暂时无法连接服务器。登录状态和本机草稿已保留。</p>
+		<button
+			class="rounded-lg bg-gray-900 px-4 py-2 text-sm text-white dark:bg-gray-100 dark:text-gray-900"
+			on:click={() => window.location.reload()}>重试连接</button
+		>
+	</div>
+{/if}
+{#if !$page.url.pathname.startsWith('/auth')}
+	<SessionRecovery />
+{/if}

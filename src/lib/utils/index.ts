@@ -1,3 +1,4 @@
+import { resolveModelReference } from './modelDirectory';
 import type { Writable } from 'svelte/store';
 import { v4 as uuidv4 } from 'uuid';
 import sha256 from 'js-sha256';
@@ -35,12 +36,15 @@ import { decode } from 'html-entities';
 //////////////////////////
 
 export const resolveDefaultModelIds = (
-	models: { id: string; info?: { meta?: { hidden?: boolean } } }[],
+	models: { id: string; aliases?: string[]; info?: { meta?: { hidden?: boolean } } }[],
 	...preferences: (string[] | null | undefined)[]
 ): string[] => {
 	const available = models.filter((model) => !model.info?.meta?.hidden).map((model) => model.id);
 	for (const preference of preferences) {
-		const selected = [...new Set(preference ?? [])].filter((id) => available.includes(id));
+		const selected = [...new Set(preference ?? [])].map(
+			(id) => resolveModelReference(models, id) ?? id
+		);
+		// An unavailable saved binding is a user decision, never an excuse to select another model.
 		if (selected.length) return selected;
 	}
 	return available.length ? [available[0]] : [];

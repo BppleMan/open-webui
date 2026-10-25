@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ModelOptions from '$lib/components/models/ModelOptions.svelte';
 	import { getModels, getTaskConfig, updateTaskConfig } from '$lib/apis';
 	import { getChatConfig, updateChatConfig } from '$lib/apis/chats';
 	import { onMount, getContext } from 'svelte';
@@ -215,12 +216,7 @@
 								}}
 							>
 								<option value="" selected>{$i18n.t('Current Model')}</option>
-								{#each modelOptions as model}
-									<option value={model.id} class="bg-gray-100 dark:bg-gray-700">
-										{model.name}
-										{model?.connection_type === 'local' ? `(${$i18n.t('Local')})` : ''}
-									</option>
-								{/each}
+								<ModelOptions items={modelOptions} />
 							</SettingsSelect>
 						</AdminSettingField>
 
@@ -236,12 +232,7 @@
 								}}
 							>
 								<option value="" selected>{$i18n.t('Current Model')}</option>
-								{#each modelOptions as model}
-									<option value={model.id} class="bg-gray-100 dark:bg-gray-700">
-										{model.name}
-										{model?.connection_type === 'local' ? `(${$i18n.t('Local')})` : ''}
-									</option>
-								{/each}
+								<ModelOptions items={modelOptions} />
 							</SettingsSelect>
 						</AdminSettingField>
 					</div>
@@ -312,12 +303,7 @@
 							}}
 						>
 							<option value="" selected>{$i18n.t('Current Model')}</option>
-							{#each modelOptions as model}
-								<option value={model.id} class="bg-gray-100 dark:bg-gray-700">
-									{model.name}
-									{model?.connection_type === 'local' ? `(${$i18n.t('Local')})` : ''}
-								</option>
-							{/each}
+							<ModelOptions items={modelOptions} />
 						</SettingsSelect>
 					</AdminSettingField>
 

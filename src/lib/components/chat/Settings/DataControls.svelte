@@ -3,7 +3,8 @@
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
 
-	import { user } from '$lib/stores';
+	import { user, showSettings } from '$lib/stores';
+	import ArchiveImportModal from '../ArchiveImportModal.svelte';
 	import { refreshSidebar } from '$lib/stores/chatList';
 
 	import { archiveAllChats, deleteAllChats, getAllChats, importChats } from '$lib/apis/chats';
@@ -30,16 +31,16 @@
 	let showFilesModal = false;
 
 	let chatImportInputElement: HTMLInputElement;
+	let archiveInput: HTMLInputElement;
+	let archiveFile: File | null = null;
+	let showArchiveImport = false;
 	const actionButtonClass =
 		'text-xs text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-500 dark:hover:text-white';
 
 	$: if (importFiles) {
-		console.log(importFiles);
-
 		let reader = new FileReader();
 		reader.onload = (event) => {
 			let chats = JSON.parse(event.target.result);
-			console.log(chats);
 			if (getImportOrigin(chats) == 'openai') {
 				try {
 					chats = convertOpenAIChats(chats);
@@ -120,6 +121,16 @@
 
 <SharedChatsModal bind:show={showSharedChatsModal} />
 <FilesModal bind:show={showFilesModal} />
+<ArchiveImportModal
+	bind:show={showArchiveImport}
+	file={archiveFile}
+	onImported={async (result) => {
+		await refreshSidebar(localStorage.token);
+		showSettings.set(false);
+		await goto(`/c/${result.id}`);
+		toast.success('会话归档已还原');
+	}}
+/>
 
 <ConfirmDialog
 	title={$i18n.t('settings.personal.dataControls.archiveAllChats.label')}
@@ -161,6 +172,24 @@
 			first
 		>
 			{#if canManageChats({ user: $user, config: null }, 'import')}
+				<input
+					type="file"
+					accept=".zip"
+					bind:this={archiveInput}
+					hidden
+					on:change={(event) => {
+						archiveFile = event.currentTarget.files?.[0] ?? null;
+						if (archiveFile) showArchiveImport = true;
+						event.currentTarget.value = '';
+					}}
+				/>
+				<UserSettingRow
+					label="还原 OI 归档"
+					description="还原包含费用、分支、修订和附件的会话 ZIP 归档。"
+					><button class={actionButtonClass} type="button" on:click={() => archiveInput.click()}
+						>选择归档</button
+					></UserSettingRow
+				>
 				<UserSettingRow
 					label={$i18n.t('settings.personal.dataControls.importChats.label')}
 					description={$i18n.t('settings.personal.dataControls.importChats.description')}

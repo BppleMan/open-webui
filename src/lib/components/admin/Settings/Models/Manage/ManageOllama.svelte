@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ModelOptions from '$lib/components/models/ModelOptions.svelte';
 	import { toast } from 'svelte-sonner';
 	import { getContext, onMount } from 'svelte';
 	const i18n: any = getContext('i18n');
@@ -774,11 +775,7 @@
 							>
 								<option value="" disabled selected>{$i18n.t('Select a model')}</option>
 
-								{#each ollamaModels as model}
-									<option value={model.id} class="bg-gray-50 dark:bg-gray-700"
-										>{model.name + ' (' + (model.size / 1024 ** 3).toFixed(1) + ' GB)'}</option
-									>
-								{/each}
+								<ModelOptions items={ollamaModels} />
 							</SettingsSelect>
 						</div>
 						<Tooltip content={$i18n.t('Delete Model')} placement="top">

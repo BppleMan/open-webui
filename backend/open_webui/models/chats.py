@@ -424,6 +424,9 @@ class ChatTable:
                         if column.key not in ChatMessages.EXCLUDED_COLUMNS
                     }
                 )
+                message.update(
+                    {key: value for key, value in (row.oi_state or {}).items() if key in ChatMessages.OI_STATE_FIELDS}
+                )
                 message['id'] = message_id
             if not message:
                 yield None
@@ -807,6 +810,7 @@ class ChatTable:
         db: AsyncSession | None = None,
         *,
         touch: bool = True,
+        revision_user_id: str | None = None,
     ) -> ChatModel | None:
         """Patch top-level chat keys; history is merged so stale writers don't drop messages."""
         try:
@@ -815,6 +819,41 @@ class ChatTable:
                     return None
 
                 stored = chat_item.chat or {}
+                if revision_user_id and (incoming := (chat.get('history') or {}).get('messages')):
+                    from copy import deepcopy
+
+                    from open_webui.models.customization import MessageRevision
+                    from open_webui.utils.oi.replay import reconcile_native_edit
+                    from open_webui.utils.oi.storage import identifier, now
+
+                    previous = {
+                        **(stored.get('history', {}).get('messages') or {}),
+                        **(await ChatMessages.get_messages_map_by_chat_id(id, db=session) or {}),
+                    }
+                    for mid, message in incoming.items():
+                        old = previous.get(mid)
+                        if (
+                            old
+                            and old.get('role') == 'assistant'
+                            and (
+                                old.get('content') != message.get('content')
+                                or old.get('output') != message.get('output')
+                            )
+                        ):
+                            if old.get('done') is False:
+                                raise ValueError('Stop the response before editing it')
+                            session.add(
+                                MessageRevision(
+                                    id=identifier(),
+                                    chat_id=id,
+                                    message_id=mid,
+                                    user_id=revision_user_id,
+                                    content=old.get('content') or '',
+                                    output=deepcopy(old.get('output')),
+                                    created_at=now(),
+                                )
+                            )
+                        reconcile_native_edit(message, previous)
                 updated = {**stored, **chat}
                 if 'history' in chat:
                     # The caller built its history from an earlier read; merge so messages saved since then survive.
@@ -849,6 +888,8 @@ class ChatTable:
                             mid, id, message.get('user_id') or chat_item.user_id, message, db=session
                         )
                 return ChatModel.model_validate(chat_item)
+        except ValueError:
+            raise
         except Exception:
             return
 
@@ -1322,6 +1363,65 @@ class ChatTable:
             if parent_id:
                 turn[parent_id] = history['messages'][parent_id]
             return {'messages': turn, 'currentId': history['currentId']}
+
+    async def edit_reply_text(self, id: str, message_id: str, content: str, user_id: str, extra: dict):
+        """Persist a user edit, its revision and replay invalidation in one transaction."""
+        from copy import deepcopy
+
+        from open_webui.models.customization import MessageRevision
+        from open_webui.utils.oi.replay import invalidate_native
+        from open_webui.utils.oi.storage import identifier, now
+
+        async with self._chat_transaction(id) as (session, chat_item):
+            if chat_item is None:
+                raise LookupError('Chat not found')
+            normalized = await ChatMessages.get_messages_map_by_chat_id(id, db=session) or {}
+            history = (chat_item.chat or {}).setdefault('history', {})
+            previous = normalized.get(message_id) or history.get('messages', {}).get(message_id)
+            if not previous:
+                raise LookupError('Message not found')
+            if previous.get('done') is False:
+                raise ValueError('Stop the response before editing it')
+            message = deepcopy(previous)
+            if message.get('content') != content:
+                session.add(
+                    MessageRevision(
+                        id=identifier(),
+                        chat_id=id,
+                        message_id=message_id,
+                        user_id=user_id,
+                        content=message.get('content') or '',
+                        output=deepcopy(message.get('output')),
+                        created_at=now(),
+                    )
+                )
+                message['content'] = content
+                if message.get('output'):
+                    text_items = [item for item in message['output'] if item.get('type') == 'message']
+                    for item in text_items:
+                        item['content'] = [
+                            part for part in item.get('content', []) if part.get('type') not in {'output_text', 'text'}
+                        ]
+                    if text_items:
+                        text_items[-1]['content'].append({'type': 'output_text', 'text': content})
+                    else:
+                        message['output'].append(
+                            {
+                                'type': 'message',
+                                'role': 'assistant',
+                                'content': [{'type': 'output_text', 'text': content}],
+                            }
+                        )
+                invalidate_native(message)
+            message.update(extra)
+            self.upsert_message_to_history(history, message_id, message)
+            await ChatMessages.upsert_message(
+                message_id, id, previous.get('user_id') or chat_item.user_id, message, db=session
+            )
+            chat_item.chat['history'] = history
+            chat_item.updated_at = int(time.time())
+            flag_modified(chat_item, 'chat')
+            return ChatModel.model_validate(chat_item)
 
     async def upsert_message_to_chat_by_id_and_message_id(
         self, id: str, message_id: str, message: dict, *, touch: bool = True

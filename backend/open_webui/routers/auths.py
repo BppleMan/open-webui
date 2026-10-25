@@ -74,6 +74,7 @@ from open_webui.utils.auth import (
     get_password_hash,
     get_verified_user,
     invalidate_token,
+    is_valid_token,
     validate_password,
     verify_password,
 )
@@ -236,6 +237,38 @@ async def get_session_user(
     }
 
     return response_data
+
+
+@router.post('/refresh', response_model=SessionUserInfoResponse)
+async def refresh_session(
+    request: Request,
+    response: Response,
+    user=Depends(get_human_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    """Renew a still-valid human session without resetting its authentication/MFA age."""
+    header = get_http_authorization_cred(request.headers.get('Authorization', ''))
+    previous = header.credentials if header else request.cookies.get('token')
+    claims = decode_token(previous) if previous else None
+    if not claims or claims.get('typ', 'session') != 'session' or claims.get('id') != user.id:
+        raise HTTPException(401, ERROR_MESSAGES.INVALID_TOKEN)
+    if not await is_valid_token(claims, getattr(request.app.state, 'redis', None)):
+        raise HTTPException(401, ERROR_MESSAGES.INVALID_TOKEN)
+    # The helper reads current permissions but writes its old cookie only to a discarded response.
+    result = await get_session_user(request, Response(), user, db)
+    payload = {key: value for key, value in claims.items() if key not in {'exp', 'iat', 'jti'}}
+    expires_delta = parse_duration(await Config.get('auth.jwt_expiry'))
+    renewed = create_token(payload, expires_delta=expires_delta)
+    expires_at = (decode_token(renewed) or {}).get('exp')
+    response.set_cookie(
+        'token',
+        renewed,
+        httponly=True,
+        secure=WEBUI_AUTH_COOKIE_SECURE,
+        samesite=WEBUI_AUTH_COOKIE_SAME_SITE,
+        **({'max_age': max(0, int(expires_at - time.time()))} if expires_at else {}),
+    )
+    return {**result, 'token': renewed, 'expires_at': expires_at}
 
 
 ############################

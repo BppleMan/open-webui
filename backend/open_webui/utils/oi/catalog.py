@@ -1,0 +1,362 @@
+"""Connection-scoped model identities and credentials. Display names never route requests."""
+
+import base64
+import hashlib
+import json
+from urllib.parse import urlparse
+
+import httpx
+from cryptography.fernet import Fernet, InvalidToken
+from open_webui.env import WEBUI_SECRET_KEY
+from open_webui.models.customization import Connection, ModelBinding
+from open_webui.utils.oi.connection_templates import (
+    PROTOCOLS as PROTOCOLS,
+)
+from open_webui.utils.oi.connection_templates import (
+    TEMPLATES as TEMPLATES,
+)
+from open_webui.utils.oi.connection_templates import (
+    connection_defaults as connection_defaults,
+)
+from open_webui.utils.oi.connection_templates import (
+    get_template as get_template,
+)
+from open_webui.utils.oi.storage import identifier, now
+from sqlalchemy import select
+
+
+def _cipher():
+    if not WEBUI_SECRET_KEY:
+        raise ValueError('A persistent WEBUI_SECRET_KEY is required for connection credentials')
+    digest = hashlib.sha256(('oi.connection.v1:' + WEBUI_SECRET_KEY).encode()).digest()
+    return Fernet(base64.urlsafe_b64encode(digest))
+
+
+def encrypt_credentials(value):
+    return _cipher().encrypt(json.dumps(value, ensure_ascii=False).encode()).decode()
+
+
+def credentials(connection):
+    try:
+        return json.loads(_cipher().decrypt(connection.credentials.encode())) if connection.credentials else {}
+    except (InvalidToken, ValueError):
+        raise ValueError('Connection credentials cannot be decrypted with the current server key') from None
+
+
+def visible(connection, user):
+    return bool(connection.shared or (user and (connection.owner_id == user.id or user.role == 'admin')))
+
+
+def editable(connection, user):
+    return bool(user and (connection.owner_id == user.id or user.role == 'admin'))
+
+
+def connection_json(connection, user):
+    result = {
+        key: getattr(connection, key)
+        for key in (
+            'id',
+            'name',
+            'template',
+            'protocol',
+            'shared',
+            'enabled',
+            'revision',
+            'created_at',
+            'updated_at',
+        )
+    }
+    if editable(connection, user):
+        result.update(
+            base_url=connection.base_url,
+            settings=connection.settings,
+            has_credentials=bool(connection.credentials),
+            owner_id=connection.owner_id,
+        )
+    return result
+
+
+def capabilities(binding):
+    config = binding.capabilities or {}
+    if 'discovered' in config or 'overrides' in config:
+        return {**config.get('discovered', {}), **config.get('overrides', {})}
+    return config
+
+
+def binding_json(binding, connection):
+    return {
+        key: getattr(binding, key)
+        for key in (
+            'id',
+            'connection_id',
+            'upstream_id',
+            'protocol',
+            'name',
+            'enabled',
+            'available',
+            'pricing',
+            'params',
+            'aliases',
+        )
+    } | {
+        'connection_name': connection.name,
+        'capabilities': capabilities(binding),
+        'capability_overrides': (binding.capabilities or {}).get('overrides', {}),
+    }
+
+
+async def binding_readable(db, binding, connection, user, *, management=False):
+    if not visible(connection, user):
+        return False
+    if management and editable(connection, user):
+        return True
+    if not (connection.enabled and binding.enabled and binding.available):
+        return False
+    from open_webui.config import BYPASS_ADMIN_ACCESS_CONTROL
+    from open_webui.env import BYPASS_MODEL_ACCESS_CONTROL
+    from open_webui.utils.models import check_model_access
+
+    if BYPASS_MODEL_ACCESS_CONTROL or (user.role == 'admin' and BYPASS_ADMIN_ACCESS_CONTROL):
+        return True
+    try:
+        await check_model_access(user, {'id': binding.id, 'oi_binding': True}, db=db)
+        return True
+    except Exception:
+        return False
+
+
+async def resolve(db, reference, user, *, require_enabled=True):
+    pairs = (
+        await db.execute(select(ModelBinding, Connection).join(Connection, ModelBinding.connection_id == Connection.id))
+    ).all()
+    matches = [(b, c) for b, c in pairs if visible(c, user) and (b.id == reference or reference in (b.aliases or []))]
+    if not matches:
+        raise LookupError('Unknown model binding')
+    if len(matches) != 1:
+        raise ValueError('Ambiguous legacy model ID; choose a connection-specific model')
+    binding, connection = matches[0]
+    if require_enabled and not (binding.enabled and binding.available and connection.enabled):
+        raise ValueError('The selected connection or model is unavailable')
+    return binding, connection
+
+
+def reasoning_controls(binding):
+    reasoning = capabilities(binding).get('reasoning') or {}
+    levels = reasoning.get('levels')
+    parameter = reasoning.get('parameter')
+    # A declared parameter is required: never guess a provider's wire semantics from its model name.
+    if not parameter:
+        return {}
+    if levels:
+
+        def parameters(value):
+            result, target = {}, None
+            target = result
+            parts = parameter.split('.')
+            if any(not part or part in {'__proto__', 'prototype', 'constructor'} for part in parts):
+                raise ValueError('Invalid reasoning parameter path')
+            for part in parts[:-1]:
+                target[part] = {}
+                target = target[part]
+            target[parts[-1]] = value
+            return result
+
+        default_index = levels.index(reasoning['default']) if reasoning.get('default') in levels else 0
+        return {
+            'oi_reasoning': {
+                'label': 'Reasoning',
+                'display': 'slider' if len(levels) > 1 else 'menu',
+                'default': f'level_{default_index}',
+                'options': {
+                    f'level_{i}': {'label': str(level), 'params': parameters(level)} for i, level in enumerate(levels)
+                },
+            }
+        }
+    budget = reasoning.get('budget')
+    if budget:
+        from open_webui.models.models import ModelControl
+
+        control = ModelControl(
+            label='Reasoning budget',
+            display='budget',
+            budget={**budget, 'parameter': parameter},
+        )
+        return {'oi_reasoning': control.model_dump()}
+    return {}
+
+
+async def model_catalog(db, user):
+    pairs = (
+        await db.execute(select(ModelBinding, Connection).join(Connection, ModelBinding.connection_id == Connection.id))
+    ).all()
+    result = []
+    for binding, connection in pairs:
+        if not await binding_readable(db, binding, connection, user):
+            continue
+        caps = capabilities(binding)
+        controls = {**(binding.params or {}).get('model_controls', {}), **reasoning_controls(binding)}
+        result.append(
+            {
+                'id': binding.id,
+                'name': binding.name,
+                'object': 'model',
+                'created': 0,
+                'owned_by': 'openai',
+                'connection_type': connection.settings.get(
+                    'connection_type', 'local' if binding.protocol == 'ollama' else 'external'
+                ),
+                'connection': {'id': connection.id, 'name': connection.name, 'protocol': binding.protocol},
+                'oi_binding': True,
+                'aliases': binding.aliases or [],
+                'upstream_id': binding.upstream_id,
+                'capabilities': caps,
+                'info': {
+                    'id': binding.id,
+                    'name': binding.name,
+                    'params': {**(binding.params or {}), 'model_controls': controls},
+                    'meta': {'capabilities': caps, 'oi_connection_id': connection.id},
+                },
+            }
+        )
+    return result
+
+
+def validate_url(value):
+    parsed = urlparse(value)
+    if (
+        parsed.scheme not in {'http', 'https'}
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError('Use an HTTP(S) base URL without embedded credentials, query or fragment')
+    return value.rstrip('/')
+
+
+def request_headers(connection, *, user_id=None, chat_id=None, protocol=None):
+    secrets = credentials(connection)
+    headers = {**(secrets.get('headers') or {})}
+    key = secrets.get('api_key', '')
+    template = next((t for t in TEMPLATES if t['id'] == connection.template), {})
+    auth = connection.settings.get('auth', template.get('auth', 'bearer'))
+    if key:
+        if auth == 'bearer':
+            headers['Authorization'] = f'Bearer {key}'
+        elif auth != 'none':
+            headers[auth] = key
+    if (protocol or connection.protocol) == 'anthropic':
+        headers.setdefault('anthropic-version', '2023-06-01')
+    if (connection.template == 'cpa-agy' or protocol == 'cpa-agy') and user_id is not None:
+        if not chat_id:
+            raise ValueError('CPA requires a stable conversation ID before the first request')
+        for key in list(headers):
+            if key.lower().startswith('x-rp-'):
+                del headers[key]
+        headers.update({'X-RP-Client': 'openwebui', 'X-RP-User-ID': user_id, 'X-RP-Chat-ID': chat_id})
+    return headers
+
+
+def _model_page(body, protocol):
+    if not isinstance(body, dict):
+        raise ValueError('The provider did not return a model list')
+    field = 'models' if protocol in {'ollama', 'gemini', 'gemini-interactions', 'cpa-agy'} else 'data'
+    if protocol == 'cpa-agy' and field not in body:
+        field = 'data'
+    models = body.get(field)
+    if not isinstance(models, list) or any(not isinstance(m, dict) for m in models):
+        raise ValueError('The provider did not return a model list')
+    cursor = None
+    if protocol in {'gemini', 'gemini-interactions', 'cpa-agy'} and body.get('nextPageToken'):
+        cursor = ('pageToken', body['nextPageToken'])
+    elif protocol == 'anthropic' and body.get('has_more'):
+        cursor = ('after_id', body.get('last_id'))
+    if cursor and (not isinstance(cursor[1], str) or not cursor[1]):
+        raise ValueError('The provider returned an invalid pagination cursor')
+    return models, cursor
+
+
+async def fetch_models(connection, transport=None):
+    protocol = connection.protocol
+    path = '/api/tags' if protocol == 'ollama' else '/models'
+    params, cursors, models = {}, set(), []
+    async with httpx.AsyncClient(trust_env=True, timeout=30, transport=transport) as client:
+        for _ in range(100):
+            response = await client.get(connection.base_url + path, params=params, headers=request_headers(connection))
+            response.raise_for_status()
+            page, cursor = _model_page(response.json(), protocol)
+            models.extend(page)
+            if cursor is None:
+                return models
+            if cursor in cursors:
+                raise ValueError('Model discovery repeated a page')
+            cursors.add(cursor)
+            params = dict([cursor])
+    raise ValueError('Model discovery exceeded the page limit; previous configuration was preserved')
+
+
+def discovered_capabilities(model):
+    result = dict(model.get('capabilities') or {})
+    for source, target in (
+        ('inputTokenLimit', 'input_limit'),
+        ('outputTokenLimit', 'output_limit'),
+        ('supportedGenerationMethods', 'methods'),
+    ):
+        if model.get(source):
+            result[target] = model[source]
+    return result
+
+
+async def discover(db, connection, transport=None):
+    protocol = connection.protocol
+    # Fetch all pages before changing availability; a partial failure must preserve the catalog.
+    models = await fetch_models(connection, transport)
+    seen, result = set(), []
+    for model in models:
+        upstream = model.get('id') or model.get('name') or model.get('model')
+        if not isinstance(upstream, str) or not upstream:
+            raise ValueError('The provider returned a model without an ID')
+        if protocol.startswith('gemini') or protocol == 'cpa-agy':
+            upstream = upstream.removeprefix('models/')
+        if upstream in seen:
+            continue
+        seen.add(upstream)
+        row = (
+            await db.execute(
+                select(ModelBinding).where(
+                    ModelBinding.connection_id == connection.id,
+                    ModelBinding.upstream_id == upstream,
+                    ModelBinding.protocol == protocol,
+                )
+            )
+        ).scalar_one_or_none()
+        discovered = discovered_capabilities(model)
+        if row is None:
+            row = ModelBinding(
+                id='oi:' + identifier(),
+                connection_id=connection.id,
+                upstream_id=upstream,
+                protocol=protocol,
+                name=model.get('displayName') or model.get('display_name') or model.get('name') or upstream,
+                enabled=False,
+                available=True,
+                capabilities={'discovered': discovered, 'overrides': {}, 'manual': False},
+                pricing={},
+                params={},
+                aliases=[],
+                updated_at=now(),
+            )
+            db.add(row)
+        else:
+            old = row.capabilities or {}
+            row.capabilities = {**old, 'discovered': discovered, 'overrides': old.get('overrides', {})}
+            row.available = True
+            row.updated_at = now()
+        result.append(row)
+    # Only a successful discovery can mark an absent model unavailable; never delete user overrides.
+    for row in (await db.execute(select(ModelBinding).where(ModelBinding.connection_id == connection.id))).scalars():
+        if row.protocol == protocol and row.upstream_id not in seen and not (row.capabilities or {}).get('manual'):
+            row.available = False
+    await db.flush()
+    return result

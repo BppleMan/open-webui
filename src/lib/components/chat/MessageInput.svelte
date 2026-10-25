@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ContextPanel from './ContextPanel.svelte';
+	import DraftSyncStatus from './DraftSyncStatus.svelte';
 	import type { TerminalContext } from '$lib/types';
 	import { resolveLocalizedFunction } from '$lib/utils/localizedContent';
 	import { functions as localizedFunctions } from '$lib/stores';
@@ -152,6 +154,8 @@
 	export let statusHandler: Function = () => {};
 	export let forkHandler: Function = () => {};
 	export let chatId = '';
+	export let oiContext: any = null;
+	export let draftSync: any = null;
 	export let terminalContext: TerminalContext | null = null;
 	export let contextUsage = null;
 	export let contextCompactionEnabled = false;
@@ -235,7 +239,7 @@
 	export let onUpdate: (data?: { file?: any }) => void = () => {};
 	export let chatTasks = [];
 
-	let inputContent = null;
+	let inputContent: any = null;
 
 	let showInputVariablesModal = false;
 	let inputVariablesModalCallback = (variableValues) => {};
@@ -257,15 +261,13 @@
 	// Approval mode is persisted in chat parameters and user settings, not input drafts.
 	$: chatInputDraft = {
 		prompt,
-		files: files
-			.filter((file) => file.type !== 'image')
-			.map((file) => {
-				return {
-					...file,
-					user: undefined,
-					access_grants: undefined
-				};
-			}),
+		files: files.map((file) => {
+			return {
+				...file,
+				user: undefined,
+				access_grants: undefined
+			};
+		}),
 		selectedToolIds,
 		selectedSkillIds,
 		selectedFilterIds,
@@ -430,6 +432,15 @@
 
 	export const focus = (options: FocusOptions = {}) => {
 		chatInputElement?.focus(options);
+	};
+
+	// A draft is literal user work, not a prompt template. Never interpolate it on restore.
+	export const getDraftContent = () => structuredClone(inputContent?.json ?? null);
+	export const restoreDraftContent = async (text: string, json?: any) => {
+		prompt = text;
+		await tick();
+		if (json) chatInputElement?.setContent(json);
+		else chatInputElement?.setText(text);
 	};
 
 	export const setText = async (text?: string, cb?: (text: string) => void) => {
@@ -2720,6 +2731,8 @@
 										/>
 									</div>
 									<ModelControls selectedModels={selectedModelIds} />
+									{#if draftSync}<DraftSyncStatus {...draftSync} />{/if}
+									{#if oiContext}<ContextPanel {...oiContext} />{/if}
 
 									{#if isActive && prompt === '' && files.length === 0}
 										<div class=" flex items-center">

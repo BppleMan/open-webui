@@ -1,4 +1,5 @@
 from contextlib import nullcontext
+from copy import deepcopy
 import time
 import uuid
 from collections import Counter
@@ -162,6 +163,7 @@ class ChatMessage(Base):
 
     # Context compaction checkpoint
     context_summary = Column(Text, nullable=True)
+    oi_state = Column(JSON, nullable=True)
 
     # Timestamps
     created_at = Column(BigInteger, index=True)
@@ -200,6 +202,7 @@ class ChatMessageModel(BaseModel):
     error: Optional[dict | str] = None
     usage: Optional[dict] = None
     context_summary: Optional[str] = None
+    oi_state: Optional[dict] = None
     created_at: int
     updated_at: int
 
@@ -210,6 +213,12 @@ class ChatMessageModel(BaseModel):
 
 
 class ChatMessageTable:
+    OI_STATE_FIELDS = ('oi_native', 'oi_native_invalidated', 'finish_reason', 'oi_source_message_id')
+
+    @classmethod
+    def native_state(cls, data, previous=None):
+        return {**(previous or {}), **{key: deepcopy(data[key]) for key in cls.OI_STATE_FIELDS if key in data}}
+
     @staticmethod
     def _apply_message_data(message: ChatMessage, data: dict, now: int) -> None:
         """Overwrite only the fields the payload carries."""
@@ -239,6 +248,8 @@ class ChatMessageTable:
             message.error = data.get('error')
         if 'context_summary' in data or 'contextSummary' in data:
             message.context_summary = data.get('context_summary') or data.get('contextSummary')
+        if any(key in data for key in ChatMessageTable.OI_STATE_FIELDS):
+            message.oi_state = ChatMessageTable.native_state(data, message.oi_state)
 
         usage = get_usage(data)
         if usage:
@@ -266,6 +277,7 @@ class ChatMessageTable:
             error=data.get('error'),
             usage=get_usage(data),
             context_summary=data.get('context_summary') or data.get('contextSummary'),
+            oi_state=ChatMessageTable.native_state(data) or None,
             created_at=data.get('timestamp') or now,
             updated_at=now,
         )
@@ -355,7 +367,7 @@ class ChatMessageTable:
         'created_at': 'timestamp',
     }
     # DB-internal columns excluded from the reconstructed message dict.
-    EXCLUDED_COLUMNS = frozenset({'id', 'chat_id', 'updated_at'})
+    EXCLUDED_COLUMNS = frozenset({'id', 'chat_id', 'updated_at', 'oi_state'})
 
     async def get_messages_map_by_chat_id(self, chat_id: str, db: Optional[AsyncSession] = None) -> Optional[dict]:
         """Build a {message_id: message_dict} map from chat_message rows.
@@ -391,6 +403,7 @@ class ChatMessageTable:
                     continue
                 json_key = self.DB_TO_JSON_KEY_MAP.get(key, key)
                 msg[json_key] = val
+            msg.update({key: value for key, value in (row.oi_state or {}).items() if key in self.OI_STATE_FIELDS})
 
             # Ensure content always has a value
             msg.setdefault('content', '')

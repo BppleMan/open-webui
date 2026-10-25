@@ -2,7 +2,8 @@
 	import { toast } from 'svelte-sonner';
 
 	import { createEventDispatcher, onMount, getContext } from 'svelte';
-	import { config as backendConfig, user } from '$lib/stores';
+	import { config as backendConfig, user, models as connectionModels } from '$lib/stores';
+	import ModelOptions from '$lib/components/models/ModelOptions.svelte';
 
 	import { getBackendConfig } from '$lib/apis';
 	import {
@@ -345,6 +346,7 @@
 							bind:value={config.IMAGE_GENERATION_ENGINE}
 							placeholder={$i18n.t('Select Engine')}
 						>
+							<option value="connection">连接模型</option>
 							<option value="openai">{$i18n.t('Default (Open AI)')}</option>
 							<option value="comfyui">{$i18n.t('ComfyUI')}</option>
 							<option value="automatic1111">{$i18n.t('Automatic1111')}</option>
@@ -357,19 +359,32 @@
 							<AdminSettingField
 								label={$i18n.t('settings.admin.images.imageGenerationModel.label')}
 							>
-								<input
-									list="model-list"
-									class={inputClass}
-									bind:value={config.IMAGE_GENERATION_MODEL}
-									placeholder={$i18n.t('Select a model')}
-									required
-								/>
+								{#if config.IMAGE_GENERATION_ENGINE === 'connection'}
+									<select
+										class={inputClass}
+										aria-label="图像生成连接模型"
+										bind:value={config.IMAGE_GENERATION_MODEL}
+										required
+										><option value="">选择模型</option><ModelOptions
+											items={$connectionModels}
+											capability="image_generation"
+										/></select
+									>
+								{:else}
+									<input
+										list="model-list"
+										class={inputClass}
+										bind:value={config.IMAGE_GENERATION_MODEL}
+										placeholder={$i18n.t('Select a model')}
+										required
+									/>
 
-								<datalist id="model-list">
-									{#each models ?? [] as model}
-										<option value={model.id}>{model.name}</option>
-									{/each}
-								</datalist>
+									<datalist id="model-list">
+										{#each models ?? [] as model}
+											<option value={model.id}>{model.name}</option>
+										{/each}
+									</datalist>
+								{/if}
 							</AdminSettingField>
 
 							<AdminSettingField label={$i18n.t('settings.admin.images.imageSize.label')}>
@@ -765,6 +780,7 @@
 							bind:value={config.IMAGE_EDIT_ENGINE}
 							placeholder={$i18n.t('Select Engine')}
 						>
+							<option value="connection">连接模型</option>
 							<option value="openai">{$i18n.t('Default (Open AI)')}</option>
 							<option value="comfyui">{$i18n.t('ComfyUI')}</option>
 							<option value="gemini">{$i18n.t('Gemini')}</option>
@@ -774,18 +790,31 @@
 					{#if config?.ENABLE_IMAGE_GENERATION && config?.ENABLE_IMAGE_EDIT}
 						<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 							<AdminSettingField label={$i18n.t('settings.admin.images.imageEditModel.label')}>
-								<input
-									list="model-list"
-									class={inputClass}
-									bind:value={config.IMAGE_EDIT_MODEL}
-									placeholder={$i18n.t('Select a model')}
-								/>
+								{#if config.IMAGE_EDIT_ENGINE === 'connection'}
+									<select
+										class={inputClass}
+										aria-label="图像编辑连接模型"
+										bind:value={config.IMAGE_EDIT_MODEL}
+										required
+										><option value="">选择模型</option><ModelOptions
+											items={$connectionModels}
+											capability="image_edit"
+										/></select
+									>
+								{:else}
+									<input
+										list="model-list"
+										class={inputClass}
+										bind:value={config.IMAGE_EDIT_MODEL}
+										placeholder={$i18n.t('Select a model')}
+									/>
 
-								<datalist id="model-list">
-									{#each models ?? [] as model}
-										<option value={model.id}>{model.name}</option>
-									{/each}
-								</datalist>
+									<datalist id="model-list">
+										{#each models ?? [] as model}
+											<option value={model.id}>{model.name}</option>
+										{/each}
+									</datalist>
+								{/if}
 							</AdminSettingField>
 
 							<AdminSettingField label={$i18n.t('settings.admin.images.imageEditSize.label')}>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { sortByConnection, modelConnection, modelMatches } from '$lib/utils/modelDirectory';
 	import { marked } from 'marked';
 	import Sortable from 'sortablejs';
 	import fileSaver from 'file-saver';
@@ -158,34 +159,37 @@
 	$: if (models) {
 		const modelOrder = new Map(modelOrderList.map((id, idx) => [id, idx]));
 
-		filteredModels = models
-			.filter((m) => !selectedTag || modelTags(m).includes(selectedTag))
-			.filter((m) => searchValue === '' || m.name.toLowerCase().includes(searchValue.toLowerCase()))
-			.filter((m) => {
-				if (viewOption === 'available') return availableModelIds.has(m.id) || isPresetModel(m);
-				if (viewOption === 'unavailable') return !availableModelIds.has(m.id) && !isPresetModel(m);
-				if (viewOption === 'base') return !isPresetModel(m);
-				if (viewOption === 'workspace') return isPresetModel(m);
-				if (viewOption === 'enabled') return m?.is_active ?? true;
-				if (viewOption === 'disabled') return !(m?.is_active ?? true);
-				if (viewOption === 'visible') return !(m?.meta?.hidden ?? false);
-				if (viewOption === 'hidden') return m?.meta?.hidden === true;
-				if (viewOption === 'public') return isPublicModel(m);
-				if (viewOption === 'private') return !isPublicModel(m);
-				if (viewOption === 'selected') return defaultModelIdSet.has(m.id);
-				if (viewOption === 'pinned') return defaultPinnedModelIdSet.has(m.id);
-				return true; // All
-			})
-			.sort((a, b) => {
-				const orderA = modelOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER;
-				const orderB = modelOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+		filteredModels = sortByConnection(
+			models
+				.filter((m) => !selectedTag || modelTags(m).includes(selectedTag))
+				.filter((m) => searchValue === '' || modelMatches(m, searchValue))
+				.filter((m) => {
+					if (viewOption === 'available') return availableModelIds.has(m.id) || isPresetModel(m);
+					if (viewOption === 'unavailable')
+						return !availableModelIds.has(m.id) && !isPresetModel(m);
+					if (viewOption === 'base') return !isPresetModel(m);
+					if (viewOption === 'workspace') return isPresetModel(m);
+					if (viewOption === 'enabled') return m?.is_active ?? true;
+					if (viewOption === 'disabled') return !(m?.is_active ?? true);
+					if (viewOption === 'visible') return !(m?.meta?.hidden ?? false);
+					if (viewOption === 'hidden') return m?.meta?.hidden === true;
+					if (viewOption === 'public') return isPublicModel(m);
+					if (viewOption === 'private') return !isPublicModel(m);
+					if (viewOption === 'selected') return defaultModelIdSet.has(m.id);
+					if (viewOption === 'pinned') return defaultPinnedModelIdSet.has(m.id);
+					return true; // All
+				})
+				.sort((a, b) => {
+					const orderA = modelOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+					const orderB = modelOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER;
 
-				if (orderA !== orderB) {
-					return orderA - orderB;
-				}
+					if (orderA !== orderB) {
+						return orderA - orderB;
+					}
 
-				return (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? '');
-			});
+					return (a?.name ?? a?.id ?? '').localeCompare(b?.name ?? b?.id ?? '');
+				})
+		);
 	}
 
 	let searchValue = '';
@@ -450,8 +454,8 @@
 		parent.insertBefore(item, target);
 
 		// Anchor on the visible neighbor so filtered-out models keep their place
-		const movedModelId = filteredModels[oldIndex].id;
-		const anchorModelId = filteredModels[newIndex].id;
+		const movedModelId = item.dataset.modelId;
+		const anchorModelId = filteredModels[event.newDraggableIndex].id;
 		const reorderedIds = modelOrderList.filter((id) => id !== movedModelId);
 		const anchorIndex = reorderedIds.indexOf(anchorModelId);
 		reorderedIds.splice(oldIndex < newIndex ? anchorIndex + 1 : anchorIndex, 0, movedModelId);
@@ -470,6 +474,9 @@
 			sortable = new Sortable(modelListElement, {
 				animation: 150,
 				handle: '.model-item-handle',
+				draggable: '[data-model-id]',
+				onMove: (event: any) =>
+					event.dragged.dataset.connectionId === event.related.dataset.connectionId,
 				onUpdate: positionChangeHandler
 			});
 		}
@@ -1024,12 +1031,19 @@
 				>
 					{#if filteredModels.length > 0}
 						{#each filteredModels as model, modelIdx (`${model.id}-${modelIdx}`)}
+							{#if modelIdx === 0 || modelConnection(filteredModels[modelIdx - 1]).id !== modelConnection(model).id}
+								<div class="px-2 pt-4 pb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+									{modelConnection(model).name}
+								</div>
+							{/if}
 							<div
 								class="flex cursor-pointer transition w-full px-2 py-1 rounded-xl hover:bg-gray-50/70 dark:hover:bg-gray-850/50 {model
 									?.meta?.hidden
 									? 'opacity-50 dark:opacity-50'
 									: ''}"
 								id="model-item-{model.id}"
+								data-model-id={model.id}
+								data-connection-id={modelConnection(model).id}
 							>
 								<div class="self-center pr-1 -ml-1 text-gray-400 dark:text-gray-600">
 									<Tooltip content={$i18n.t('Drag to reorder')}>

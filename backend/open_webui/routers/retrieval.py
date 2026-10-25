@@ -177,6 +177,8 @@ def get_rf(
     auto_update: bool = RAG_RERANKING_MODEL_AUTO_UPDATE,
 ):
     rf = None
+    if engine == 'connection':
+        return None  # Resolved at each call, with the current user's access and connection configuration.
     # Convert timeout string to int or None (system default)
     timeout_value = int(external_reranker_timeout) if external_reranker_timeout else None
     if reranking_model and engine == 'external':
@@ -509,6 +511,10 @@ async def unload_embedding_model(request: Request):
 
 @router.post('/embedding/update')
 async def update_embedding_config(request: Request, form_data: EmbeddingModelUpdateForm, user=Depends(get_admin_user)):
+    if form_data.RAG_EMBEDDING_ENGINE == 'connection':
+        from open_webui.utils.oi.capability_calls import target_for
+
+        await target_for(form_data.RAG_EMBEDDING_MODEL, 'embedding', user)
     if USE_SLIM and form_data.RAG_EMBEDDING_ENGINE == '':
         raise HTTPException(400, 'Slim requires an external embedding engine (openai, ollama, azure_openai).')
     config = await Config.get_many(*RETRIEVAL_CONFIG_KEYS.values())
@@ -935,6 +941,10 @@ class ConfigForm(BaseModel):
 
 @router.post('/config/update')
 async def update_rag_config(request: Request, form_data: ConfigForm, user=Depends(get_admin_user)):
+    if form_data.RAG_RERANKING_ENGINE == 'connection' and form_data.RAG_RERANKING_MODEL:
+        from open_webui.utils.oi.capability_calls import target_for
+
+        await target_for(form_data.RAG_RERANKING_MODEL, 'rerank', user)
     # RAG settings
     config = await Config.get_many(*RETRIEVAL_CONFIG_KEYS.values())
     if USE_SLIM:
@@ -970,7 +980,7 @@ async def update_rag_config(request: Request, form_data: ConfigForm, user=Depend
             else config['rag.reranking_model']
         )
         if (
-            reranker_engine != 'external'
+            reranker_engine not in {'external', 'connection'}
             and reranker_model
             and (reranker_engine != config['rag.reranking_engine'] or reranker_model != config['rag.reranking_model'])
         ):

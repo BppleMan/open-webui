@@ -324,6 +324,20 @@ async def has_base_model_access(
     seen = {model_info.id}
     while base_model_id and base_model_id not in seen:
         seen.add(base_model_id)
+        if base_model_id.startswith('oi:'):
+            from types import SimpleNamespace
+
+            from open_webui.utils.models import check_model_access as check_binding_access
+
+            try:
+                await check_binding_access(
+                    SimpleNamespace(id=user_id, role=user_role),
+                    {'id': base_model_id, 'oi_binding': True},
+                    db=db,
+                )
+                return True
+            except Exception:
+                return False
         base_model_info = await Models.get_model_by_id(base_model_id, db=db)
         if base_model_info is None:
             if user_role != 'admin':
@@ -353,7 +367,7 @@ async def has_base_model_access(
             )
             return False
         base_model_id = getattr(base_model_info, 'base_model_id', None)
-    return True
+    return not base_model_id
 
 
 async def check_model_access(

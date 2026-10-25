@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { sortByConnection, modelConnection, modelMatches } from '$lib/utils/modelDirectory';
 	import ProfileImage from '$lib/components/chat/Messages/ProfileImage.svelte';
 	import { getAbortSignal, getContext, onMount } from 'svelte';
 	const i18n = getContext('i18n');
@@ -37,7 +38,8 @@
 	$: filteredItems = [..._users, ..._models, ..._channels, ..._apps].filter(
 		(u) =>
 			u.label.toLowerCase().includes(query.toLowerCase()) ||
-			u.id.toLowerCase().includes(query.toLowerCase())
+			u.id.toLowerCase().includes(query.toLowerCase()) ||
+			(u.type === 'model' && modelMatches(u.data, query))
 	);
 
 	const toUserItems = (users: UserSuggestion[]) =>
@@ -162,9 +164,12 @@
 		} else {
 			if (modelSuggestions) {
 				_models = [
-					...$models
-						.filter((m) => !m?.direct)
-						.map((m) => ({ type: 'model', id: m.id, label: m.name, data: m }))
+					...sortByConnection($models.filter((m) => !m?.direct)).map((m) => ({
+						type: 'model',
+						id: m.id,
+						label: m.name,
+						data: m
+					}))
 				];
 			}
 		}
@@ -212,6 +217,12 @@
 						{:else if item?.type === 'channel'}
 							{$i18n.t('Channels')}
 						{/if}
+					</div>
+				{/if}
+
+				{#if item.type === 'model' && (i === 0 || filteredItems[i - 1].type !== 'model' || modelConnection(filteredItems[i - 1].data).id !== modelConnection(item.data).id)}
+					<div class="px-2.5 pt-2 pb-1 text-xs text-gray-500">
+						{modelConnection(item.data).name}
 					</div>
 				{/if}
 

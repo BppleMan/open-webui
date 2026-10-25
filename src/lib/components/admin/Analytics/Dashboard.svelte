@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelLabel } from '$lib/utils/modelDirectory';
 	import { onMount, getContext } from 'svelte';
 	import { models } from '$lib/stores';
 	import {
@@ -551,7 +552,11 @@
 													e.target.src = '/favicon.png';
 												}}
 											/>
-											<span class="truncate max-w-[9.375rem]">{model.name}</span>
+											<span
+												class="truncate max-w-[9.375rem]"
+												title={modelLabel({ id: model.model_id, name: model.name })}
+												>{modelLabel({ id: model.model_id, name: model.name })}</span
+											>
 										</div>
 									</td>
 									<td class="px-3 py-1 text-right">{model.count.toLocaleString()}</td>

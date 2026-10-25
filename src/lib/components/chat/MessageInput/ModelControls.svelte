@@ -5,6 +5,8 @@
 	import DropdownMenu from '$lib/components/common/DropdownMenu.svelte';
 	import DropdownSub from '$lib/components/common/DropdownSub.svelte';
 	import ModelControlSlider from './ModelControlSlider.svelte';
+	import ModelControlBudget from './ModelControlBudget.svelte';
+	import { modelLabel } from '$lib/utils/modelDirectory';
 	import type { ModelControl } from '$lib/apis';
 	import { updateUserSettings } from '$lib/apis/users';
 	import { toast } from 'svelte-sonner';
@@ -140,11 +142,19 @@
 					{#each available as model (model.id)}
 						{#if selectedModels.length > 1}
 							<div class="truncate px-2 pt-1.5 pb-0.5 text-xs text-gray-400 dark:text-gray-500">
-								{resolveLocalizedModelName(model, $i18n.language)}
+								{modelLabel({ ...model, name: resolveLocalizedModelName(model, $i18n.language) })}
 							</div>
 						{/if}
 						{#each Object.entries(localizeModelControls(model, $i18n.language)) as [key, control] (key)}
-							{#if control.display === 'slider'}
+							{#if control.display === 'budget' && control.budget}
+								<ModelControlBudget
+									id={`model-control-budget-${model.id}-${key}`}
+									{control}
+									value={modelControls[model.id]?.[key] ?? ''}
+									disabled={saving}
+									on:change={(event) => select(model.id, key, event.detail)}
+								/>
+							{:else if control.display === 'slider'}
 								<ModelControlSlider
 									{control}
 									value={modelControls[model.id]?.[key] ?? ''}

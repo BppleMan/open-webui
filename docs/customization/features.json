@@ -1,0 +1,744 @@
+{
+  "schema_version": 1,
+  "project": "OI Open WebUI customization",
+  "updated_on": "2026-10-25",
+  "phase": "implementation",
+  "requirements_file": "requirements.md",
+  "prototype_file": "prototype.md",
+  "source": {
+    "upstream": "https://github.com/open-webui/open-webui",
+    "tag": "v0.12.3",
+    "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60",
+    "remote_fork_created": true,
+    "application_code_modified": true,
+    "customization_committed": false,
+    "deployment_changed": false,
+    "fork": "https://github.com/BppleMan/open-webui"
+  },
+  "status_definitions": {
+    "planned": "需求已记录，原型为文字设计，应用功能未实现",
+    "in_progress": "已开始实施，尚未完成验收",
+    "implemented": "实现已完成，尚未完成所需验收",
+    "verified": "有验收证据，尚未代表已部署",
+    "deployed": "目标环境已部署并完成对应运行验收",
+    "proposed": "助手提出的候选，用户尚未确认纳入实施范围",
+    "deferred": "用户明确暂缓，或按其当前范围约束暂不实施；保留概念供以后讨论",
+    "reuse_existing": "已有能力，复用并回归验证；不作为新增实现完成的证据",
+    "merged_into_existing": "取消独立新增，保留既有能力或合并进已确认 Feature"
+  },
+  "features": [
+    {
+      "id": "F01",
+      "title": "原生三家模型接入",
+      "requirements": [
+        "R01",
+        "R32",
+        "R33"
+      ],
+      "prototypes": [
+        "P01",
+        "P20"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "template_connection_models_flow_with_native_components_and_persisted_defaults",
+      "verification": "three_native_preset_nonstream_http_roundtrips_with_synthetic_provider_passed_real_provider_matrix_pending",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "三家原生流式与非流式请求可用",
+        "结构化历史、工具、多模态、usage 和错误正确处理",
+        "不同连接的模型身份与能力不混用"
+      ],
+      "depends_on": [
+        "F13"
+      ],
+      "template_workflow": {
+        "implementation": "implemented",
+        "verification": "local_synthetic_verified",
+        "deployment": "not_deployed",
+        "templates": 17,
+        "evidence": "validation.md#connection-template-acceptance-2026-10-25",
+        "remaining": [
+          "all_22_model_surfaces",
+          "personal_browser_direct_migration",
+          "real_provider_acceptance"
+        ]
+      },
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+    },
+    {
+      "id": "F02",
+      "title": "LC 上下文面板及 RP 完整上下文",
+      "requirements": [
+        "R02",
+        "R09",
+        "R31"
+      ],
+      "prototypes": [
+        "P02",
+        "P19"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "replace_flat_panel_with_composer_ring_popover",
+      "verification": "composer_ring_popover_desktop_390px_escape_focus_verified_full_LC_fields_pending",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "完整上下文分类与窗口、压缩阈值分离",
+        "默认不压缩、不裁剪历史，超限明确失败",
+        "分支切换与刷新恢复对应快照",
+        "未知或估算值如实标注",
+        "输入框内环形按钮打开详情浮层，聊天内容不被统计区挤占",
+        "手机/桌面、键盘焦点、Esc关闭、未知容量与费用分列验证"
+      ],
+      "depends_on": [
+        "F13"
+      ]
+    },
+    {
+      "id": "F03",
+      "title": "OI 内置单条 usage",
+      "requirements": [
+        "R03"
+      ],
+      "prototypes": [
+        "P03"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "persistence_api_and_ui_integration_in_progress",
+      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "无需 usage Filter 或 Pipe 即可显示明细",
+        "流式快照和增量不重复累计",
+        "中断后保留已确认用量并标明缺失"
+      ],
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+    },
+    {
+      "id": "F04",
+      "title": "助手回复编辑弹窗",
+      "requirements": [
+        "R04"
+      ],
+      "prototypes": [
+        "P04"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "modal_revision_history_diff_undo_source_links_and_atomic_message_writes",
+      "verification": "local_HTTP_edit_restore_preserves_revision_native_invalidation_and_ledger; desktop_diff_UI_verified; broad_acceptance_pending",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "独立弹窗编辑与取消不扰动聊天滚动",
+        "保存和另存分支正确",
+        "编辑后历史回传正确且费用不变"
+      ],
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+    },
+    {
+      "id": "F05",
+      "title": "自动生成推理滑杆",
+      "requirements": [
+        "R05"
+      ],
+      "prototypes": [
+        "P05"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "native_discrete_and_budget_controls_with_exact_wire_validation",
+      "verification": "budget_unit_tests_passed_browser_outbound_acceptance_pending",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "按连接协议模型获取能力并生成原生控件",
+        "档位顺序、默认值和实际出站参数一致",
+        "未知模型不编造档位"
+      ],
+      "depends_on": [
+        "F13"
+      ]
+    },
+    {
+      "id": "F06",
+      "title": "新会话生成费用账本与 regen 累计",
+      "requirements": [
+        "R06",
+        "R07"
+      ],
+      "prototypes": [
+        "P06"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "persistence_api_and_ui_integration_in_progress",
+      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "第一笔请求前建立生成记录",
+        "regen 与继续回复分别记录新增费用",
+        "0.03 加 0.04 加 0.05 的总额稳定为 0.12",
+        "重放、切分支、编辑、刷新和删除不重复计费或丢账",
+        "金额来源与不完整状态明确"
+      ],
+      "depends_on": [
+        "F13"
+      ],
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "anchor_refinement": {
+        "implementation": "source_message_reference_and_nullable_non_generation_snapshot",
+        "verification": "92_backend_tests_and_real_local_HTTP_copy_fork_baseline_fork_passed",
+        "deployment": "not_deployed"
+      }
+    },
+    {
+      "id": "F07",
+      "title": "导入历史费用基数",
+      "requirements": [
+        "R08"
+      ],
+      "prototypes": [
+        "P07"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "persistence_api_and_ui_integration_in_progress",
+      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "导入时可填写并随后修改历史费用基数",
+        "修改替换基数，同批单条旧 cost 不重复计入",
+        "多次导入分批累计",
+        "导入后生成与 regen 正常入账"
+      ],
+      "legacy_import_baseline": "implemented_unknown_baseline_for_plain_JSON_import; runtime_test_pending"
+    },
+    {
+      "id": "F08",
+      "title": "CPA AGY 保真适配",
+      "requirements": [
+        "R10"
+      ],
+      "prototypes": [
+        "P08"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "persistence_api_and_ui_integration_in_progress",
+      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "复用 CPA OAuth、账号池和 RP 策略",
+        "建立请求/返回字段保留与转换清单",
+        "原生内容块、工具、grounding、usage 和结束来源可用",
+        "从首轮保留用户会话隔离，429 不被无声改写",
+        "必要的 CPA 元数据改动单独记录验证"
+      ],
+      "depends_on": [
+        "F13"
+      ],
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+    },
+    {
+      "id": "F09",
+      "title": "本地源码与 GitOps 分工",
+      "requirements": [
+        "R11"
+      ],
+      "prototypes": [
+        "P09"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "public_fork_created_private_records_separated",
+      "verification": "repository_setup_in_progress",
+      "deployment": "not_applicable",
+      "acceptance": [
+        "源码位于 gemini-api/work/open-webui",
+        "CPA 保持独立兄弟仓库",
+        "现网声明仍由 convertor-gitops 管理",
+        "远端 fork、提交和部署分别报告"
+      ],
+      "source_submission": {
+        "requirement": "R38",
+        "prototype": "P25",
+        "branch": "oi/main",
+        "scope": "source_commit_and_push_only",
+        "deployment": "not_requested_in_this_submission",
+        "full_plan_complete": false
+      }
+    },
+    {
+      "id": "F10",
+      "title": "登录连续性与恢复",
+      "requirements": [
+        "R12"
+      ],
+      "prototypes": [
+        "P10"
+      ],
+      "priority": "P0",
+      "status": "in_progress",
+      "implementation": "persistence_api_and_ui_integration_in_progress",
+      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "deployment": "not_deployed",
+      "investigation": "fixed_expiry_mechanism_verified_other_incidents_not_fully_attributed",
+      "acceptance": [
+        "正常活动期间无感续期",
+        "旧标签页不注销新会话",
+        "网络异常不等同认证撤销",
+        "需要重新登录时保留页面与草稿",
+        "真实撤销仍正确生效"
+      ]
+    },
+    {
+      "id": "F11",
+      "title": "每会话唯一服务器草稿与 PWA 恢复",
+      "requirements": [
+        "R13",
+        "R14",
+        "R16"
+      ],
+      "prototypes": [
+        "P11"
+      ],
+      "priority": "P0",
+      "status": "in_progress",
+      "implementation": "persistence_api_and_ui_integration_in_progress",
+      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "同一用户每会话只有一份服务器草稿，跨分支和浏览器共用",
+        "服务器持久保存，换浏览器和 PWA kill/reopen 后恢复已保存版本",
+        "其他 sessionStorage 数据不作广泛改造",
+        "超过 5000 字符不清空草稿",
+        "未发送的新会话有稳定 ID，中文输入法内容可恢复",
+        "离线与登录失效保留未同步工作副本",
+        "并发编辑不静默覆盖且服务端仍只有一份当前草稿",
+        "只在服务端接受后清除已发送版本"
+      ],
+      "review_fix_verification": "U22_recovery_candidates_fixed_with_versioned_atomic_IDB_transfer",
+      "queue_reliability": {
+        "implementation": "implemented",
+        "verification": "local_browser_refresh_model_identity_acceptance_replay_and_new_input_passed",
+        "deployment": "not_deployed",
+        "remaining": [
+          "physical_PWA",
+          "cross_browser",
+          "full_auth_matrix"
+        ]
+      }
+    },
+    {
+      "id": "F12",
+      "title": "需求原型 Feature 三层记录",
+      "requirements": [
+        "R15"
+      ],
+      "prototypes": [
+        "P12"
+      ],
+      "priority": "P0",
+      "status": "verified",
+      "implementation": "local_documents_created",
+      "verification": "local_paths_traceability_and_evidence_validated",
+      "deployment": "not_applicable",
+      "acceptance": [
+        "本次所有用户要求和修正保留原话",
+        "每项 Feature 可追溯到需求和原型",
+        "未实施功能不标为已完成",
+        "后续讨论有仓库级记录约定",
+        "外层工作区入口可定位全部记录，压缩上下文后可继续接手"
+      ]
+    },
+    {
+      "id": "F13",
+      "title": "全局连接模型目录与统一选择",
+      "requirements": [
+        "R17",
+        "R19",
+        "R32",
+        "R33",
+        "R35"
+      ],
+      "prototypes": [
+        "P13",
+        "P20",
+        "P22"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "template_connection_models_flow_with_native_components_and_persisted_defaults",
+      "verification": "template_http_persistence_native_request_builder_and_local_browser_flow_passed_broader_acceptance_pending",
+      "deployment": "not_deployed",
+      "architecture_role": "shared_foundation_for_all_model_lists_and_selection",
+      "coverage": {
+        "inventory_groups": 22,
+        "implementation": "all_groups_pending",
+        "runtime_verification": "not_run",
+        "completion_rule": "all_applicable_entries_verified_and_no_unexplained_omissions"
+      },
+      "acceptance": [
+        "所有模型列表与选择入口按连接一对多组织，完成入口清单逐项验收",
+        "聊天、@、并行回答、收藏、文件夹、预设、权限、任务、自动化与 Arena 使用统一身份和选择契约",
+        "图像、音频、Embedding、重排沿用同一组织方式并按能力筛选",
+        "没有独立选择器的笔记、子代理等继承调用链仍保留绑定身份",
+        "管理、紧凑选择、只读统计、收藏、多选与搜索均可辨认连接来源，手机与 PWA 可用",
+        "不同连接的同名模型保持独立身份并正确路由",
+        "连接改名和重排不改变模型绑定",
+        "模型开关、推理控件、窗口与价格按所属连接隔离",
+        "权限、停用与个人可见性分别处理，服务端调用资格与界面一致",
+        "停用连接不删除历史且不静默切换同名模型",
+        "模型列表刷新保留用户配置与历史引用",
+        "歧义模型、用户个人直连和 Arena/Pipe 有明确迁移或兼容处理",
+        "导入导出、默认模型、草稿输入选择与历史模型引用经过迁移验证",
+        "参考产品已观察行为与 OI 设计推断分开记录，不以参考界面代替 OI 验收"
+      ],
+      "template_workflow": {
+        "implementation": "implemented",
+        "verification": "local_synthetic_verified",
+        "deployment": "not_deployed",
+        "templates": 17,
+        "evidence": "validation.md#connection-template-acceptance-2026-10-25",
+        "remaining": [
+          "all_22_model_surfaces",
+          "personal_browser_direct_migration",
+          "real_provider_acceptance"
+        ]
+      },
+      "ui_revision": "U21_corrected_and_locally_verified_not_production_deployed",
+      "ui_correction": {
+        "requirements": [
+          "R35"
+        ],
+        "implementation": "implemented",
+        "verification": "local_browser_verified",
+        "deployment": "not_deployed",
+        "evidence": "validation.md#u21-settings-and-model-picker-correction",
+        "limits": [
+          "broader_feature_acceptance_in_progress",
+          "no_production_changes"
+        ]
+      },
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "capability_routing": {
+        "implementation": "connection_scoped_embedding_rerank_TTS_STT_image_and_realtime_paths_implemented",
+        "verification": "10_unit_tests_and_local_HTTP_WebSocket_passed; full_UI_and_22_surface_acceptance_pending",
+        "deployment": "not_deployed",
+        "remaining": [
+          "legacy_auxiliary_config_migration",
+          "full_22_surface_acceptance",
+          "real_provider_checks"
+        ]
+      }
+    },
+    {
+      "id": "F14",
+      "title": "多种预设连接模板",
+      "requirements": [
+        "R18",
+        "R19",
+        "R32",
+        "R33"
+      ],
+      "prototypes": [
+        "P14",
+        "P20"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "template_connection_models_flow_with_native_components_and_persisted_defaults",
+      "verification": "template_http_persistence_native_request_builder_and_local_browser_flow_passed_broader_acceptance_pending",
+      "deployment": "not_deployed",
+      "depends_on": [
+        "F13",
+        "F01",
+        "F08"
+      ],
+      "acceptance": [
+        "提供多种连接模板，首批名单和各自支持协议有明确记录",
+        "同一模板可创建多条独立连接，各自拥有一对多模型绑定",
+        "模板预设地址规则、认证字段、协议、发现方式和能力来源，未知值不冒充已验证",
+        "模型发现、手动添加、参数继承和覆盖进入全局目录并在各入口生效",
+        "高级请求头与请求体保留类型，协议校验及 CPA RP 契约不被覆盖破坏",
+        "单模型价格、原生 usage 与推理控件能沿绑定正确生效",
+        "保存不隐含发起收费推理，主动连接测试和模型发现结果分别记录",
+        "刷新和模板升级保留用户覆盖、稳定模型身份与历史费用",
+        "连接配置导入预览和模型映射可追溯，不按同名覆盖且不导出凭据",
+        "没有完整参考源码时仍形成可检验的行为规格，实际协议验收使用对应服务的官方资料"
+      ],
+      "template_workflow": {
+        "implementation": "implemented",
+        "verification": "local_synthetic_verified",
+        "deployment": "not_deployed",
+        "templates": 17,
+        "evidence": "validation.md#connection-template-acceptance-2026-10-25",
+        "remaining": [
+          "all_22_model_surfaces",
+          "personal_browser_direct_migration",
+          "real_provider_acceptance"
+        ]
+      },
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+    },
+    {
+      "id": "F15",
+      "title": "长期 RP 跑团候选优化",
+      "requirements": [
+        "R20",
+        "R21",
+        "R22",
+        "R23"
+      ],
+      "prototypes": [
+        "P15",
+        "P17"
+      ],
+      "priority": "uncommitted",
+      "status": "proposed",
+      "scope_confirmed": false,
+      "implementation": "not_started",
+      "verification": "existing_capabilities_source_checked_and_current_ui_inspected; runtime_generation_not_tested",
+      "deployment": "not_deployed",
+      "candidates": [
+        {
+          "id": "RP01",
+          "title": "剧情事实与场景状态",
+          "suggested_priority": "not_scheduled",
+          "status": "deferred",
+          "disposition": "R21: 暂缓状态提取、自动记忆与上下文注入"
+        },
+        {
+          "id": "RP02",
+          "title": "存档、分支与 regen 对比",
+          "suggested_priority": "after_confirmed_core",
+          "status": "planned",
+          "disposition": "仅规划分支命名、原文对照和人工选用；不新增场景状态联动"
+        },
+        {
+          "id": "RP03",
+          "title": "战役工作区、版本化角色卡与世界书",
+          "suggested_priority": "not_scheduled",
+          "status": "deferred",
+          "disposition": "U15 批注 2：只作憧憬，现在不实现"
+        },
+        {
+          "id": "RP04",
+          "title": "RP 写作约定与实际请求预览",
+          "suggested_priority": "not_scheduled",
+          "status": "deferred",
+          "disposition": "U15 批注 3：整项只作憧憬；已确认上下文用量面板保留"
+        },
+        {
+          "id": "RP05",
+          "title": "生成结果跨端接续",
+          "suggested_priority": "not_scheduled",
+          "status": "reuse_existing",
+          "disposition": "U15 批注 1：核实原生任务、响应快照和读取重连路径，后续只做回归与证实缺口修复"
+        },
+        {
+          "id": "RP06",
+          "title": "长篇阅读、搜索与编辑",
+          "suggested_priority": "after_confirmed_core",
+          "status": "planned",
+          "disposition": "先复用搜索，仅规划阅读定位、书签和长文体验，不新增语义提取"
+        },
+        {
+          "id": "RP07",
+          "title": "可完整还原的跑团归档",
+          "suggested_priority": "after_confirmed_core",
+          "status": "planned",
+          "disposition": "先核对已有导出，补本期数据与费用账本的完整性；不新增定时调度"
+        },
+        {
+          "id": "RP08",
+          "title": "骰子与规则引擎",
+          "suggested_priority": "not_scheduled",
+          "status": "deferred",
+          "disposition": "U15 批注 5：只作憧憬，现在不实现"
+        },
+        {
+          "id": "RP09",
+          "title": "模型 RP 预设与缓存可观测性",
+          "suggested_priority": "not_scheduled",
+          "status": "merged_into_existing",
+          "disposition": "U15 批注 4：沿用高级参数，不新建 RP 预设；缓存 usage 归 F03/F06，推理控件保留 F05"
+        },
+        {
+          "id": "RP10",
+          "title": "主持人笔记与角色知情范围",
+          "suggested_priority": "not_scheduled",
+          "status": "deferred",
+          "disposition": "U15 批注 6：只作憧憬，现在不实现"
+        }
+      ],
+      "acceptance": [
+        "U15 的六条批注和额外上下文限制有逐项处置记录",
+        "已暂缓的功能不进入近期实施或作为其他功能的隐含依赖",
+        "复用既有跨端生成和参数功能，源码核实与运行验收状态分开",
+        "RP02/RP06/RP07 的建议范围限定为界面、元数据和归档增量",
+        "原有 R05 推理滑杆、R02 上下文用量面板和 R09 不压缩约束仍保留"
+      ],
+      "scope_revision": "U15 supersedes initial candidate priorities; deferred items excluded from current work"
+    },
+    {
+      "id": "F16",
+      "title": "设置页标签与控件的关联布局",
+      "requirements": [
+        "R24",
+        "R34"
+      ],
+      "prototypes": [
+        "P16",
+        "P21"
+      ],
+      "priority": "P1",
+      "status": "in_progress",
+      "implementation": "aligned_settings_rows_with_grouped_text_trailing_controls_and_width_limits",
+      "verification": "personal_interface_390px_1275px_2560px_light_dark_110_percent_long_labels_verified_other_settings_audit_pending",
+      "deployment": "not_deployed",
+      "acceptance": [
+        "开关与标题属于同一紧凑视觉组，不随视口加宽被推到最右端",
+        "普通表单限制宽度，复杂表格和编辑器不被一刀切收窄",
+        "个人界面页及其他同类设置行逐项核对，保留原有设置语义与保存行为",
+        "长中文、说明文本、手机布局、应用缩放与浏览器放大不造成错位或遮挡",
+        "键盘、可访问名称与点击区域可用，紧凑布局不缩小交互目标",
+        "布局操作不改变用户现有设置，也不改变模型请求内容"
+      ],
+      "ui_revision": "U21_corrected_and_locally_verified_not_production_deployed",
+      "ui_correction": {
+        "requirements": [
+          "R34"
+        ],
+        "implementation": "implemented",
+        "verification": "local_browser_verified",
+        "deployment": "not_deployed",
+        "evidence": "validation.md#u21-settings-and-model-picker-correction",
+        "limits": [
+          "broader_feature_acceptance_in_progress",
+          "no_production_changes"
+        ]
+      }
+    },
+    {
+      "id": "F17",
+      "title": "不增加上下文的 RP 界面与归档增强计划",
+      "requirements": [
+        "R21",
+        "R25"
+      ],
+      "prototypes": [
+        "P17",
+        "P15"
+      ],
+      "priority": "after_confirmed_core",
+      "status": "in_progress",
+      "scope_confirmed": true,
+      "implementation": "reading_bookmarks_branch_names_comparison_and_ZIP_archive_restore_implemented",
+      "verification": "local_HTTP_browser_ZIP_roundtrip_and_synthetic_PostgreSQL_archive_restore_passed; full_acceptance_pending",
+      "deployment": "not_deployed",
+      "candidate_ids": [
+        "RP02",
+        "RP06",
+        "RP07"
+      ],
+      "context_injection": "none",
+      "extra_model_calls": "none",
+      "depends_on": [
+        "F04",
+        "F06",
+        "F07",
+        "F13"
+      ],
+      "acceptance": [
+        "先核对既有分叉、搜索和导入导出，只补具体体验或数据缺口",
+        "分支命名、对照、人工选用、阅读位置和书签不写入模型输入",
+        "取消状态联合回档、自动事实复核、语义提取和自动段落重写",
+        "归档包含本期消息、分支、附件关系、生成记录与费用，并经过还原验证",
+        "UI 与元数据操作前后规范化请求一致，不依赖 token 总数近似判定",
+        "费用不随分支回档消失或重复，服务器草稿仍每会话唯一",
+        "候选增强的实施范围与已确认需求、憧憬项目明确分开"
+      ],
+      "archive": {
+        "schema": "oi-conversation-archive-v1",
+        "verification": "107_backend_tests; local_HTTP_UI_and_synthetic_PostgreSQL_roundtrip_passed",
+        "attachments": "original_bytes_and_extracted_text; external_or_unavailable_explicit; vector_indexes_not_included",
+        "production": "not_deployed"
+      }
+    },
+    {
+      "id": "F18",
+      "title": "已批准实施及发布集成",
+      "requirements": [
+        "R26",
+        "R27",
+        "R28",
+        "R29",
+        "R30"
+      ],
+      "prototypes": [
+        "P18"
+      ],
+      "status": "in_progress",
+      "implementation": "local_review_fixes_durable_drafts_revisions_reading_archive_and_capability_routes_implemented",
+      "verification": "stage_local_checks_passed; full_plan_acceptance_and_release_pending",
+      "deployment": "not_deployed",
+      "postgres_rehearsal": {
+        "environment": "local_synthetic_postgres17",
+        "migration": "v0.12.3_to_oi0000000004_passed",
+        "backup_restore": "12_table_content_hashes_match_including_non_generation_anchor",
+        "concurrency": "six_draft_writers_and_six_generation_reservations_each_have_one_winner",
+        "production_copy_rehearsal": "not_run",
+        "remote_CI": "configured_not_run",
+        "archive": "archive_restore_included; 12_table_hashes_match_after_pg_dump_restore"
+      },
+      "session_checkpoint": {
+        "date": "2026-10-26",
+        "requirement": "R37",
+        "prototype": "P24",
+        "state": "stage_closed_at_user_request",
+        "plan_complete": false,
+        "next": "22_surface_and_capability_UI_acceptance_then_auth_PWA_protocol_release_gates"
+      },
+      "source_submission": {
+        "requirement": "R38",
+        "prototype": "P25",
+        "branch": "oi/main",
+        "scope": "source_commit_and_push_only",
+        "deployment": "not_requested_in_this_submission",
+        "full_plan_complete": false
+      }
+    }
+  ],
+  "latest_checks": {
+    "backend_tests": 107,
+    "frontend_tests": 29,
+    "type_gate": "no_new_diagnostics_5862_upstream_remain",
+    "frontend_build": "earlier_8GiB_build_passed_latest_changes_build_deferred_at_stage_checkpoint",
+    "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
+    "postgres_archive_restore": "12_table_hashes_match",
+    "production_deployment": "unchanged"
+  },
+  "review_remediation": {
+    "review": "code-review-2026-10-25",
+    "status": "locally_verified",
+    "confirmed_findings": [
+      "CR01",
+      "CR02",
+      "CR03",
+      "CR04",
+      "CR05",
+      "CR06",
+      "CR07",
+      "CR08"
+    ],
+    "baseline_reproduction": "9_backend_assertions_fail_and_2_draft_resurrections_reproduced",
+    "deployment": "unchanged",
+    "backend_tests": 86,
+    "frontend_tests": 20,
+    "associated_fix": "normalized_message_native_state_and_finish_reason",
+    "evidence": "validation.md#u22-review-fixes"
+  },
+  "postgres_correction": "psycopg_async_insert_rowcount_minus_one_replaced_by_returning"
+}

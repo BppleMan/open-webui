@@ -22,6 +22,7 @@
 	} from '$lib/stores';
 
 	import { getChatById } from '$lib/apis/chats';
+	import { WEBUI_API_BASE_URL } from '$lib/constants';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import DropdownMenu from '$lib/components/common/DropdownMenu.svelte';
@@ -295,6 +296,22 @@
 			saveAs(blob, `chat-export-${Date.now()}.json`);
 		}
 	};
+	const downloadArchive = async () => {
+		try {
+			const response = await fetch(`${WEBUI_API_BASE_URL}/chats/${chat.id}/archive-bundle`, {
+				headers: { Authorization: `Bearer ${localStorage.token}` }
+			});
+			if (!response.ok) throw new Error((await response.json()).detail || '归档导出失败');
+			saveAs(await response.blob(), `oi-conversation-${chat.id}.zip`);
+			if (
+				Number(response.headers.get('X-OI-Archive-Unavailable')) ||
+				Number(response.headers.get('X-OI-Archive-External'))
+			)
+				toast.message('归档已下载；部分附件或外部链接只保留引用，详情见还原预览。');
+		} catch (error) {
+			toast.error(String(error));
+		}
+	};
 </script>
 
 {#if showFullMessages}
@@ -433,6 +450,11 @@
 						<div class="flex items-center">{$i18n.t('Download')}</div>
 					</button>
 
+					{#if !$temporaryChatEnabled && !readOnly}<button
+							draggable="false"
+							class="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
+							on:click={downloadArchive}>会话归档（.zip）</button
+						>{/if}
 					<button
 						draggable="false"
 						class="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"

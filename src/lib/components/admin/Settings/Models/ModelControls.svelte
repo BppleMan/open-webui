@@ -18,7 +18,7 @@
 	let editingKey = '';
 	let label = '';
 	let description = '';
-	let display: 'menu' | 'slider' = 'menu';
+	let display: 'menu' | 'slider' | 'budget' = 'menu';
 	let defaultOption = '';
 	let options: { id: string; key?: string; label: string; params: Record<string, any> }[] = [];
 	let nameInput: HTMLInputElement;
@@ -63,6 +63,18 @@
 		nameInput?.focus();
 	};
 	const apply = () => {
+		if (display === 'budget' && controls?.[editingKey]) {
+			controls = {
+				...controls,
+				[editingKey]: {
+					...controls[editingKey],
+					label: label.trim(),
+					description: description.trim()
+				}
+			};
+			show = false;
+			return;
+		}
 		const saved: ModelControl['options'] = {};
 		// Reserve existing keys so a new option cannot overwrite a renamed option.
 		const keys = Object.fromEntries(
@@ -248,72 +260,81 @@
 				>
 				<input class={inputClass} placeholder={$i18n.t('Optional')} bind:value={description} />
 			</label>
-			<div class="flex items-center justify-between">
-				<span class="text-xs font-normal text-gray-600 dark:text-gray-400"
-					>{$i18n.t('Display')}</span
-				>
-				<div class="flex gap-1">
-					{#each ['menu', 'slider'] as mode}
-						<button
-							type="button"
-							aria-pressed={display === mode}
-							class="rounded-lg px-2 py-1 text-xs transition {display === mode
-								? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white'
-								: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
-							on:click={() => (display = mode as 'menu' | 'slider')}
-						>
-							{mode === 'slider' ? $i18n.t('Slider') : $i18n.t('Menu')}
-						</button>
-					{/each}
+			{#if display === 'budget'}
+				<p class="rounded-lg bg-gray-50 p-3 text-xs text-gray-500 dark:bg-white/5">
+					预算范围由连接的模型能力配置提供。
+				</p>
+			{:else}
+				<div class="flex items-center justify-between">
+					<span class="text-xs font-normal text-gray-600 dark:text-gray-400"
+						>{$i18n.t('Display')}</span
+					>
+					<div class="flex gap-1">
+						{#each ['menu', 'slider'] as mode}
+							<button
+								type="button"
+								aria-pressed={display === mode}
+								class="rounded-lg px-2 py-1 text-xs transition {display === mode
+									? 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-white'
+									: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}"
+								on:click={() => (display = mode as 'menu' | 'slider')}
+							>
+								{mode === 'slider' ? $i18n.t('Slider') : $i18n.t('Menu')}
+							</button>
+						{/each}
+					</div>
 				</div>
-			</div>
-			<div>
-				<span class="text-xs font-normal text-gray-600 dark:text-gray-400"
-					>{$i18n.t('Options')}</span
-				>
-				<div class="divide-y divide-gray-100/60 dark:divide-gray-850/60" use:sortable={moveOption}>
-					{#each options as option, index (option.id)}
-						<div class="py-1.5">
-							<div class="flex items-center gap-1">
-								<button
-									type="button"
-									class={`${actionClass} sort-handle cursor-grab`}
-									aria-label={`${$i18n.t('Reorder')} ${option.label || $i18n.t('option')}`}
-									title={$i18n.t('Drag or use the up and down arrow keys to reorder')}
-									on:keydown={(event) => keyboardMove(event, index, moveOption)}
-									><EllipsisVertical className="size-4" /></button
-								>
-								<input
-									class={inputClass}
-									aria-label={$i18n.t('Option name')}
-									use:focus
-									placeholder={$i18n.t('Option name')}
-									bind:value={option.label}
-									required
-								/>
-								<button
-									type="button"
-									class="flex shrink-0 items-center justify-center rounded text-gray-400 transition hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300"
-									aria-label={`${$i18n.t('Remove')} ${option.label || $i18n.t('option')}`}
-									on:click={() => {
-										options = options.filter((item) => item.id !== option.id);
-										if (defaultOption === option.id) defaultOption = '';
-									}}><XMark className="size-3" /></button
-								>
+				<div>
+					<span class="text-xs font-normal text-gray-600 dark:text-gray-400"
+						>{$i18n.t('Options')}</span
+					>
+					<div
+						class="divide-y divide-gray-100/60 dark:divide-gray-850/60"
+						use:sortable={moveOption}
+					>
+						{#each options as option, index (option.id)}
+							<div class="py-1.5">
+								<div class="flex items-center gap-1">
+									<button
+										type="button"
+										class={`${actionClass} sort-handle cursor-grab`}
+										aria-label={`${$i18n.t('Reorder')} ${option.label || $i18n.t('option')}`}
+										title={$i18n.t('Drag or use the up and down arrow keys to reorder')}
+										on:keydown={(event) => keyboardMove(event, index, moveOption)}
+										><EllipsisVertical className="size-4" /></button
+									>
+									<input
+										class={inputClass}
+										aria-label={$i18n.t('Option name')}
+										use:focus
+										placeholder={$i18n.t('Option name')}
+										bind:value={option.label}
+										required
+									/>
+									<button
+										type="button"
+										class="flex shrink-0 items-center justify-center rounded text-gray-400 transition hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300"
+										aria-label={`${$i18n.t('Remove')} ${option.label || $i18n.t('option')}`}
+										on:click={() => {
+											options = options.filter((item) => item.id !== option.id);
+											if (defaultOption === option.id) defaultOption = '';
+										}}><XMark className="size-3" /></button
+									>
+								</div>
+								<div class="pl-8"><CustomParams compact bind:value={option.params} /></div>
 							</div>
-							<div class="pl-8"><CustomParams compact bind:value={option.params} /></div>
-						</div>
-					{/each}
+						{/each}
+					</div>
+					<button
+						type="button"
+						class="mt-1 flex items-center gap-1.5 py-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+						on:click={addOption}
+					>
+						<Plus className="size-3" />
+						<span>{$i18n.t('Add option')}</span>
+					</button>
 				</div>
-				<button
-					type="button"
-					class="mt-1 flex items-center gap-1.5 py-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-					on:click={addOption}
-				>
-					<Plus className="size-3" />
-					<span>{$i18n.t('Add option')}</span>
-				</button>
-			</div>
+			{/if}
 			{#if display === 'slider' && options.length < 2}
 				<p class="text-xs text-gray-500 dark:text-gray-400">
 					{$i18n.t('Add at least two options for a slider.')}
@@ -328,9 +349,9 @@
 				<button
 					type="submit"
 					disabled={!label.trim() ||
-						!options.length ||
+						(display !== 'budget' && !options.length) ||
 						(display === 'slider' && options.length < 2) ||
-						options.some((option) => !option.label.trim())}
+						(display !== 'budget' && options.some((option) => !option.label.trim()))}
 					class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-2.5 text-xs font-normal text-white transition hover:bg-black disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
 					>{$i18n.t('Apply')}</button
 				>

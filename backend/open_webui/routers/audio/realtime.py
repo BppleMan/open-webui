@@ -362,6 +362,8 @@ async def realtime_call(ws: WebSocket):
     upstream = None
     tasks = []
     user = None
+    ledger = None
+    connected_models = None
     try:
         async with asyncio.timeout(10):
             raw = await ws.receive_text()
@@ -423,7 +425,17 @@ async def realtime_call(ws: WebSocket):
             raise ValueError('Configure the Realtime model, voice, and transcription model')
         async with asyncio.timeout(30):
             async with asyncio.timeout(15):
-                ws_url, headers = await _get_realtime_connection(config)
+                if config.get('audio.realtime.provider') == 'connection':
+                    from open_webui.utils.oi.realtime import connection, CallLedger
+
+                    ws_url, headers, voice_target, transcription_target = await connection(
+                        config, user, chat_id or 'voice:' + str(id(ws))
+                    )
+                    connected_models = (config['audio.realtime.model'], config['audio.realtime.transcription_model'])
+                    ledger = CallLedger(user, chat_id, voice_target, transcription_target)
+                    config['audio.realtime.transcription_model'] = transcription_target.binding.upstream_id
+                else:
+                    ws_url, headers = await _get_realtime_connection(config)
                 session = await get_session()
                 try:
                     upstream = await session.ws_connect(
@@ -451,6 +463,7 @@ async def realtime_call(ws: WebSocket):
                     'type': 'session.update',
                     'session': {
                         'type': 'realtime',
+                        'truncation': 'disabled',
                         'output_modalities': ['audio'],
                         'instructions': (
                             (config.get('audio.realtime.prompt_template') or DEFAULT_REALTIME_CALL_PROMPT_TEMPLATE)
@@ -459,7 +472,6 @@ async def realtime_call(ws: WebSocket):
                         'audio': {
                             'input': {
                                 'format': {'type': 'audio/pcm', 'rate': 24000},
-                                'transcription': {'model': config['audio.realtime.transcription_model']},
                                 # Wait for the finalized transcript before requesting a response. This gives
                                 # every function call an unambiguous input_item_id, even during barge-in.
                                 'turn_detection': {
@@ -469,6 +481,7 @@ async def realtime_call(ws: WebSocket):
                                     'create_response': False,
                                 },
                                 **(config.get('audio.realtime.input_params') or {}),
+                                'transcription': {'model': config['audio.realtime.transcription_model']},
                             },
                             'output': {'format': {'type': 'audio/pcm', 'rate': 24000}, 'voice': voice},
                         },
@@ -481,6 +494,15 @@ async def realtime_call(ws: WebSocket):
             if event.get('type') != 'session.updated':
                 raise ValueError('Provider rejected voice configuration. Check model, voice, and transcription model.')
         await ws.send_json({'type': 'bridge.ready', 'model': voice_model, 'voice': voice, 'sample_rate': 24000})
+
+        async def send_command(command):
+            if ledger:
+                if command.get('type') == 'response.create':
+                    from open_webui.utils.oi.capability_calls import target_for
+                    await target_for(connected_models[0],'realtime',user)
+                command = await ledger.prepare(command)
+            async with asyncio.timeout(5):
+                await upstream.send_json(command)
 
         async def client_events():
             while True:
@@ -495,8 +517,7 @@ async def realtime_call(ws: WebSocket):
                 if event['type'] == 'bridge.result':
                     protocol.requested.add(f'result:{event["call_id"]}')
                 for item in command if isinstance(command, list) else [command]:
-                    async with asyncio.timeout(5):
-                        await upstream.send_json(item)
+                    await send_command(item)
 
         async def provider_events():
             async for message in upstream:
@@ -511,11 +532,12 @@ async def realtime_call(ws: WebSocket):
                 if kind == 'error':
                     # Provider error text can include prompts or credentials.
                     raise ValueError('Voice provider rejected a request')
+                if ledger:
+                    await ledger.observe(event)
                 command = protocol.observe(event)
                 if command:
                     # Clean up before the client can request another response.
-                    async with asyncio.timeout(5):
-                        await upstream.send_json(command)
+                    await send_command(command)
                 if kind.startswith(('response.', 'conversation.item.', 'input_audio_buffer.')):
                     async with asyncio.timeout(5):
                         await ws.send_json(event)
@@ -528,6 +550,11 @@ async def realtime_call(ws: WebSocket):
                 current = await get_verified_user_by_token(token, redis)
                 if not current or not await Config.get('audio.realtime.enabled'):
                     raise ValueError('Call authorization expired')
+                if connected_models:
+                    from open_webui.utils.oi.capability_calls import target_for
+
+                    await target_for(connected_models[0], 'realtime', current)
+                    await target_for(connected_models[1], 'stt', current)
                 if current.role != 'admin' and not await has_permission(
                     current.id, 'chat.call', await Config.get('user.permissions') or {}
                 ):
@@ -556,6 +583,11 @@ async def realtime_call(ws: WebSocket):
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+        if ledger:
+            try:
+                await asyncio.shield(ledger.close())
+            except Exception as error:
+                log.error('Voice accounting finalization failed: error_type=%s',type(error).__name__)
         if upstream is not None:
             await upstream.close()
         with contextlib.suppress(Exception):

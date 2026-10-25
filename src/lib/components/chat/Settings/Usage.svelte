@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelLabel } from '$lib/utils/modelDirectory';
 	import { getContext, onMount } from 'svelte';
 	import type { Writable } from 'svelte/store';
 
@@ -33,7 +34,7 @@
 	const DEFAULT_HEATMAP_COLUMNS = 26;
 	const MIN_MONTH_LABEL_GAP = 6;
 
-	$: modelNames = new Map($models.map((model) => [model.id, model.name || model.id]));
+	$: modelNames = new Map($models.map((model) => [model.id, modelLabel(model)]));
 	$: dailyHeatmap = usage?.heatmap ?? [];
 	$: weeklyHeatmap = new Map((usage?.weekly_heatmap ?? []).map((entry) => [entry.date, entry]));
 	$: cumulativeHeatmap = new Map(

@@ -16,6 +16,7 @@
 	const i18n: any = getContext('i18n');
 
 	export let saveSettings: Function;
+	export let showFirstSectionTitle = true;
 	export let settingsValue: Record<string, any> | null = null;
 	export let personalSettingsValue: Record<string, any> = {};
 
@@ -119,12 +120,16 @@
 	let fontFamilyInput = '';
 	let showTextScaleSlider = false;
 	let showFontFamilyInput = false;
-	const settingRowClass = 'flex items-center justify-between gap-2.5';
-	const settingLabelClass = 'min-w-0 text-xs text-gray-600 dark:text-gray-400';
-	const settingControlClass = 'flex shrink-0 items-center justify-end gap-1.5';
-	const sectionHeadingClass = 'mt-4 text-xs text-gray-600 dark:text-gray-500';
-	const firstSectionHeadingClass = 'text-xs text-gray-600 dark:text-gray-500';
-	const settingDescriptionClass = 'mt-1.5 text-[0.6875rem] text-gray-600 dark:text-gray-500';
+	const settingRowClass = 'oi-setting-row grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6';
+	const settingLabelClass =
+		'min-w-0 text-[0.8125rem] font-medium leading-5 text-gray-800 dark:text-gray-200';
+	const settingControlClass = 'flex min-h-5 shrink-0 items-center justify-end gap-1.5';
+	const sectionHeadingClass =
+		'oi-setting-section px-2 pt-6 pb-2 text-sm font-semibold text-gray-900 dark:text-gray-100';
+	const firstSectionHeadingClass =
+		'oi-setting-section px-2 pb-2 text-sm font-semibold text-gray-900 dark:text-gray-100';
+	const settingDescriptionClass =
+		'oi-setting-description mt-1 text-xs leading-[1.125rem] text-gray-500 dark:text-gray-400';
 	const actionButtonClass =
 		'text-xs text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white';
 
@@ -453,10 +458,10 @@
 	}}
 />
 
-<div class="flex flex-col gap-2.5">
-	<h3 class={firstSectionHeadingClass}>
-		{$i18n.t('settings.personal.interface.sections.ui.title')}
-	</h3>
+<div class="oi-interface-settings flex w-full max-w-[48rem] flex-col">
+	{#if showFirstSectionTitle}<h3 class={firstSectionHeadingClass}>
+			{$i18n.t('settings.personal.interface.sections.ui.title')}
+		</h3>{/if}
 
 	<div>
 		<div class={settingRowClass}>
@@ -493,7 +498,7 @@
 		</div>
 
 		{#if textScale !== null && (showTextScaleSlider || !isDefaultSetting('textScale'))}
-			<div class=" flex items-center gap-2 px-1 pb-1">
+			<div class="mt-2 flex w-full max-w-[24rem] items-center gap-2 px-1 pb-1">
 				<button
 					type="button"
 					class="rounded-lg p-1 transition outline-gray-200 hover:bg-gray-100 dark:outline-gray-700 dark:hover:bg-gray-800"
@@ -1937,3 +1942,28 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.oi-interface-settings > :global(div:not(.oi-setting-section)) {
+		padding: 0.875rem 0.5rem;
+		border-bottom: 1px solid rgb(0 0 0 / 0.06);
+	}
+	:global(.dark) .oi-interface-settings > :global(div:not(.oi-setting-section)) {
+		border-color: rgb(255 255 255 / 0.06);
+	}
+	.oi-interface-settings :global(.oi-setting-description) {
+		max-width: calc(100% - 5rem);
+	}
+	.oi-interface-settings :global(.oi-setting-row > :last-child) {
+		justify-self: end;
+	}
+	@media (max-width: 480px) {
+		.oi-interface-settings :global(.oi-setting-description) {
+			max-width: calc(100% - 3rem);
+		}
+	}
+
+	.oi-interface-settings :global(input[type='range']) {
+		max-width: 24rem;
+	}
+</style>

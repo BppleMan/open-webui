@@ -83,31 +83,18 @@ export const updateAdminConfig = async (token: string, body: object) => {
 };
 
 export const getSessionUser = async (token: string) => {
-	let error = null;
-
-	const res = await fetch(`${WEBUI_API_BASE_URL}/auths/`, {
+	const response = await fetch(`${WEBUI_API_BASE_URL}/auths/`, {
 		method: 'GET',
-		headers: {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${token}`
-		},
-		credentials: 'include'
-	})
-		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.catch((err) => {
-			console.error(err);
-			error = err.detail;
-			return null;
+		credentials: 'include',
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+	});
+	if (!response.ok) {
+		const body = await response.json().catch(() => ({}));
+		throw Object.assign(new Error(body.detail || 'Session lookup failed'), {
+			status: response.status
 		});
-
-	if (error) {
-		throw error;
 	}
-
-	return res;
+	return response.json();
 };
 
 export const ldapUserSignIn = async (user: string, password: string) => {

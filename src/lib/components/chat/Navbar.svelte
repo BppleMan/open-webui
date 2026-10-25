@@ -37,6 +37,8 @@
 	import Knobs from '../icons/Knobs.svelte';
 	import { isTemporaryChatId } from '$lib/utils/chatId';
 	import ChatParticipants from '$lib/components/common/ChatParticipants.svelte';
+	import ReadingPanel from './ReadingPanel.svelte';
+	import type { ReadingPosition } from '$lib/stores/chatReading';
 
 	const i18n: any = getContext('i18n');
 
@@ -46,6 +48,13 @@
 	export let shareEnabled: boolean = false;
 	export let scrollTop = 0;
 	export let scrollToTop: (() => void) | null = null;
+	export let onReadingNavigate: (
+		id: string,
+		offset?: number,
+		adopt?: boolean
+	) => Promise<void> = async () => {};
+	export let currentReadingPosition: () => ReadingPosition | null = () => null;
+	export let onFork: ((id: string) => Promise<any>) | null = null;
 
 	export let chat;
 	export let history;
@@ -247,6 +256,15 @@
 						</Tooltip>
 					{/if}
 
+					{#if chat?.id && history?.currentId && !$temporaryChatEnabled && !readOnly}
+						{#key chat.id}<ReadingPanel
+								chatId={chat.id}
+								{history}
+								onNavigate={onReadingNavigate}
+								currentPosition={currentReadingPosition}
+								{onFork}
+							/>{/key}
+					{/if}
 					{#if liveParticipants.length > 0}
 						<ChatParticipants
 							participants={liveParticipants}

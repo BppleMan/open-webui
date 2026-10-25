@@ -864,6 +864,11 @@ async def import_chats(
 
     try:
         chats = await Chats.import_chats(user.id, form_data.chats, db=db)
+        from open_webui.utils.oi.accounting import set_baseline
+        for imported in chats:
+            if (imported.chat.get('history') or {}).get('messages') or imported.chat.get('messages'):
+                await set_baseline(db,user.id,imported.id,'imported-history',note='Imported history; cost has not been supplied')
+        await db.commit()
         await Tags.ensure_tags_exist(
             list({tag_id for chat in chats for tag_id in (chat.meta or {}).get('tags', [])}), user.id, db=db
         )
@@ -1455,7 +1460,10 @@ async def update_chat_by_id(
     chat = await Chats.get_chat_by_id_and_user_id(id, user.id, db=db)
     if chat:
         touch = 'history' in form_data.chat or 'messages' in form_data.chat
-        chat = await Chats.update_chat_by_id(id, form_data.chat, db=db, touch=touch)
+        try:
+            chat = await Chats.update_chat_by_id(id, form_data.chat, db=db, touch=touch, revision_user_id=user.id)
+        except ValueError as error:
+            raise HTTPException(409, str(error)) from None
         if form_data.variables is not None:
             chat = (
                 await Chats.update_chat_variables_by_id(
@@ -1524,7 +1532,24 @@ async def update_chat_message_by_id(
         updates['meta'] = {'voice': form_data.voice}
     if not updates:
         raise HTTPException(400, 'No message changes supplied')
-    chat = await Chats.upsert_message_to_chat_by_id_and_message_id(id, message_id, updates)
+    previous = await Chats.get_message_by_id_and_message_id(id, message_id)
+    if not previous:
+        raise HTTPException(404, ERROR_MESSAGES.NOT_FOUND)
+    if form_data.content is not None and previous.get('role') == 'assistant':
+        try:
+            chat = await Chats.edit_reply_text(
+                id,
+                message_id,
+                form_data.content,
+                user.id,
+                {key: value for key, value in updates.items() if key != 'content'},
+            )
+        except LookupError:
+            raise HTTPException(404, ERROR_MESSAGES.NOT_FOUND) from None
+        except ValueError as error:
+            raise HTTPException(409, str(error)) from None
+    else:
+        chat = await Chats.upsert_message_to_chat_by_id_and_message_id(id, message_id, updates)
 
     event_emitter = await get_event_emitter(
         {
@@ -1543,6 +1568,18 @@ async def update_chat_message_by_id(
                     'chat_id': id,
                     'message_id': message_id,
                     **({'content': form_data.content} if form_data.content is not None else {'voice': form_data.voice}),
+                    **(
+                        {
+                            key: value
+                            for key, value in chat.chat.get('history', {})
+                            .get('messages', {})
+                            .get(message_id, {})
+                            .items()
+                            if key in {'output', 'oi_native_invalidated'}
+                        }
+                        if form_data.content is not None
+                        else {}
+                    ),
                 },
             }
         )
@@ -1865,6 +1902,23 @@ async def fork_chat_by_id(
         db=db,
         internal_meta=meta,
     )
+
+    if fork and is_owner:
+        from open_webui.utils.oi.accounting import inherit_history_baseline, inherit_snapshot
+
+        anchor_id = source_message_id
+        visited = set()
+        inherited = None
+        while anchor_id and anchor_id not in visited:
+            visited.add(anchor_id)
+            inherited = await inherit_snapshot(db, user.id, fork.id, chat.id, anchor_id)
+            if inherited:
+                break
+            anchor = messages_map.get(anchor_id) or {}
+            anchor_id = anchor.get('oi_source_message_id') or anchor.get('parentId')
+        if not inherited:
+            await inherit_history_baseline(db, user.id, fork.id, chat.id, source_message_id)
+        await db.commit()
 
     if fork and is_owner and chat.variables:
         fork = await Chats.update_chat_variables_by_id(fork.id, chat.variables, db=db, touch=False) or fork

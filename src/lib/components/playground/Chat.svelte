@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ModelOptions from '$lib/components/models/ModelOptions.svelte';
 	import { v4 as uuidv4 } from 'uuid';
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
@@ -496,11 +497,7 @@
 									class=" bg-transparent border border-gray-100/30 dark:border-gray-850/30 rounded-lg py-1 px-2 -mx-0.5 text-sm outline-hidden w-full"
 									bind:value={selectedModelId}
 								>
-									{#each $models as model}
-										<option value={model.id} class="bg-gray-50 dark:bg-gray-700"
-											>{model.name}</option
-										>
-									{/each}
+									<ModelOptions items={$models} />
 								</select>
 							</div>
 

@@ -276,8 +276,18 @@ async def get_config(request: Request, user=Depends(get_admin_user)):
 
 @router.post('/config/update')
 async def update_config(request: Request, form_data: ImagesConfig, user=Depends(get_admin_user)):
-    if form_data.IMAGE_SIZE == 'auto' and not re.match(
-        IMAGE_AUTO_SIZE_MODELS_REGEX_PATTERN, form_data.IMAGE_GENERATION_MODEL
+    from open_webui.utils.oi.capability_calls import target_for
+
+    for engine, reference, capability in [
+        (form_data.IMAGE_GENERATION_ENGINE, form_data.IMAGE_GENERATION_MODEL, 'image_generation'),
+        (form_data.IMAGE_EDIT_ENGINE, form_data.IMAGE_EDIT_MODEL, 'image_edit'),
+    ]:
+        if engine == 'connection':
+            await target_for(reference, capability, user)
+    if (
+        form_data.IMAGE_GENERATION_ENGINE != 'connection'
+        and form_data.IMAGE_SIZE == 'auto'
+        and not re.match(IMAGE_AUTO_SIZE_MODELS_REGEX_PATTERN, form_data.IMAGE_GENERATION_MODEL)
     ):
         raise HTTPException(
             status_code=400,
@@ -599,6 +609,29 @@ async def generate_images(request: Request, form_data: CreateImageForm, user=Dep
     return result
 
 
+async def connected_images(request, reference, payload, user, metadata, input_images=None):
+    from open_webui.utils.oi.capability_calls import images
+    from open_webui.utils.oi.catalog import request_headers
+
+    outputs, target = await images(
+        reference, payload, user, input_images=input_images, request_object=request, metadata=metadata
+    )
+    result = []
+    for output in outputs:
+        # Do not forward credentials to an external result URL. Existing image loader enforces SSRF checks.
+        headers = (
+            request_headers(target.connection, protocol=target.binding.protocol)
+            if output.startswith(('http://', 'https://')) and _is_same_origin(output, target.connection.base_url)
+            else None
+        )
+        data, mime = await get_image_data(output, headers)
+        _, image_file = await upload_image(
+            request, data, mime, {'model': reference, **payload, **(metadata or {})}, user
+        )
+        result.append(image_file)
+    return result
+
+
 async def image_generations(
     request: Request,
     form_data: CreateImageForm,
@@ -606,6 +639,22 @@ async def image_generations(
     user=None,
 ):
     image_config = await get_image_config()
+    if image_config.IMAGE_GENERATION_ENGINE == 'connection':
+        return await connected_images(
+            request,
+            form_data.model or image_config.IMAGE_GENERATION_MODEL,
+            {
+                'prompt': form_data.prompt,
+                'n': form_data.n,
+                **(
+                    {'size': form_data.size or image_config.IMAGE_SIZE}
+                    if form_data.size or image_config.IMAGE_SIZE
+                    else {}
+                ),
+            },
+            user,
+            metadata,
+        )
     # if IMAGE_SIZE = 'auto', default WidthxHeight to the 512x512 default
     # This is only relevant when the user has set IMAGE_SIZE to 'auto' with an
     # image model other than gpt-image-1, which is warned about on settings save
@@ -981,7 +1030,21 @@ async def image_edits(
         )
 
     try:
-        if image_config.IMAGE_EDIT_ENGINE == 'openai':
+        if image_config.IMAGE_EDIT_ENGINE == 'connection':
+            return await connected_images(
+                request,
+                model,
+                {
+                    'prompt': form_data.prompt,
+                    **({'n': form_data.n} if form_data.n else {}),
+                    **({'size': size} if size else {}),
+                    **({'background': form_data.background} if form_data.background else {}),
+                },
+                user,
+                metadata,
+                [form_data.image] if isinstance(form_data.image, str) else form_data.image,
+            )
+        elif image_config.IMAGE_EDIT_ENGINE == 'openai':
             headers = {
                 'Authorization': f'Bearer {image_config.IMAGES_EDIT_OPENAI_API_KEY}',
             }
@@ -1202,6 +1265,8 @@ async def image_edits(
                 images.append(image_file)
 
             return images
+    except HTTPException:
+        raise
     except Exception as e:
         error = e
         if isinstance(e, aiohttp.ClientResponseError):

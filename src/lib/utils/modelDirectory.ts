@@ -1,0 +1,75 @@
+export type ConnectionIdentity = { id: string; name: string; protocol?: string };
+export type DirectoryModel = {
+	id: string;
+	name?: string;
+	connection?: ConnectionIdentity;
+	aliases?: string[];
+	capabilities?: Record<string, any>;
+	[key: string]: any;
+};
+
+let directory = new Map<string, DirectoryModel>();
+export const setModelDirectory = (models: DirectoryModel[]) => {
+	directory = new Map(models.map((m) => [m.id, m]));
+};
+
+export function modelConnection(model: any): ConnectionIdentity {
+	model = model?.model && typeof model.model === 'object' ? model.model : model;
+	if (typeof model === 'string') model = { id: model };
+	const seen = new Set<string>();
+	while (model) {
+		if (model.connection?.id) return model.connection;
+		if (model.connection_id && model.connection_name)
+			return { id: model.connection_id, name: model.connection_name, protocol: model.protocol };
+		if (model.owned_by === 'arena' || model.arena)
+			return { id: 'composite:arena', name: '组合模型 · Arena' };
+		if (model.pipe)
+			return {
+				id: `extension:${model.pipe.id || model.id}`,
+				name: '扩展 · ' + (model.pipe.name || model.pipe.id || model.id)
+			};
+		if (seen.has(model.id)) break;
+		seen.add(model.id);
+		const known = directory.get(model.id);
+		if (known?.connection) return known.connection;
+		const base = model.base_model_id || model.info?.base_model_id || known?.info?.base_model_id;
+		const reference = base || model.id;
+		const resolved = resolveModelReference([...directory.values()], reference);
+		model = resolved ? directory.get(resolved) : undefined;
+	}
+	return { id: 'unresolved', name: '待映射连接' };
+}
+
+export function groupModels<T>(items: T[]): { connection: ConnectionIdentity; items: T[] }[] {
+	const groups = new Map<string, { connection: ConnectionIdentity; items: T[] }>();
+	for (const item of items) {
+		const connection = modelConnection(item);
+		if (!groups.has(connection.id)) groups.set(connection.id, { connection, items: [] });
+		groups.get(connection.id)!.items.push(item);
+	}
+	return [...groups.values()];
+}
+export const sortByConnection = <T>(items: T[]) => groupModels(items).flatMap((g) => g.items);
+export const modelLabel = (model: any) => {
+	const item = typeof model === 'string' ? directory.get(model) || { id: model } : model;
+	return `${modelConnection(item).name} / ${item?.name || item?.id || ''}`;
+};
+export const modelMatches = (model: DirectoryModel, query: string) =>
+	`${modelConnection(model).name} ${model.name || ''} ${model.id} ${model.upstream_id || ''}`
+		.toLocaleLowerCase()
+		.includes(query.toLocaleLowerCase());
+export const capableModels = (models: DirectoryModel[], capability?: string) =>
+	models.filter(
+		(model) =>
+			!capability ||
+			(model.info?.meta?.capabilities?.[capability] ?? model.capabilities?.[capability]) === true
+	);
+
+export function resolveModelReference(
+	models: { id: string; aliases?: string[] }[],
+	reference: string
+): string | null {
+	if (models.some((model) => model.id === reference)) return reference;
+	const matches = models.filter((model) => model.aliases?.includes(reference));
+	return matches.length === 1 ? matches[0].id : null;
+}

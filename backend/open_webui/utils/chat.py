@@ -1,15 +1,15 @@
 import asyncio
+import copy
 import logging
 import random
 import sys
-import time
 import uuid
-from typing import Any, Optional
+from typing import Any
 
-from aiocache import cached
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, Request
 from open_webui.env import BYPASS_MODEL_ACCESS_CONTROL, GLOBAL_LOG_LEVEL
 from open_webui.functions import generate_function_chat_completion
+from open_webui.internal.db import get_async_db
 from open_webui.models.models import Models
 from open_webui.models.users import UserModel
 from open_webui.routers.ollama import (
@@ -19,7 +19,6 @@ from open_webui.routers.openai import (
     generate_chat_completion as generate_openai_chat_completion,
 )
 from open_webui.routers.pipelines import (
-    process_pipeline_inlet_filter,
     process_pipeline_outlet_filter,
 )
 from open_webui.socket.main import (
@@ -33,12 +32,17 @@ from open_webui.utils.filter import (
 )
 from open_webui.utils.json_codec import JSONCodec
 from open_webui.utils.models import check_model_access, get_all_models
-from open_webui.utils.payload import apply_system_prompt_to_body, convert_payload_openai_to_ollama
+from open_webui.utils.oi.runtime import track_call
+from open_webui.utils.payload import (
+    apply_model_params_to_body_openai,
+    apply_system_prompt_to_body,
+    convert_payload_openai_to_ollama,
+)
 from open_webui.utils.response import (
     convert_response_ollama_to_openai,
     convert_streaming_response_ollama_to_openai,
 )
-from starlette.responses import JSONResponse, Response, StreamingResponse
+from starlette.responses import StreamingResponse
 
 logging.basicConfig(stream=sys.stdout, level=GLOBAL_LOG_LEVEL)
 log = logging.getLogger(__name__)
@@ -186,14 +190,33 @@ async def generate_chat_completion(
         models = request.app.state.MODELS
 
     model_id = form_data['model']
+    from open_webui.utils.oi.legacy import alias_map
+
+    async with get_async_db() as db:
+        aliases = await alias_map(db, user)
+    if model_id in aliases:
+        if len(aliases[model_id]) != 1:
+            raise HTTPException(409, 'Ambiguous legacy model; select its connection')
+        form_data['model'] = model_id = aliases[model_id][0]
+    from open_webui.utils.oi.model_targets import resolve_native_target
+
+    async with get_async_db() as db:
+        native_target = await resolve_native_target(db, model_id, user)
     # Single lookup — membership check plus getitem would be two Redis
     # round trips on a Redis-backed model pool.
     model = models.get(model_id)
+    if model is None and native_target is not None:
+        model = {'id': model_id, 'oi_binding': True}
     if model is None:
         raise Exception('Model not found')
 
     if getattr(request.state, 'direct', False) and model_id == getattr(request.state, 'model', {}).get('id'):
-        return await generate_direct_chat_completion(request, form_data, user=user, models=models)
+        return await track_call(
+            request,
+            form_data,
+            user,
+            lambda _: generate_direct_chat_completion(request, form_data, user=user, models=models),
+        )
     else:
         # Check if user has access to the model
         if not bypass_filter and user.role == 'user':
@@ -277,40 +300,72 @@ async def generate_chat_completion(
                     return response
                 return {**response, 'selected_model_id': selected_model_id}
 
+        if native_target is not None:
+            from open_webui.utils.oi.protocols import generate
+
+            binding, connection = native_target.binding, native_target.connection
+            if not bypass_filter:
+                await check_model_access(user, models.get(model_id) or {'id': model_id, 'oi_binding': True})
+                if model_id != binding.id:
+                    await check_model_access(user, {'id': binding.id, 'oi_binding': True})
+            form_data = copy.deepcopy(form_data)
+            params = copy.deepcopy(native_target.params)
+            system = params.pop('system', None)
+            form_data = apply_model_params_to_body_openai(params, form_data)
+            if not bypass_system_prompt and system:
+                form_data = await apply_system_prompt_to_body(system, form_data, form_data.get('metadata'), user)
+            return await track_call(
+                request,
+                form_data,
+                user,
+                lambda call_id: generate(request, form_data, user, binding, connection, call_id),
+                binding,
+                connection,
+            )
         if model.get('pipe'):
             # Below does not require bypass_filter because this is the only route the uses this function and it is already bypassing the filter
-            return await generate_function_chat_completion(request, form_data, user=user, models=models)
-        if model.get('owned_by') == 'ollama':
-            # Apply before Ollama conversion so tool follow-ups keep the model system prompt
-            if not bypass_system_prompt:
-                model_info = await Models.get_model_by_id(form_data['model'])
-                if model_info:
-                    system = model_info.params.model_dump().get('system')
-                    form_data = await apply_system_prompt_to_body(system, form_data, metadata, user)
-                request.state.bypass_system_prompt = True
+            return await track_call(
+                request,
+                form_data,
+                user,
+                lambda _: generate_function_chat_completion(request, form_data, user=user, models=models),
+            )
 
-            # Using /ollama/api/chat endpoint
-            form_data = convert_payload_openai_to_ollama(form_data)
-            response = await generate_ollama_chat_completion(
-                request=request,
-                form_data=form_data,
-                user=user,
-            )
-            if form_data.get('stream'):
-                response.headers['content-type'] = 'text/event-stream'
-                return StreamingResponse(
-                    convert_streaming_response_ollama_to_openai(response),
-                    headers=dict(response.headers),
-                    background=response.background,
+        async def dispatch_provider(_):
+            nonlocal form_data
+            if model.get('owned_by') == 'ollama':
+                # Apply before Ollama conversion so tool follow-ups keep the model system prompt
+                if not bypass_system_prompt:
+                    model_info = await Models.get_model_by_id(form_data['model'])
+                    if model_info:
+                        system = model_info.params.model_dump().get('system')
+                        form_data = await apply_system_prompt_to_body(system, form_data, metadata, user)
+                    request.state.bypass_system_prompt = True
+
+                # Using /ollama/api/chat endpoint
+                form_data = convert_payload_openai_to_ollama(form_data)
+                response = await generate_ollama_chat_completion(
+                    request=request,
+                    form_data=form_data,
+                    user=user,
                 )
+                if form_data.get('stream'):
+                    response.headers['content-type'] = 'text/event-stream'
+                    return StreamingResponse(
+                        convert_streaming_response_ollama_to_openai(response),
+                        headers=dict(response.headers),
+                        background=response.background,
+                    )
+                else:
+                    return convert_response_ollama_to_openai(response)
             else:
-                return convert_response_ollama_to_openai(response)
-        else:
-            return await generate_openai_chat_completion(
-                request=request,
-                form_data=form_data,
-                user=user,
-            )
+                return await generate_openai_chat_completion(
+                    request=request,
+                    form_data=form_data,
+                    user=user,
+                )
+
+        return await track_call(request, form_data, user, dispatch_provider)
 
 
 chat_completion = generate_chat_completion

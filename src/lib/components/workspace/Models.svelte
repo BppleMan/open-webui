@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { sortByConnection, modelConnection } from '$lib/utils/modelDirectory';
 	import WorkspaceAccessModal from './common/WorkspaceAccessModal.svelte';
 	let accessModal: WorkspaceAccessModal;
 	import dayjs from 'dayjs';
@@ -97,6 +98,7 @@
 
 	let page = 1;
 	let models = null;
+	$: directoryModels = sortByConnection<any>(models ?? []);
 	let total = null;
 
 	let searchDebounceTimer: ReturnType<typeof setTimeout>;
@@ -759,8 +761,13 @@
 					</div>
 
 					<div class="grid gap-y-0.5">
-						{#each models as model (model.id)}
+						{#each directoryModels as model, modelIdx (model.id)}
 							{@const localizedModelName = resolveLocalizedModelName(model, $i18n.language)}
+							{#if modelIdx === 0 || modelConnection(directoryModels[modelIdx - 1]).id !== modelConnection(model).id}
+								<div class="px-2 pt-4 pb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+									{modelConnection(model).name}
+								</div>
+							{/if}
 							<div
 								class="group flex min-h-8 w-full items-center gap-1.5 overflow-hidden rounded-xl px-2 py-0.5 text-left {model.write_access
 									? 'cursor-pointer'

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelLabel } from '$lib/utils/modelDirectory';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import { getContext } from 'svelte';
 	import { getModelChats, getModelOverview } from '$lib/apis/analytics';
@@ -179,9 +180,9 @@
 <Modal size="md" bind:show>
 	{#if model}
 		<div class="flex justify-between dark:text-gray-300 px-4 pt-3 pb-1">
-			<Tooltip content={`${model.name} (${model.id})`} placement="top-start">
+			<Tooltip content={`${modelLabel(model)} (${model.id})`} placement="top-start">
 				<div class="text-sm font-medium self-center line-clamp-1">
-					{model.name}
+					{modelLabel(model)}
 				</div>
 			</Tooltip>
 			<button

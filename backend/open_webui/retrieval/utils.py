@@ -1139,7 +1139,7 @@ def get_embedding_function(
             return await asyncio.to_thread(encode)
 
         return async_embedding_function
-    elif embedding_engine in ['ollama', 'openai', 'azure_openai']:
+    elif embedding_engine in ['ollama', 'openai', 'azure_openai', 'connection']:
         embedding_function = lambda query, prefix=None, user=None: generate_embeddings(
             engine=embedding_engine,
             model=embedding_model,
@@ -1215,6 +1215,18 @@ async def generate_embeddings(
         else:
             text = f'{prefix}{text}'
 
+    if engine == 'connection':
+        from open_webui.utils.oi.capability_calls import embeddings
+
+        vectors = await embeddings(
+            model,
+            text if isinstance(text, list) else [text],
+            user=user,
+            extra={RAG_EMBEDDING_PREFIX_FIELD_NAME: prefix}
+            if prefix is not None and RAG_EMBEDDING_PREFIX_FIELD_NAME
+            else None,
+        )
+        return vectors[0] if isinstance(text, str) else vectors
     if engine == 'ollama':
         embeddings = await agenerate_ollama_batch_embeddings(
             **{
@@ -1253,6 +1265,14 @@ async def generate_embeddings(
 
 
 def get_reranking_function(reranking_engine, reranking_model, reranking_function, reranking_batch_size=32):
+    if reranking_engine == 'connection':
+
+        async def connected_reranker(query, documents, user=None):
+            from open_webui.utils.oi.capability_calls import rerank
+
+            return await rerank(reranking_model, query, [doc.page_content for doc in documents], user=user)
+
+        return connected_reranker
     if USE_SLIM and reranking_model and reranking_engine != 'external':
 
         def unavailable(query, documents, user=None):
@@ -1835,7 +1855,14 @@ class RerankCompressor(BaseDocumentCompressor):
 
         scores = None
         if reranking:
-            scores = await asyncio.to_thread(self.reranking_function, query, documents)
+            import inspect
+
+            if inspect.iscoroutinefunction(self.reranking_function):
+                scores = await self.reranking_function(query, documents)
+            else:
+                scores = await asyncio.to_thread(self.reranking_function, query, documents)
+                if inspect.isawaitable(scores):
+                    scores = await scores
         else:
             query_embedding = await self.embedding_function(query, RAG_EMBEDDING_QUERY_PREFIX)
             doc_texts = [doc.page_content for doc in documents]

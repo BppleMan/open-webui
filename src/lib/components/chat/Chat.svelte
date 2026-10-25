@@ -1,4 +1,14 @@
 <script lang="ts">
+	import {
+		DraftManager,
+		createQueuedDraft,
+		hasDraftInput,
+		type QueuedDraft,
+		type DraftState,
+		type DraftTicket
+	} from '$lib/utils/drafts';
+	import { registerBillingIdentity } from '$lib/stores/oiUsage';
+	import { readingFor, type ReadingPosition } from '$lib/stores/chatReading';
 	import type { TerminalContext } from '$lib/types';
 	import { v4 as uuidv4 } from 'uuid';
 	import { toast } from 'svelte-sonner';
@@ -480,13 +490,7 @@
 		const attachments = [structuredClone(file)];
 		const last = history.currentId ? history.messages[history.currentId] : null;
 		if (last?.role === 'assistant' && !last.done) {
-			chatRequestQueues.update((queues) => ({
-				...queues,
-				[$chatId]: [
-					...(queues[$chatId] ?? []),
-					{ id: uuidv4(), prompt: instruction, files: attachments }
-				]
-			}));
+			await enqueueDraft(instruction, attachments, false);
 		} else await submitPrompt(instruction, attachments);
 	};
 
@@ -828,15 +832,22 @@
 		});
 	};
 
-	const restoreChatInput = async (storageChatInput: string | null) => {
-		if (!storageChatInput || $temporaryChatEnabled) {
-			return false;
-		}
+	let draftManager: DraftManager | null = null;
+	const resolveDraftChoice = (choice: 'local' | 'server', candidate?: any) =>
+		draftManager?.resolve(choice, candidate);
+	let draftScope = '';
+	let draftLoad: Promise<any> | null = null;
+	let draftRestore: Promise<void> | null = null;
+	let draftState: DraftState = { status: 'loading', revision: 0 };
+	let restoringDraft = false;
+	let clearingSubmittedInput = false;
+	const submittedDrafts = new Map<string, { manager: DraftManager; ticket: DraftTicket }>();
 
+	const applyDraftInput = async (input: any) => {
+		restoringDraft = true;
 		try {
-			const input = JSON.parse(storageChatInput);
+			chatRequestQueues.update((q) => ({ ...q, [$chatId]: input.queue ?? [] }));
 			prompt = input.prompt ?? '';
-			messageInput?.setText(prompt);
 			files = input.files ?? [];
 			selectedToolIds = input.selectedToolIds ?? [];
 			selectedSkillIds = input.selectedSkillIds ?? [];
@@ -844,13 +855,59 @@
 			webSearchEnabled = input.webSearchEnabled ?? false;
 			imageGenerationEnabled = input.imageGenerationEnabled ?? false;
 			codeInterpreterEnabled = input.codeInterpreterEnabled ?? false;
-			// Ignore approval modes in older drafts. Restoring input must not overwrite chat
-			// parameters or invoke the change handler, which can save settings and approve tools.
-			return true;
-		} catch (e) {
-			return false;
+			if (input.selectedModels?.length) selectedModels = input.selectedModels;
+			await tick();
+			await messageInput?.restoreDraftContent(prompt, input.richContent);
+		} finally {
+			await tick();
+			restoringDraft = false;
 		}
 	};
+
+	const restoreChatInput = async (storageChatInput: string | null) => {
+		if (!$user || isShared) return false;
+		const id = $temporaryChatEnabled ? null : chatIdProp || $chatId || null;
+		const scope = `${$user.id}:${$temporaryChatEnabled ? 'temporary' : id || 'new'}`;
+		if (draftManager && scope === draftScope) {
+			await draftLoad;
+			await draftRestore;
+			return !!draftManager.payload.prompt;
+		}
+		draftManager?.dispose();
+		draftScope = scope;
+		const manager = new DraftManager({
+			userId: $user.id,
+			chatId: id,
+			temporary: !!$temporaryChatEnabled,
+			onState: (state) => {
+				if (manager === draftManager) draftState = state;
+			},
+			onRestore: (payload) => {
+				if (manager === draftManager) {
+					draftRestore = applyDraftInput(payload);
+					void draftRestore.then(() => processNextInQueue($chatId));
+				}
+			},
+			onAllocated: (id) => {
+				if (manager !== draftManager) return;
+				draftScope = `${$user.id}:${id}`;
+				chatRequestQueues.update((q) => ({ ...q, [id]: manager.payload.queue ?? [] }));
+				chatId.set(id);
+				if (!embedded) window.history.replaceState(window.history.state, '', `/c/${id}`);
+				void refreshChatList(localStorage.token);
+			}
+		});
+		draftManager = manager;
+		let legacy;
+		try {
+			legacy = storageChatInput ? JSON.parse(storageChatInput) : undefined;
+		} catch {}
+		draftLoad = manager.load(legacy);
+		await draftLoad;
+		await draftRestore;
+		return hasDraftInput(manager.payload);
+	};
+	onDestroy(() => draftManager?.dispose());
 
 	const withSelectedText = (text: string) =>
 		embedded && selectedText?.trim()
@@ -934,13 +991,10 @@
 			// Process any queued requests if the chat is idle
 			const lastMessage = history.currentId ? history.messages[history.currentId] : null;
 			const isIdle = !lastMessage || lastMessage.role !== 'assistant' || lastMessage.done;
-			if (isIdle) {
-				await processNextInQueue(chatIdProp);
-			}
-
 			if (!(await restoreChatInput(storageChatInput))) {
 				await setDefaults();
 			}
+			if (isIdle) await processNextInQueue(chatIdProp);
 
 			messageInput?.focus({ preventScroll: true });
 		} else if (!embedded) {
@@ -1642,6 +1696,8 @@
 					message.content += data.content;
 				} else if (type === 'chat:message' || type === 'replace') {
 					message.content = data.content;
+					if ('output' in data) message.output = data.output;
+					if (data.oi_native_invalidated) message.oi_native_invalidated = true;
 				} else if (type === 'chat:message:voice') {
 					message.meta = { ...message.meta, voice: data.voice };
 				} else if (type === 'chat:message:files' || type === 'files') {
@@ -1977,21 +2033,6 @@
 				await tick();
 			}
 
-			if (storageChatInput) {
-				prompt = '';
-				messageInput?.setText('');
-
-				files = [];
-				selectedToolIds = [];
-				selectedSkillIds = [];
-				selectedFilterIds = [];
-				webSearchEnabled = false;
-				imageGenerationEnabled = false;
-				codeInterpreterEnabled = false;
-
-				await restoreChatInput(storageChatInput);
-			}
-
 			messageInput?.focus({ preventScroll: true });
 		};
 		init();
@@ -2257,6 +2298,7 @@
 			}));
 		}
 
+		if (draftManager?.ready) await saveDraft(getChatInputDraft());
 		await processNextInQueue($chatId);
 	};
 
@@ -2751,7 +2793,6 @@
 		autoScroll = true;
 
 		// resetInput() must stay last: the selected model's defaults override the draft's selection.
-		await restoreChatInput(sessionStorage.getItem('chat-input'));
 		const previousChatId = $chatId;
 		await resetInput();
 		// A chat opened in the meantime keeps its id
@@ -2769,6 +2810,8 @@
 		chatVariables = {};
 		taskIds = null;
 		chatTasks = [];
+
+		await restoreChatInput(sessionStorage.getItem('chat-input'));
 
 		const youtube = $page.url.searchParams.get('youtube');
 		const loadUrl = $page.url.searchParams.get('load-url');
@@ -3076,6 +3119,69 @@
 	const scrollToTop = async () => {
 		await messagesRef?.scrollToTop();
 	};
+	let readingTouched = false;
+	let readingScope = '';
+	let readingTimer: ReturnType<typeof setTimeout>;
+	$: if (readingScope !== $chatId) {
+		readingScope = $chatId;
+		readingTouched = false;
+		clearTimeout(readingTimer);
+	}
+	onDestroy(() => clearTimeout(readingTimer));
+	const currentReadingPosition = (): ReadingPosition | null => {
+		if (!messagesContainerElement) return null;
+		const top = messagesContainerElement.getBoundingClientRect().top + 56;
+		const candidates = [
+			...messagesContainerElement.querySelectorAll<HTMLElement>('[id^="message-"]')
+		].filter((element) => history.messages[element.id.slice(8)]);
+		const current = candidates.find((element) => element.getBoundingClientRect().bottom > top);
+		return current
+			? {
+					message_id: current.id.slice(8),
+					offset: Math.max(0, Math.round(top - current.getBoundingClientRect().top)),
+					updated_at: Date.now()
+				}
+			: null;
+	};
+	const rememberReadingPosition = () => {
+		if (!readingTouched || loading || !$user || !$chatId || $temporaryChatEnabled || isShared)
+			return;
+		clearTimeout(readingTimer);
+		const id = $chatId,
+			userId = $user.id;
+		readingTimer = setTimeout(() => {
+			if ($chatId !== id || $user?.id !== userId) return;
+			const position = currentReadingPosition();
+			if (position)
+				void readingFor(userId, id)
+					.change((data) => ({ ...data, read_position: position }))
+					.catch(() => {});
+		}, 800);
+	};
+	const onReadingNavigate = async (id: string, offset?: number, adopt = false) => {
+		if (!history.messages[id]) return;
+		if (adopt && (generating || taskIds?.length)) throw new Error('请等待当前回复结束，再选用分支');
+		autoScroll = false;
+		if (
+			adopt ||
+			!createMessagesList(history, history.currentId).some((message) => message.id === id)
+		) {
+			history.currentId = getDeepestChildId(history, id);
+			if (adopt)
+				await updateChatById(localStorage.token, $chatId, {
+					history: { currentId: history.currentId }
+				});
+		}
+		await tick();
+		await messagesRef?.scrollToMessage(id);
+		const target = document.getElementById(`message-${id}`);
+		if (offset !== undefined && target && messagesContainerElement)
+			messagesContainerElement.scrollTop +=
+				target.getBoundingClientRect().top -
+				messagesContainerElement.getBoundingClientRect().top -
+				56 +
+				offset;
+	};
 
 	const shouldAutoScrollResponse = () =>
 		autoScroll && ($settings?.scrollOnResponseGeneration ?? true);
@@ -3095,108 +3201,150 @@
 
 	let processingQueueChats = new Set<string>();
 
-	const processNextInQueue = async (targetChatId: string) => {
-		if (processingQueueChats.has(targetChatId) || targetChatId !== $chatId) return;
-
-		const queue = $chatRequestQueues[targetChatId];
-		if (!queue || queue.length === 0 || queue[0].error) return;
-		const lastMessage = history.currentId ? history.messages[history.currentId] : null;
-		if (
-			(lastMessage && lastMessage.role === 'assistant' && !lastMessage.done) ||
-			queue.some((m) =>
-				(m.files ?? []).some((file) => ['uploading', 'error'].includes(file.status))
-			)
-		) {
-			return;
-		}
-
-		processingQueueChats.add(targetChatId);
-		const boundary = queue.findIndex((entry) =>
-			entry.files.some((file: any) => file.type === 'filesystem')
-		);
-		const queuedMessages =
-			boundary === 0 ? queue.slice(0, 1) : boundary < 0 ? [...queue] : queue.slice(0, boundary);
-		const queuedMessageIds = new Set(queuedMessages.map((m) => m.id));
-		try {
-			const combinedPrompt = queuedMessages.map((m) => m.prompt).join('\n\n');
-			const combinedFiles = queuedMessages.flatMap((m) => m.files);
-
-			chatRequestQueues.update((q) => ({
-				...q,
-				[targetChatId]: (q[targetChatId] ?? []).filter((m) => !queuedMessageIds.has(m.id))
-			}));
-
-			await submitPrompt(combinedPrompt, combinedFiles);
-		} catch (error) {
-			console.error(error);
-			chatRequestQueues.update((q) => ({
-				...q,
-				[targetChatId]: [
-					...queuedMessages.map((entry) => ({ ...entry, error: String(error) })),
-					...(q[targetChatId] ?? [])
-				]
-			}));
-		} finally {
-			processingQueueChats.delete(targetChatId);
-		}
-	};
-
-	const sendQueuedMessageNow = async (id) => {
-		if (processingQueueChats.has($chatId)) return;
-
-		const queue = $chatRequestQueues[$chatId] ?? [];
-		const item = queue.find((m) => m.id === id);
-		if (!item || (item.files ?? []).some((file) => ['uploading', 'error'].includes(file.status))) {
-			return;
-		}
-
-		const targetChatId = $chatId;
-		processingQueueChats.add(targetChatId);
-		try {
-			chatRequestQueues.update((q) => ({
-				...q,
-				[targetChatId]: queue.filter((m) => m.id !== id)
-			}));
-			await stopResponse(false);
-			await tick();
-			await submitPrompt(item.prompt, item.files);
-		} catch (error) {
-			toast.error(String(error));
-			chatRequestQueues.update((q) => ({
-				...q,
-				[targetChatId]: [{ ...item, error: String(error) }, ...(q[targetChatId] ?? [])]
-			}));
-		} finally {
-			processingQueueChats.delete(targetChatId);
-			// Completion can arrive before submitPrompt returns, while the queue is locked.
-			if ($chatId === targetChatId) {
-				await processNextInQueue(targetChatId);
+	const enqueueDraft = async (text: string, attachments = files, clearComposer = true) => {
+		const input = getChatInputDraft();
+		if (!draftManager) await restoreChatInput(null);
+		await draftLoad;
+		if ($temporaryChatEnabled && !$chatId) await chatId.set(createTemporaryChatId($socket?.id));
+		const item = createQueuedDraft({
+			...input,
+			prompt: text,
+			files: attachments,
+			selectedModels: atSelectedModel ? [atSelectedModel.id] : selectedModels,
+			params: getRequestParams(),
+			system: params?.system || $settings?.system || '',
+			features: getFeatures(),
+			terminalId: $selectedTerminalId,
+			chatVariables
+		});
+		const queue = [...($chatRequestQueues[$chatId] ?? []), item];
+		chatRequestQueues.update((q) => ({ ...q, [$chatId]: queue }));
+		const next = {
+			...getChatInputDraft(),
+			queue,
+			...(clearComposer && prompt === input.prompt && equal(getChatInputDraft().files, input.files)
+				? { prompt: '', files: [], richContent: undefined }
+				: {})
+		};
+		if (!(await draftManager!.edit(next))) throw new Error('未能保存排队消息，请保留输入并重试');
+		// IDB commit precedes clearing the visible composer, including while offline.
+		// A keystroke during that commit belongs to the next draft, never to this submission.
+		if (clearComposer && prompt === input.prompt && equal(getChatInputDraft().files, input.files)) {
+			clearingSubmittedInput = true;
+			try {
+				prompt = '';
+				files = [];
+				await messageInput?.restoreDraftContent('');
+				await tick();
+			} finally {
+				clearingSubmittedInput = false;
 			}
 		}
+		await saveDraft(getChatInputDraft());
+		await draftManager!.flush();
+		return item;
 	};
 
-	const editQueuedMessage = async (id) => {
-		const queue = $chatRequestQueues[$chatId] ?? [];
-		const item = queue.find((m) => m.id === id);
+	const dispatchQueued = async (id: string, interrupt = false) => {
+		const targetChatId = $chatId;
+		if (processingQueueChats.has(targetChatId) || !draftManager?.ready) return;
+		let item = ($chatRequestQueues[targetChatId] ?? []).find((m) => m.id === id);
+		if (!item || item.files.some((file) => ['uploading', 'error'].includes(file.status))) return;
+		processingQueueChats.add(targetChatId);
+		try {
+			if (interrupt) {
+				await stopResponse(false);
+				await tick();
+			}
+			if (item.context.selectedModels?.some((id: string) => !$models.some((m) => m.id === id)))
+				throw new Error('排队消息的模型已不可用，请编辑后重新选择');
+			const queuedItem: QueuedDraft = {
+				...item,
+				error: undefined,
+				parentId: item.parentId === undefined ? history.currentId : item.parentId
+			};
+			chatRequestQueues.update((q) => ({
+				...q,
+				[targetChatId]: q[targetChatId].map((m) => (m.id === id ? queuedItem : m))
+			}));
+			await saveDraft(getChatInputDraft(), targetChatId, false);
+			const manager = draftManager;
+			const ticket = await manager.prepareQueuedSend(id);
+			const result = await submitPrompt(
+				queuedItem.prompt,
+				queuedItem.files,
+				null,
+				{ manager, ticket },
+				queuedItem
+			);
+			if (result?.status !== 'submitted') throw new Error('消息尚未被接受，可重试发送');
+			return result;
+		} catch (error) {
+			if ($chatId === targetChatId) {
+				chatRequestQueues.update((q) => ({
+					...q,
+					[targetChatId]: (q[targetChatId] ?? []).map((m) =>
+						m.id === id ? { ...m, error: String(error) } : m
+					)
+				}));
+				await saveDraft(getChatInputDraft());
+				toast.error(String(error));
+			}
+		} finally {
+			processingQueueChats.delete(targetChatId);
+			if ($chatId === targetChatId) void processNextInQueue(targetChatId);
+		}
+	};
+
+	const processNextInQueue = async (targetChatId: string) => {
+		if (
+			loading ||
+			restoringDraft ||
+			!draftManager?.ready ||
+			processingQueueChats.has(targetChatId) ||
+			targetChatId !== $chatId ||
+			[...submittedDrafts.values()].some((submitted) => submitted.manager === draftManager)
+		)
+			return;
+		const item = $chatRequestQueues[targetChatId]?.[0];
+		if (!item || item.error) return;
+		const lastMessage = history.currentId ? history.messages[history.currentId] : null;
+		if (lastMessage?.role === 'assistant' && !lastMessage.done) return;
+		await dispatchQueued(item.id);
+	};
+
+	const sendQueuedMessageNow = (id: string) => dispatchQueued(id, true);
+
+	const editQueuedMessage = async (id: string) => {
+		if (processingQueueChats.has($chatId)) return;
+		const input = getChatInputDraft();
+		const item = input.queue.find((m: QueuedDraft) => m.id === id);
 		if (!item) return;
-
-		chatRequestQueues.update((q) => ({
-			...q,
-			[$chatId]: queue.filter((m) => m.id !== id)
-		}));
-		files = item.files;
-		messageInput?.setText(item.prompt);
-
-		await processNextInQueue($chatId);
+		// Never replace work already being typed. The queued item remains available.
+		if (prompt.trim() || files.length) {
+			toast.message('请先发送或清空当前输入，再编辑排队消息');
+			return;
+		}
+		const next = {
+			...item.context,
+			prompt: item.prompt,
+			files: item.files,
+			queue: input.queue.filter((m: QueuedDraft) => m.id !== id)
+		};
+		if (!(await draftManager?.edit(next))) return;
+		await applyDraftInput(next);
+		await draftManager?.flush();
 	};
 
-	const deleteQueuedMessage = async (id) => {
-		const queue = $chatRequestQueues[$chatId] ?? [];
-		chatRequestQueues.update((q) => ({
-			...q,
-			[$chatId]: queue.filter((m) => m.id !== id)
-		}));
-
+	const deleteQueuedMessage = async (id: string) => {
+		if (processingQueueChats.has($chatId)) return;
+		const next = {
+			...getChatInputDraft(),
+			queue: ($chatRequestQueues[$chatId] ?? []).filter((m) => m.id !== id)
+		};
+		if (!(await draftManager?.edit(next))) return;
+		chatRequestQueues.update((q) => ({ ...q, [$chatId]: next.queue }));
+		await draftManager?.flush();
 		await processNextInQueue($chatId);
 	};
 
@@ -3435,6 +3583,8 @@
 
 	const chatCompletionEventHandler = async (data, message, chatId, shared = false) => {
 		const { id, done, choices, content, output, sources, selected_model_id, error, usage } = data;
+		const finishReason = data.finish_reason || choices?.[0]?.finish_reason;
+		if (finishReason) message.finish_reason = finishReason;
 
 		if (error) {
 			if (shared) message.error = error;
@@ -3566,7 +3716,9 @@
 	const submitPrompt = async (
 		inputContent: string,
 		inputFiles: any[],
-		bridgeRequest: { userMessageId: string; modelId: string } | null = null
+		bridgeRequest: { userMessageId: string; modelId: string } | null = null,
+		draftSubmission: { manager: DraftManager; ticket: DraftTicket } | null = null,
+		queued: QueuedDraft | null = null
 	) => {
 		const _files = structuredClone(inputFiles);
 
@@ -3583,10 +3735,11 @@
 		);
 
 		// Create user message
-		let userMessageId = bridgeRequest?.userMessageId ?? uuidv4();
+		let userMessageId = queued?.userMessageId ?? bridgeRequest?.userMessageId ?? uuidv4();
+		if (draftSubmission) submittedDrafts.set(userMessageId, draftSubmission);
 		let userMessage = {
 			id: userMessageId,
-			parentId: history.currentId ?? null,
+			parentId: queued ? queued.parentId : (history.currentId ?? null),
 			childrenIds: [],
 			role: 'user',
 			user: { id: $user?.id, name: $user?.name },
@@ -3594,7 +3747,7 @@
 			content: inputContent,
 			files: _files.length > 0 ? _files : undefined,
 			timestamp: Math.floor(Date.now() / 1000), // Unix epoch
-			models: selectedModels
+			models: queued?.context.selectedModels ?? selectedModels
 		};
 
 		// A transcribed Bridge message already exists in the same history.
@@ -3603,8 +3756,8 @@
 		history.messages[userMessageId] = userMessage;
 
 		// Append messageId to childrenIds of parent message
-		if (!existingUserMessage && history.currentId !== null) {
-			history.messages[history.currentId].childrenIds.push(userMessageId);
+		if (!existingUserMessage && userMessage.parentId && history.messages[userMessage.parentId]) {
+			history.messages[userMessage.parentId].childrenIds.push(userMessageId);
 		}
 
 		history.currentId = userMessageId;
@@ -3616,9 +3769,14 @@
 
 		saveSessionSelectedModels();
 
-		return await sendMessage(history, userMessageId, {
-			modelId: bridgeRequest?.modelId ?? null
-		});
+		try {
+			return await sendMessage(history, userMessageId, {
+				modelId: bridgeRequest?.modelId ?? null,
+				queued
+			});
+		} finally {
+			submittedDrafts.delete(userMessageId);
+		}
 	};
 
 	const handleManualCompact = async () => {
@@ -3855,13 +4013,7 @@
 			(files.length > 0 && files.some((file) => ['uploading', 'error'].includes(file.status)))
 		) {
 			if (bridgeRequest) return { status: 'deferred' };
-			chatRequestQueues.update((q) => ({
-				...q,
-				[$chatId]: [...(q[$chatId] ?? []), { id: uuidv4(), prompt: userPrompt, files }]
-			}));
-			messageInput?.setText('');
-			prompt = '';
-			files = [];
+			await enqueueDraft(userPrompt);
 			return { status: 'rejected' };
 		}
 
@@ -3877,16 +4029,7 @@
 		if (isGenerating) {
 			if (bridgeRequest) return { status: 'deferred' };
 			if ($settings?.enableMessageQueue ?? true) {
-				// Enqueue the request
-				const _files = structuredClone(files);
-				chatRequestQueues.update((q) => ({
-					...q,
-					[$chatId]: [...(q[$chatId] ?? []), { id: uuidv4(), prompt: userPrompt, files: _files }]
-				}));
-				// Clear input
-				messageInput?.setText('');
-				prompt = '';
-				files = [];
+				await enqueueDraft(userPrompt);
 				return { status: 'rejected' };
 			} else {
 				// Interrupt: stop current generation and proceed
@@ -3895,13 +4038,26 @@
 			}
 		}
 
-		// Clear input and submit
-		messageInput?.setText('');
-		prompt = '';
-		const _files = structuredClone(files);
-		files = [];
-		messageInput?.setText('');
+		if (!bridgeRequest) {
+			try {
+				const entry = await enqueueDraft(userPrompt);
+				return (await dispatchQueued(entry.id)) ?? { status: 'rejected' };
+			} catch (error) {
+				toast.error(String(error));
+				return { status: 'rejected' };
+			}
+		}
 
+		const _files = structuredClone(files);
+		clearingSubmittedInput = true;
+		try {
+			prompt = '';
+			files = [];
+			await messageInput?.restoreDraftContent('');
+			await tick();
+		} finally {
+			clearingSubmittedInput = false;
+		}
 		return (
 			(await submitPrompt(userPrompt, _files, bridgeRequest)) ?? {
 				status: 'rejected'
@@ -3916,12 +4072,14 @@
 			messages = null,
 			modelId = null,
 			modelIdx = null,
-			regenerationPrompt = null
+			regenerationPrompt = null,
+			queued = null
 		}: {
 			messages?: any[] | null;
 			modelId?: string | null;
 			modelIdx?: number | null;
 			regenerationPrompt?: string | null;
+			queued?: QueuedDraft | null;
 		} = {}
 	) => {
 		const parent = _history.messages[parentId];
@@ -3948,11 +4106,9 @@
 
 		const responseMessageIds: Record<PropertyKey, string> = {};
 		// If modelId is provided, use it, else use selected model
-		let selectedModelIds = modelId
-			? [modelId]
-			: atSelectedModel !== undefined
-				? [atSelectedModel.id]
-				: selectedModels;
+		let selectedModelIds =
+			queued?.context.selectedModels ??
+			(modelId ? [modelId] : atSelectedModel !== undefined ? [atSelectedModel.id] : selectedModels);
 		if (!modelId && history.messages[parentId]) {
 			history.messages[parentId].models = [...selectedModelIds];
 		}
@@ -3967,7 +4123,7 @@
 			const model = $models.filter((m) => m.id === modelId).at(0);
 
 			if (model) {
-				let responseMessageId = uuidv4();
+				let responseMessageId = queued?.responseIds[_modelIdx] ?? uuidv4();
 				let responseMessage = {
 					parentId: parentId,
 					id: responseMessageId,
@@ -3989,8 +4145,7 @@
 				// Append messageId to childrenIds of parent message
 				if (parentId !== null && history.messages[parentId]) {
 					history.messages[parentId].childrenIds = [
-						...history.messages[parentId].childrenIds,
-						responseMessageId
+						...new Set([...history.messages[parentId].childrenIds, responseMessageId])
 					];
 				}
 
@@ -4064,6 +4219,7 @@
 		const primaryModel = $models.filter((m) => m.id === primaryModelId).at(0);
 		const primaryResponseMessageId = messageIdsList[0]?.message_id;
 		let submittedTaskIds: string[] = [];
+		let accepted = false;
 
 		if (primaryModel && primaryResponseMessageId) {
 			const chatEventEmitter = await getChatEventEmitter(primaryModel.id, _chatId);
@@ -4084,17 +4240,19 @@
 						// regenerations in a duplicate-model chat, which would otherwise lose their
 						// column identity and collapse on reload.
 						messageIdsList: messageIdsList.length > 0 ? messageIdsList : undefined,
-						regenerationPrompt
+						regenerationPrompt,
+						queued
 					}
 				);
 				submittedTaskIds =
 					completion?.task_ids ?? (completion?.task_id ? [completion.task_id] : []);
+				accepted = !!completion && !completion.error;
 			} finally {
 				if (chatEventEmitter) clearInterval(chatEventEmitter);
 			}
 		}
 		return {
-			status: 'submitted' as const,
+			status: accepted ? ('submitted' as const) : ('rejected' as const),
 			chatId: $chatId,
 			userMessageId: parentId,
 			assistantMessageId: primaryResponseMessageId,
@@ -4138,6 +4296,12 @@
 			.filter(Boolean)
 			.map((token) => decodeURIComponent(JSON.parse(`"${token.replace(/"/g, '\\"')}"`)));
 	};
+	const getRequestParams = () => ({
+		...$settings?.params,
+		...Object.fromEntries(Object.entries(params).filter(([, value]) => value !== null)),
+		model_controls: $settings?.params?.model_controls ?? {},
+		stop: getStopTokens()
+	});
 
 	const sendMessageSocket = async (
 		model,
@@ -4148,11 +4312,13 @@
 		{
 			messageIdsList,
 			regenerationPrompt,
-			continueResponse = false
+			continueResponse = false,
+			queued = null
 		}: {
 			messageIdsList?: Array<{ model_id: string; message_id: string }>;
 			regenerationPrompt?: string | null;
 			continueResponse?: boolean;
+			queued?: QueuedDraft | null;
 		} = {}
 	) => {
 		const responseMessage = _history.messages[responseMessageId];
@@ -4160,7 +4326,12 @@
 		const filesystemAttachment = userMessage?.files?.find(
 			(file: any) => file.type === 'filesystem'
 		);
-		const requestTerminalId = filesystemAttachment?.terminal_id ?? $selectedTerminalId;
+		const requestTerminalId =
+			filesystemAttachment?.terminal_id ?? queued?.context.terminalId ?? $selectedTerminalId;
+		const requestParams = queued?.context.params ?? getRequestParams();
+		const requestSystem = queued
+			? queued.context.system
+			: params?.system || $settings?.system || '';
 
 		const chatMessageFiles = _messages
 			.filter((message) => message.files)
@@ -4201,17 +4372,11 @@
 			});
 		}
 
-		const stream =
-			model?.info?.params?.stream_response ??
-			params?.stream_response ??
-			$settings?.params?.stream_response ??
-			true;
+		const stream = model?.info?.params?.stream_response ?? requestParams?.stream_response ?? true;
 		// Always include system prompt — backend extracts it and prepends to DB messages.
 		// Only temp chats need conversation messages (persisted chats load from DB).
 		let messages: any[] = [
-			params?.system || $settings.system
-				? { role: 'system', content: `${params?.system || $settings?.system || ''}` }
-				: undefined
+			requestSystem ? { role: 'system', content: requestSystem } : undefined
 		].filter(Boolean);
 
 		if ($temporaryChatEnabled) {
@@ -4274,7 +4439,7 @@
 		const toolIds = [];
 		const toolServerIds = [];
 
-		for (const toolId of selectedToolIds) {
+		for (const toolId of queued?.context.selectedToolIds ?? selectedToolIds) {
 			if (toolId.startsWith('direct_server:')) {
 				let serverId = toolId.replace('direct_server:', '');
 				// Check if serverId is a number
@@ -4290,7 +4455,8 @@
 
 		// Menu-selected skills and inline <$skillId|label> mentions both load instructions.
 		// Keep mentions in the message so the backend can resolve them.
-		const skillIds = [...selectedSkillIds];
+		const skillIds = [...(queued?.context.selectedSkillIds ?? selectedSkillIds)];
+		const filterIds = queued?.context.selectedFilterIds ?? selectedFilterIds;
 
 		// Only send terminal_id if the model has terminal capability enabled
 		const terminalEnabled =
@@ -4304,19 +4470,12 @@
 				stream: stream,
 				model: model.id,
 				...(messages.length > 0 ? { messages } : {}),
-				params: {
-					...$settings?.params,
-					...Object.fromEntries(Object.entries(params).filter(([, value]) => value !== null)),
-					model_controls: $settings?.params?.model_controls ?? {},
-					stop: getStopTokens()
-				},
+				params: requestParams,
 
 				files: (files?.length ?? 0) > 0 ? files : undefined,
 
 				filter_ids:
-					$config?.features?.enable_functions && selectedFilterIds.length > 0
-						? selectedFilterIds
-						: undefined,
+					$config?.features?.enable_functions && filterIds.length > 0 ? filterIds : undefined,
 				tool_ids: toolIds.filter((id) =>
 					id.startsWith('server:')
 						? $config?.features?.enable_tool_servers
@@ -4340,7 +4499,7 @@
 								: [])
 						]
 					: [],
-				features: getFeatures(),
+				features: queued?.context.features ?? getFeatures(),
 				variables: {
 					...getPromptVariables(
 						$user?.name,
@@ -4348,11 +4507,15 @@
 						$user?.email
 					)
 				},
-				...(useChatVariablesFallback ? { chat_variables: chatVariables } : {}),
+				...(useChatVariablesFallback
+					? { chat_variables: queued?.context.chatVariables ?? chatVariables }
+					: {}),
 				model_item: $models.find((m) => m.id === model.id),
 
 				session_id: $socket?.id,
 				chat_id: _chatId || undefined,
+				oi_request_id: queued?.requestId ?? uuidv4(),
+				oi_temporary_id: $temporaryChatEnabled ? draftManager?.chatId : undefined,
 				folder_id: $selectedFolder?.id ?? undefined,
 
 				id: responseMessageId,
@@ -4365,6 +4528,8 @@
 				background_tasks: {
 					...(!$temporaryChatEnabled &&
 					(!_chatId ||
+						(userMessage?.parentId === null &&
+							createMessagesList(_history, responseMessageId).length === 2) ||
 						(embedded &&
 							(userMessage?.parentId ?? null) === null &&
 							createMessagesList(_history, responseMessageId).length === 2))
@@ -4378,6 +4543,15 @@
 			},
 			`${WEBUI_BASE_URL}/api`
 		).catch(async (error) => {
+			if (queued && error?.code === 'generation_already_accepted' && error.chat_id === _chatId) {
+				const saved = await getChatById(localStorage.token, _chatId);
+				const savedHistory = saved?.chat?.history;
+				if (!savedHistory?.messages?.[responseMessageId])
+					throw new Error('此前请求尚未建立回复，请稍后重试；若请求失败，请编辑后重新发送');
+				if ($chatId === _chatId) history = savedHistory;
+				const tasks = await getTaskIdsByChatId(localStorage.token, _chatId).catch(() => null);
+				return { chat_id: _chatId, task_ids: tasks?.task_ids ?? [], oi_reconnected: true };
+			}
 			console.log(error);
 
 			let errorMessage = error;
@@ -4412,6 +4586,18 @@
 			} else {
 				// Backend returns task_ids (multi-model) or task_id (single model)
 				onToolCallResolved(res);
+				if ($temporaryChatEnabled && draftManager)
+					registerBillingIdentity(_chatId, `temporary:${draftManager.chatId}`);
+				const submitted = submittedDrafts.get(userMessage?.id);
+				if (submitted) {
+					await submitted.manager.accepted(submitted.ticket);
+					submittedDrafts.delete(userMessage.id);
+					if ($chatId === _chatId && submitted.ticket.queueId)
+						chatRequestQueues.update((q) => ({
+							...q,
+							[_chatId]: submitted.manager.payload.queue ?? []
+						}));
+				}
 
 				// Backend returns chat_id for new chats — set store + URL.
 				// Only update if the user hasn't navigated to a different chat
@@ -4446,7 +4632,7 @@
 					await chatId.set(res.chat_id);
 					if (!$temporaryChatEnabled && !embedded) {
 						// Carry the picks made on the new-chat page over to this chat
-						saveDraft(getChatInputDraft(), res.chat_id, false);
+
 						window.history.replaceState(window.history.state, '', `/c/${res.chat_id}`);
 						await refreshChatList(localStorage.token);
 
@@ -4765,20 +4951,18 @@
 		if (res) chat = res;
 	};
 
-	const MAX_DRAFT_LENGTH = 5000;
-	let saveDraftTimeout: ReturnType<typeof setTimeout> | null = null;
-	// chatIdProp is empty for chats started from the home page (URL set via replaceState)
 	const getDraftChatId = () => chatIdProp || $chatId || null;
 
 	const getChatInputDraft = () => ({
 		prompt,
-		files: files
-			.filter((file) => file.type !== 'image')
-			.map((file) => ({
-				...file,
-				user: undefined,
-				access_grants: undefined
-			})),
+		queue: $chatRequestQueues[$chatId] ?? [],
+		richContent: messageInput?.getDraftContent(),
+		selectedModels,
+		files: files.map((file) => ({
+			...file,
+			user: undefined,
+			access_grants: undefined
+		})),
 		selectedToolIds,
 		selectedSkillIds,
 		selectedFilterIds,
@@ -4787,22 +4971,27 @@
 		codeInterpreterEnabled
 	});
 
-	const saveDraft = async (draft: any, chatId: string | null = null, debounce = true) => {
-		if (saveDraftTimeout) {
-			clearTimeout(saveDraftTimeout);
-		}
-
-		if (draft.prompt !== null && draft.prompt.length < MAX_DRAFT_LENGTH) {
-			const key = `chat-input${chatId ? `-${chatId}` : ''}`;
-			const write = () => sessionStorage.setItem(key, JSON.stringify(draft));
-			if (debounce) {
-				saveDraftTimeout = setTimeout(write, 500);
-			} else {
-				write();
-			}
-		} else {
-			sessionStorage.removeItem(`chat-input${chatId ? `-${chatId}` : ''}`);
-		}
+	const saveDraft = async (draft: any, _chatId: string | null = null, debounce = true) => {
+		if (restoringDraft || clearingSubmittedInput || isShared) return;
+		if ((!draftManager || draftManager.isNew) && !hasDraftInput(draft)) return;
+		if (
+			!draft.prompt &&
+			!draft.files?.length &&
+			[...submittedDrafts.values()].some(
+				(submitted) =>
+					submitted.manager === draftManager && submitted.manager.isUnchanged(submitted.ticket)
+			)
+		)
+			return;
+		if (!draftManager) await restoreChatInput(null);
+		await draftLoad;
+		await draftManager?.edit({
+			...draft,
+			queue: $chatRequestQueues[$chatId] ?? [],
+			selectedModels,
+			richContent: messageInput?.getDraftContent()
+		});
+		if (!debounce) await draftManager?.flush();
 	};
 
 	const oauthRedirectHandler = async (
@@ -4817,13 +5006,6 @@
 		saveSessionSelectedModels();
 		await saveDraft(draft, null, false);
 		initiateOAuthRedirect(tool);
-	};
-
-	const clearDraft = async (chatId: string | null = null) => {
-		if (saveDraftTimeout) {
-			clearTimeout(saveDraftTimeout);
-		}
-		await sessionStorage.removeItem(`chat-input${chatId ? `-${chatId}` : ''}`);
 	};
 
 	const moveChatHandler = async (chatId, folderId) => {
@@ -5143,6 +5325,9 @@
 							{archiveChatHandler}
 							{deleteChatHandler}
 							{moveChatHandler}
+							{onReadingNavigate}
+							{currentReadingPosition}
+							onFork={handleForkChat}
 							onSaveTempChat={async () => {
 								try {
 									if (!history?.currentId || !Object.keys(history.messages).length) {
@@ -5185,16 +5370,32 @@
 					{/if}
 					<div id="chat-pane" class="flex flex-col flex-auto z-10 w-full @container overflow-auto">
 						{#if ($settings?.landingPageMode === 'chat' && !$selectedFolder) || createMessagesList(history, history.currentId).length > 0}
+							<!-- Focusable scroll region: keyboard users must be able to page through the transcript. -->
+							<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
 							<div
 								class=" pb-2.5 flex flex-col justify-between w-full flex-auto overflow-auto h-0 max-w-full z-10 scrollbar-hidden"
 								id="messages-container"
+								role="region"
+								aria-label={$i18n.t('Chat Conversation')}
+								tabindex="0"
 								bind:this={messagesContainerElement}
+								on:keydown={(event) => {
+									if (
+										['PageUp', 'PageDown', 'ArrowUp', 'ArrowDown', 'Home', 'End', ' '].includes(
+											event.key
+										)
+									)
+										readingTouched = true;
+								}}
+								on:wheel={() => (readingTouched = true)}
+								on:touchmove={() => (readingTouched = true)}
 								on:scroll={(e) => {
 									if (!messagesContainerElement) return;
 									autoScroll =
 										messagesContainerElement.scrollHeight - messagesContainerElement.scrollTop <=
 										messagesContainerElement.clientHeight + 5;
 									isNearTop = messagesContainerElement.scrollTop <= 100;
+									rememberReadingPosition();
 								}}
 							>
 								<div class=" h-full w-full flex flex-col">
@@ -5252,6 +5453,25 @@
 									class=" pb-2 {dragged ? 'z-0' : 'z-10'}"
 								>
 									<MessageInput
+										oiContext={{
+											chatId:
+												$temporaryChatEnabled && draftManager
+													? `temporary:${draftManager.chatId}`
+													: $chatId,
+											currentId: history.currentId,
+											history,
+											model: $models.find((m) => m.id === selectedModels[0]),
+											compact: handleManualCompact,
+											compactionEnabled: contextCompactionEnabled
+										}}
+										draftSync={draftManager && !isShared
+											? {
+													state: draftState,
+													temporary: !!$temporaryChatEnabled,
+													resolve: resolveDraftChoice,
+													retry: () => draftManager?.flush()
+												}
+											: null}
 										{terminalContext}
 										{typingUsers}
 										on:typing={(event) => emitTyping(event.detail)}
@@ -5297,16 +5517,13 @@
 										onQueueEdit={editQueuedMessage}
 										onQueueDelete={deleteQueuedMessage}
 										onChange={(data: any) => {
-											if (!$temporaryChatEnabled) {
-												saveDraft(data, getDraftChatId());
-											}
+											saveDraft(data, getDraftChatId());
 										}}
 										onWebSearchToggle={handleWebSearchToggle}
 										on:chatVariables={() => {
 											showChatVariablesModal = true;
 										}}
 										on:submit={async (e) => {
-											clearDraft(getDraftChatId());
 											if (e.detail || files.length > 0) {
 												await tick();
 
@@ -5349,6 +5566,25 @@
 								{/if}
 								<div id={embedded ? messageInputDropzoneId : undefined} class="pb-2 z-10">
 									<MessageInput
+										oiContext={{
+											chatId:
+												$temporaryChatEnabled && draftManager
+													? `temporary:${draftManager.chatId}`
+													: $chatId,
+											currentId: history.currentId,
+											history,
+											model: $models.find((m) => m.id === selectedModels[0]),
+											compact: handleManualCompact,
+											compactionEnabled: contextCompactionEnabled
+										}}
+										draftSync={draftManager && !isShared
+											? {
+													state: draftState,
+													temporary: !!$temporaryChatEnabled,
+													resolve: resolveDraftChoice,
+													retry: () => draftManager?.flush()
+												}
+											: null}
 										{terminalContext}
 										{typingUsers}
 										on:typing={(event) => emitTyping(event.detail)}
@@ -5394,16 +5630,13 @@
 										onQueueEdit={editQueuedMessage}
 										onQueueDelete={deleteQueuedMessage}
 										onChange={(data: any) => {
-											if (!$temporaryChatEnabled) {
-												saveDraft(data, getDraftChatId());
-											}
+											saveDraft(data, getDraftChatId());
 										}}
 										onWebSearchToggle={handleWebSearchToggle}
 										on:chatVariables={() => {
 											showChatVariablesModal = true;
 										}}
 										on:submit={async (e) => {
-											clearDraft(getDraftChatId());
 											if (e.detail || files.length > 0) {
 												await tick();
 												submitHandler(withSelectedText(e.detail));
@@ -5415,6 +5648,25 @@
 						{:else}
 							<div class="flex items-center h-full">
 								<Placeholder
+									oiContext={{
+										chatId:
+											$temporaryChatEnabled && draftManager
+												? `temporary:${draftManager.chatId}`
+												: $chatId,
+										currentId: history.currentId,
+										history,
+										model: $models.find((m) => m.id === selectedModels[0]),
+										compact: handleManualCompact,
+										compactionEnabled: contextCompactionEnabled
+									}}
+									draftSync={draftManager && !isShared
+										? {
+												state: draftState,
+												temporary: !!$temporaryChatEnabled,
+												resolve: resolveDraftChoice,
+												retry: () => draftManager?.flush()
+											}
+										: null}
 									{terminalContext}
 									callActive={!!(bridge?.connected || bridge?.connecting)}
 									callEnabled={!isShared}
@@ -5453,12 +5705,9 @@
 										showChatVariablesModal = true;
 									}}
 									onChange={(data: any) => {
-										if (!$temporaryChatEnabled) {
-											saveDraft(data, getDraftChatId());
-										}
+										saveDraft(data, getDraftChatId());
 									}}
 									on:submit={async (e) => {
-										clearDraft(getDraftChatId());
 										if (e.detail || files.length > 0) {
 											await tick();
 											submitHandler(withSelectedText(e.detail));

@@ -44,6 +44,11 @@ def public_model_params(params):
                         if field in control
                     },
                     'options': {key: {'label': option['label']} for key, option in control['options'].items()},
+                    **(
+                        {'budget': {k: v for k, v in control['budget'].items() if k != 'parameter'}}
+                        if control.get('budget')
+                        else {}
+                    ),
                 }
                 for key, control in controls.items()
             }
@@ -128,6 +133,18 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
 
     # deep copy the base models to avoid modifying the original list
     models = [model.copy() for model in base_models]
+    # The registry holds identities, never credentials. Every read and invocation rechecks access.
+    from types import SimpleNamespace
+    from open_webui.internal.db import get_async_db
+    from open_webui.utils.oi.catalog import model_catalog
+
+    async with get_async_db() as db:
+        native_models = await model_catalog(db, SimpleNamespace(id='', role='admin'))
+        from open_webui.utils.oi.legacy import alias_map
+
+        migrated_aliases = set(await alias_map(db, SimpleNamespace(id='', role='admin')))
+    models = [m for m in models if m['id'] not in migrated_aliases or m.get('pipe')]
+    models.extend(native_models)
 
     # If there are no models, return an empty list
     if len(models) == 0:
@@ -204,8 +221,19 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
             if model:
                 if custom_model.is_active:
                     arena_meta = model['info']['meta'] if model.get('arena') else None
+                    native_info = model.get('info', {}) if model.get('oi_binding') else None
                     model['name'] = custom_model.name
                     model['info'] = custom_model.model_dump()
+                    if native_info:
+                        from open_webui.utils.misc import merge_model_params
+
+                        model['info']['params'] = merge_model_params(
+                            native_info.get('params', {}), custom_model.params.model_dump(exclude_unset=True)
+                        )
+                        model['info'].setdefault('meta', {})['capabilities'] = {
+                            **native_info.get('meta', {}).get('capabilities', {}),
+                            **(model['info'].get('meta', {}).get('capabilities') or {}),
+                        }
                     if arena_meta:
                         # Evaluation config owns arena access grants and model_ids
                         model['info']['meta'].update(
@@ -247,6 +275,13 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
 
             base_model = base_model_lookup.get(custom_model.base_model_id)
             if base_model is None:
+                matches = [
+                    m
+                    for m in models
+                    if custom_model.base_model_id == m['id'] or custom_model.base_model_id in m.get('aliases', [])
+                ]
+                base_model = matches[0] if len(matches) == 1 else None
+            if base_model is None:
                 base_model = base_model_lookup.get(custom_model.base_model_id.split(':')[0])
             if base_model:
                 owned_by = base_model.get('owned_by', 'unknown')
@@ -262,12 +297,28 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
                 'owned_by': owned_by,
                 'connection_type': connection_type,
                 'preset': True,
+                'connection': base_model.get('connection')
+                if base_model
+                else {'id': 'unresolved', 'name': 'Unresolved model mapping'},
                 **({'pipe': pipe} if pipe is not None else {}),
                 **({'provider': base_model.get('provider')} if base_model and base_model.get('provider') else {}),
                 **({'loaded': base_model.get('loaded')} if base_model and base_model.get('loaded') is not None else {}),
             }
 
             info = custom_model.model_dump()
+            if base_model and base_model.get('oi_binding'):
+                from open_webui.utils.misc import merge_model_params
+
+                model['oi_base_binding'] = base_model['id']
+                info['base_model_id'] = base_model['id']
+                info['params'] = merge_model_params(
+                    copy.deepcopy(base_model.get('info', {}).get('params', {})),
+                    custom_model.params.model_dump(exclude_unset=True),
+                )
+                info.setdefault('meta', {})['capabilities'] = {
+                    **base_model.get('capabilities', {}),
+                    **(info.get('meta', {}).get('capabilities') or {}),
+                }
             schema = get_chat_variables_schema(custom_model.params.model_dump().get('system'))
             if schema:
                 info.setdefault('meta', {})['chat_variables_schema'] = schema
@@ -491,6 +542,23 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
 
 
 async def check_model_access(user, model, model_info=None, db=None):
+    if model.get('oi_binding'):
+        from open_webui.internal.db import get_async_db_context
+        from open_webui.utils.oi.catalog import resolve
+
+        async with get_async_db_context(db) as session:
+            binding, connection = await resolve(session, model['id'], user)
+            legacy_id = (binding.capabilities or {}).get('legacy_model_id')
+            legacy_unregistered = (binding.capabilities or {}).get('legacy_unregistered')
+        if legacy_id and not await Models.get_model_by_id(model['id'], db=db):
+            if legacy_unregistered:
+                if user.role != 'admin':
+                    raise Exception('Model access is not configured')
+                return
+            return await check_model_access(user, {'id': legacy_id}, db=db)
+        model_info = model_info or await Models.get_model_by_id(model['id'], db=db)
+        if model_info is None:
+            return
     if model.get('arena'):
         meta = model.get('info', {}).get('meta', {})
         access_grants = meta.get('access_grants', [])
@@ -555,6 +623,17 @@ async def check_model_access(user, model, model_info=None, db=None):
 
 
 async def get_filtered_models(models, user, db=None):
+    from open_webui.internal.db import get_async_db_context
+    from open_webui.utils.oi.catalog import model_catalog
+
+    async with get_async_db_context(db) as session:
+        visible_native = {m['id'] for m in await model_catalog(session, user)}
+    models = [
+        m
+        for m in models
+        if (not m.get('oi_binding') or m['id'] in visible_native)
+        and (not m.get('oi_base_binding') or m['oi_base_binding'] in visible_native)
+    ]
     # Filter out models that the user does not have access to
     if (
         user.role == 'user' or (user.role == 'admin' and not BYPASS_ADMIN_ACCESS_CONTROL)
@@ -583,6 +662,13 @@ async def get_filtered_models(models, user, db=None):
 
         filtered_models = []
         for model in models:
+            if model.get('oi_binding') or model.get('oi_base_binding'):
+                try:
+                    await check_model_access(user, model, db=db)
+                    filtered_models.append(model)
+                except Exception:
+                    pass
+                continue
             if model.get('arena'):
                 meta = model.get('info', {}).get('meta', {})
                 access_grants = meta.get('access_grants', [])

@@ -52,7 +52,7 @@ async def compact_messages_for_request(
     system_prompt: str = '',
 ) -> tuple[list[dict], str | None, bool]:
     config = await _load_config()
-    if not config['enable']:
+    if not config['enable'] or not metadata.get('oi_auto_compaction', False):
         return messages, None, False
 
     system_messages = [messages[0]] if messages and messages[0].get('role') == 'system' else []

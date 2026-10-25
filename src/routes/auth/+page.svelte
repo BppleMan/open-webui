@@ -78,6 +78,10 @@
 				redirectPath = $page.url.searchParams.get('redirect') || '/';
 			}
 
+			if ($page.url.searchParams.get('reauth') === '1' && window.parent !== window) {
+				window.parent.postMessage({ type: 'oi:reauthenticated' }, window.location.origin);
+				return;
+			}
 			await goto(redirectPath);
 			localStorage.removeItem('redirectPath');
 		}
@@ -170,7 +174,7 @@
 		const redirectPath = $page.url.searchParams.get('redirect');
 		const logout = $page.url.searchParams.get('state') === 'logout';
 
-		if ($user && !logout) {
+		if ($user && !logout && !$page.url.searchParams.has('reauth')) {
 			goto(redirectPath || '/');
 		} else {
 			if (redirectPath) {

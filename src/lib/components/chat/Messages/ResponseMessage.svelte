@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Modal from '$lib/components/common/Modal.svelte';
+	import MessageUsage from '$lib/components/chat/MessageUsage.svelte';
+	import ReplyRevisionTools from './ReplyRevisionTools.svelte';
 	import EditPencilIcon from '$lib/components/layout/Sidebar/icons/EditPencil.svelte';
 	import CopyIcon from '$lib/components/layout/Sidebar/icons/Copy.svelte';
 	import TrashIcon from '$lib/components/layout/Sidebar/icons/Trash.svelte';
@@ -30,6 +33,7 @@
 		user
 	} from '$lib/stores';
 	import { synthesizeOpenAISpeech } from '$lib/apis/audio';
+	import { billingIdentity } from '$lib/stores/oiUsage';
 	import { imageGenerations } from '$lib/apis/images';
 	import {
 		copyToClipboard as _copyToClipboard,
@@ -77,6 +81,8 @@
 		model: string;
 		content: string;
 		output?: OutputItem[];
+		finish_reason?: string;
+		feedbackId?: string;
 		files?: { type: string; url: string }[];
 		timestamp: number;
 		role: string;
@@ -205,6 +211,7 @@
 	let edit = false;
 	let editedContent = '';
 	let editedOutput: any[] | null = null;
+	let editOriginal: any = null;
 	let editTextAreaElement: HTMLTextAreaElement;
 
 	let messageIndexEdit = false;
@@ -355,14 +362,20 @@
 				for (const [, sentence] of messageContentParts.entries()) {
 					if (signal.aborted) return;
 
-					const res = await synthesizeOpenAISpeech(localStorage.token, voiceId, sentence).catch(
-						(error) => {
-							console.error(error);
-							toast.error(`${error}`);
-							speaking = false;
-							loadingSpeech = false;
-						}
-					);
+					const res = await synthesizeOpenAISpeech(
+						localStorage.token,
+						voiceId,
+						sentence,
+						undefined,
+						$config?.audio?.tts?.engine === 'connection' && chatId
+							? { chat_id: billingIdentity(chatId), message_id: messageId }
+							: undefined
+					).catch((error) => {
+						console.error(error);
+						toast.error(`${error}`);
+						speaking = false;
+						loadingSpeech = false;
+					});
 
 					if (signal.aborted) return;
 
@@ -407,6 +420,11 @@
 	}
 
 	const editMessageHandler = async () => {
+		if (message.done === false) {
+			toast.message('请先停止回复，再编辑内容');
+			return;
+		}
+		editOriginal = structuredClone({ content: message.content, output: message.output });
 		edit = true;
 
 		if (message.output?.length) {
@@ -433,11 +451,11 @@
 
 	const editMessageConfirmHandler = async () => {
 		if (editedOutput) {
-			editMessage(message.id, { output: editedOutput }, false);
+			await editMessage(message.id, { output: editedOutput }, false);
 		} else {
 			// Legacy text edit
 			const messageContent = postprocessAfterEditing(editedContent ?? '');
-			editMessage(message.id, { content: messageContent }, false);
+			await editMessage(message.id, { content: messageContent }, false);
 		}
 
 		edit = false;
@@ -449,10 +467,10 @@
 
 	const saveAsCopyHandler = async () => {
 		if (editedOutput) {
-			editMessage(message.id, { output: editedOutput });
+			await editMessage(message.id, { output: editedOutput });
 		} else {
 			const messageContent = postprocessAfterEditing(editedContent ?? '');
-			editMessage(message.id, { content: messageContent });
+			await editMessage(message.id, { content: messageContent });
 		}
 
 		edit = false;
@@ -584,13 +602,14 @@
 					feedbackItem.data = { ...feedbackItem.data, ...taggedMessage.annotation };
 
 					saveMessage(message.id, taggedMessage);
-					await updateFeedbackById(
-						localStorage.token,
-						taggedMessage.feedbackId,
-						feedbackItem
-					).catch((error) => {
-						toast.error(`${error}`);
-					});
+					if (updatedMessage.feedbackId)
+						await updateFeedbackById(
+							localStorage.token,
+							updatedMessage.feedbackId,
+							feedbackItem
+						).catch((error) => {
+							toast.error(`${error}`);
+						});
 				}
 			}
 		}
@@ -760,95 +779,116 @@
 						{/if}
 
 						{#if edit === true}
-							<div
-								class="w-full bg-gray-50 dark:bg-gray-800 rounded-3xl px-3 py-3 my-2 {($settings?.highContrastMode ??
-								false)
-									? 'focus-within:outline focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-blue-500'
-									: ''}"
-							>
-								{#if editedOutput}
-									<!-- Structured output editor (visual + JSON toggle) -->
-									<OutputEditView
-										output={editedOutput}
-										onChange={(updated) => {
-											editedOutput = updated;
+							<Modal show={true} size="xl" ariaLabel="编辑回复" onRequestClose={cancelEditMessage}>
+								<div class="max-h-[88dvh] overflow-y-auto p-3">
+									<h2 class="mb-3 font-semibold">编辑回复</h2>
+									<ReplyRevisionTools
+										{chatId}
+										messageId={message.id}
+										temporary={$temporaryChatEnabled}
+										original={editOriginal}
+										draft={{
+											content: postprocessAfterEditing(editedContent),
+											output: editedOutput
+										}}
+										onLoad={(revision) => {
+											editedOutput = revision.output?.length
+												? structuredClone(revision.output)
+												: null;
+											editedContent = preprocessForEditing(revision.content ?? '');
 										}}
 									/>
-								{:else}
-									<!-- Legacy textarea for messages without output -->
-									<textarea
-										id="message-edit-{message.id}"
-										bind:this={editTextAreaElement}
-										class=" bg-transparent outline-hidden focus-visible:outline-none! w-full resize-none text-[0.9375rem]"
-										bind:value={editedContent}
-										on:input={(e) => {
-											const messagesContainer = document.getElementById('messages-container');
-											const savedScrollTop = messagesContainer?.scrollTop ?? 0;
-											const textarea = e.currentTarget;
-
-											textarea.style.height = '';
-											textarea.style.height = `${textarea.scrollHeight}px`;
-
-											if (messagesContainer) messagesContainer.scrollTop = savedScrollTop;
-										}}
-										on:keydown={(e) => {
-											if (e.key === 'Escape') {
-												document.getElementById('close-edit-message-button')?.click();
-											}
-
-											const isCmdOrCtrlPressed = e.metaKey || e.ctrlKey;
-											const isEnterPressed = e.key === 'Enter';
-
-											if (isCmdOrCtrlPressed && isEnterPressed) {
-												document.getElementById('confirm-edit-message-button')?.click();
-											}
-										}}
-									></textarea>
-								{/if}
-
-								<div class=" mt-2 flex justify-between text-sm font-normal">
-									<div>
-										<button
-											id="save-new-message-button"
-											class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-2.5 text-xs font-normal text-gray-800 transition hover:bg-gray-100/70 disabled:opacity-60 dark:bg-gray-850 dark:text-white dark:hover:bg-gray-850/60"
-											on:click={() => {
-												saveAsCopyHandler();
-											}}
-										>
-											{$i18n.t('Save As Copy')}
-										</button>
-									</div>
-
-									<div class="flex space-x-1.5">
-										<button
-											id="close-edit-message-button"
-											class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-normal text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-60 dark:text-gray-400 dark:hover:bg-gray-850 dark:hover:text-white"
-											on:click={() => {
-												cancelEditMessage();
-											}}
-										>
-											{$i18n.t('Cancel')}
-										</button>
-
-										{#if !message.user_id || message.user_id === $user?.id}
-											<button
-												id="confirm-edit-message-button"
-												class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-2.5 text-xs font-normal text-white transition hover:bg-black disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
-												on:click={() => {
-													editMessageConfirmHandler();
+									<div
+										class="w-full bg-gray-50 dark:bg-gray-800 rounded-3xl px-3 py-3 my-2 {($settings?.highContrastMode ??
+										false)
+											? 'focus-within:outline focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-blue-500'
+											: ''}"
+									>
+										{#if editedOutput}
+											<!-- Structured output editor (visual + JSON toggle) -->
+											<OutputEditView
+												output={editedOutput}
+												onChange={(updated) => {
+													editedOutput = updated;
 												}}
-											>
-												{$i18n.t('Save')}
-											</button>
+											/>
+										{:else}
+											<!-- Legacy textarea for messages without output -->
+											<textarea
+												id="message-edit-{message.id}"
+												bind:this={editTextAreaElement}
+												class=" bg-transparent outline-hidden focus-visible:outline-none! w-full resize-none text-[0.9375rem]"
+												bind:value={editedContent}
+												on:input={(e) => {
+													const messagesContainer = document.getElementById('messages-container');
+													const savedScrollTop = messagesContainer?.scrollTop ?? 0;
+													const textarea = e.currentTarget;
+
+													textarea.style.height = '';
+													textarea.style.height = `${textarea.scrollHeight}px`;
+
+													if (messagesContainer) messagesContainer.scrollTop = savedScrollTop;
+												}}
+												on:keydown={(e) => {
+													if (e.key === 'Escape') {
+														document.getElementById('close-edit-message-button')?.click();
+													}
+
+													const isCmdOrCtrlPressed = e.metaKey || e.ctrlKey;
+													const isEnterPressed = e.key === 'Enter';
+
+													if (isCmdOrCtrlPressed && isEnterPressed) {
+														document.getElementById('confirm-edit-message-button')?.click();
+													}
+												}}
+											></textarea>
 										{/if}
+
+										<div class=" mt-2 flex justify-between text-sm font-normal">
+											<div>
+												<button
+													id="save-new-message-button"
+													class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-2.5 text-xs font-normal text-gray-800 transition hover:bg-gray-100/70 disabled:opacity-60 dark:bg-gray-850 dark:text-white dark:hover:bg-gray-850/60"
+													on:click={() => {
+														saveAsCopyHandler();
+													}}
+												>
+													{$i18n.t('Save As Copy')}
+												</button>
+											</div>
+
+											<div class="flex space-x-1.5">
+												<button
+													id="close-edit-message-button"
+													class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-normal text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-60 dark:text-gray-400 dark:hover:bg-gray-850 dark:hover:text-white"
+													on:click={() => {
+														cancelEditMessage();
+													}}
+												>
+													{$i18n.t('Cancel')}
+												</button>
+
+												{#if !message.user_id || message.user_id === $user?.id}
+													<button
+														id="confirm-edit-message-button"
+														class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-2.5 text-xs font-normal text-white transition hover:bg-black disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
+														on:click={() => {
+															editMessageConfirmHandler();
+														}}
+													>
+														{$i18n.t('Save')}
+													</button>
+												{/if}
+											</div>
+										</div>
 									</div>
-								</div>
-							</div>
+								</div></Modal
+							>
 						{/if}
 
 						<div
 							bind:this={contentContainerElement}
-							class="w-full flex flex-col relative {edit ? 'hidden' : ''}"
+							class="w-full flex flex-col relative"
 							id="response-content-container"
 						>
 							{#if hasResponseContent && message.error !== true}
@@ -942,6 +982,23 @@
 					</div>
 				</div>
 
+				{#if !compactPreview && message.done}
+					{#if message.finish_reason && !['stop', 'tool_calls'].includes(message.finish_reason)}
+						<p
+							class="mt-2 text-xs leading-relaxed text-amber-700 dark:text-amber-400"
+							role="status"
+						>
+							{message.finish_reason === 'length'
+								? '回复已达到输出或上下文上限，内容可能不完整。'
+								: message.finish_reason === 'content_filter'
+									? '提供方的内容策略中止了这次回复。'
+									: message.finish_reason === 'pause'
+										? '提供方暂停了这次回复，尚未完成。'
+										: '这次回复未正常完成，请检查内容与调用明细。'}
+						</p>
+					{/if}
+					<MessageUsage {chatId} messageId={message.id} />
+				{/if}
 				{#if compactPreview && message.timestamp}
 					<div class="mt-0.5 flex justify-start whitespace-nowrap text-gray-600 dark:text-gray-500">
 						<Tooltip

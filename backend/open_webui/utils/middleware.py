@@ -207,9 +207,13 @@ def _is_tool_result_error(value: Any) -> bool:
     return False
 
 
-def normalize_messages_for_model(form_data: dict) -> dict:
+def normalize_messages_for_model(form_data: dict, model: dict | None = None) -> dict:
     form_data['messages'] = strip_empty_content_blocks(form_data.get('messages', []))
-    form_data['messages'] = merge_system_messages(form_data.get('messages', []))
+    model = model or {}
+    if not (
+        model.get('oi_binding') or model.get('oi_base_binding') or str(form_data.get('model', '')).startswith('oi:')
+    ):
+        form_data['messages'] = merge_system_messages(form_data.get('messages', []))
     return form_data
 
 
@@ -1873,7 +1877,19 @@ async def convert_url_images_to_base64(form_data, user=None):
     return form_data
 
 
-MESSAGE_REPLAY_KEYS = ('id', 'role', 'content', 'output', 'files', 'contextSummary', 'usage', 'model', 'meta')
+MESSAGE_REPLAY_KEYS = (
+    'id',
+    'role',
+    'content',
+    'output',
+    'files',
+    'contextSummary',
+    'usage',
+    'model',
+    'meta',
+    'oi_native',
+    'oi_native_invalidated',
+)
 
 
 async def load_messages_from_db(chat_id: str, message_id: str) -> Optional[list[dict]]:
@@ -1977,6 +1993,9 @@ def process_messages_with_output(
                 flatten_tool_images=True,
             )
             if output_messages:
+                from open_webui.utils.oi.replay import attach_native
+
+                attach_native(message, output_messages)
                 processed.extend(output_messages)
                 processed.extend(speech)
                 continue
@@ -1986,6 +2005,8 @@ def process_messages_with_output(
         clean_message = dict(message)
         for key in ('id', 'output', 'model', 'contextSummary', 'context_summary', 'usage', 'meta'):
             clean_message.pop(key, None)
+        if clean_message.get('oi_native_invalidated') or not isinstance(clean_message.get('oi_native'), dict):
+            clean_message.pop('oi_native', None)
         processed.append(clean_message)
         processed.extend(speech)
 
@@ -3009,7 +3030,7 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         except Exception as e:
             raise Exception(f'{e}')
 
-    form_data = normalize_messages_for_model(form_data)
+    form_data = normalize_messages_for_model(form_data, model)
 
     return form_data, metadata, events, False
 
@@ -3185,7 +3206,7 @@ async def resume_tool_calls(request, form_data, user, model, metadata, message) 
                     '__message_id__': metadata.get('message_id'),
                 },
             )
-    normalize_messages_for_model(form_data)
+    normalize_messages_for_model(form_data, model)
 
     while True:
         async with Chats.edit_message_output(chat_id, message_id) as saved:
@@ -4030,6 +4051,7 @@ async def non_streaming_chat_response_handler(response, ctx):
                         response_output = previous + response_output
                         content = get_output_text(response_output)
 
+                    finish_reason = choices[0].get('finish_reason') if choices else None
                     await event_emitter(
                         {
                             'type': 'chat:completion',
@@ -4038,6 +4060,7 @@ async def non_streaming_chat_response_handler(response, ctx):
                                 'done': True,
                                 'output': response_output,
                                 'title': title,
+                                **({'finish_reason': finish_reason} if finish_reason else {}),
                             },
                         }
                     )
@@ -4054,6 +4077,7 @@ async def non_streaming_chat_response_handler(response, ctx):
                                 'done': True,
                                 'role': 'assistant',
                                 'output': response_output,
+                                **({'finish_reason': finish_reason} if finish_reason else {}),
                                 **({'usage': usage} if usage else {}),
                             },
                         )
@@ -4633,6 +4657,7 @@ async def streaming_chat_response_handler(response, ctx):
 
                     response_tool_calls = []
                     response_usage = {}
+                    usage_before_call = copy.deepcopy(usage)
 
                     delta_count = 0
                     delta_chunk_size = max(
@@ -4858,7 +4883,7 @@ async def streaming_chat_response_handler(response, ctx):
                                         # Normalize and capture usage for DB persistence
                                         if response_metadata.get('usage'):
                                             response_usage = response_metadata['usage']
-                                            usage = merge_usage(usage, response_metadata['usage'])
+                                            usage = merge_usage(usage_before_call, response_metadata['usage'])
                                             response_metadata['usage'] = usage
 
                                         if response_metadata.get('error'):
@@ -4901,7 +4926,7 @@ async def streaming_chat_response_handler(response, ctx):
                                     raw_usage.update(data.get('timings', {}))  # llama.cpp
                                     if raw_usage:
                                         response_usage = raw_usage
-                                        usage = merge_usage(usage, raw_usage)
+                                        usage = merge_usage(usage_before_call, raw_usage)
                                         await event_emitter(
                                             {
                                                 'type': 'chat:completion',
@@ -5915,6 +5940,9 @@ async def streaming_chat_response_handler(response, ctx):
                                 reasoning_format=get_reasoning_format(model),
                                 flatten_tool_images=True,
                             )
+                            from open_webui.utils.oi.replay import attach_latest_native
+
+                            attach_latest_native(request, metadata, tool_messages)
 
                             # Chat Completions providers don't support multimodal
                             # tool messages.  Extract images into a user message.
@@ -6032,7 +6060,7 @@ async def streaming_chat_response_handler(response, ctx):
                                 extra_params=extra_params,
                             )
 
-                        new_form_data = normalize_messages_for_model(new_form_data)
+                        new_form_data = normalize_messages_for_model(new_form_data, model)
 
                         res = await generate_chat_completion(
                             request,
@@ -6251,7 +6279,7 @@ async def streaming_chat_response_handler(response, ctx):
                                     extra_params=extra_params,
                                 )
 
-                            new_form_data = normalize_messages_for_model(new_form_data)
+                            new_form_data = normalize_messages_for_model(new_form_data, model)
 
                             res = await generate_chat_completion(
                                 request,
@@ -6284,6 +6312,7 @@ async def streaming_chat_response_handler(response, ctx):
                     'done': True,
                     'output': current_output,
                     'title': title,
+                    **({'finish_reason': finish_reason} if finish_reason else {}),
                     **({'usage': usage} if usage else {}),
                 }
 
@@ -6296,6 +6325,7 @@ async def streaming_chat_response_handler(response, ctx):
                         {
                             'done': True,
                             'output': current_output,
+                            **({'finish_reason': finish_reason} if finish_reason else {}),
                             **({'usage': usage} if usage else {}),
                         },
                     )

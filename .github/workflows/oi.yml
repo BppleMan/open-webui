@@ -1,0 +1,95 @@
+name: OI validation and image
+
+on:
+  push:
+    branches: [oi/main]
+  pull_request:
+    branches: [oi/main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --force
+      - run: python3 scripts/oi/check-types.py
+      - run: npm run test:frontend -- --run
+      - run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: oi_test
+          POSTGRES_PASSWORD: oi-synthetic-only
+          POSTGRES_DB: oi_migration
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U oi_test -d oi_migration"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -r backend/requirements-slim.txt pytest pytest-asyncio
+      - run: python -m compileall -q backend/open_webui
+      - run: PYTHONPATH=backend USE_SLIM_DOCKER=true python -m pytest test/oi -q
+      - name: PostgreSQL migration and restore acceptance
+        env:
+          DATABASE_URL: postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_migration
+          DATA_DIR: ${{ runner.temp }}/oi-pg-data
+          WEBUI_SECRET_KEY: oi-ci-synthetic-key
+          ENABLE_DB_MIGRATIONS: 'false'
+          USE_SLIM_DOCKER: 'true'
+          PYTHONPATH: backend
+          OI_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          python scripts/oi/postgres-acceptance.py prepare
+          docker exec "$OI_POSTGRES_CONTAINER" pg_dump -U oi_test -d oi_migration --format=custom > "$RUNNER_TEMP/oi-pg.dump"
+          docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test oi_restore
+          docker exec -i "$OI_POSTGRES_CONTAINER" pg_restore -U oi_test -d oi_restore --exit-on-error < "$RUNNER_TEMP/oi-pg.dump"
+          DATABASE_URL=postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_restore python scripts/oi/postgres-acceptance.py verify
+  image:
+    if: github.event_name != 'pull_request'
+    needs: [frontend, backend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/bppleman/open-webui-oi:sha-${{ github.sha }}
+          build-args: |
+            USE_SLIM=true
+            BUILD_HASH=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

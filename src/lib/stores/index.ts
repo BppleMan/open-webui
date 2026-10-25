@@ -130,7 +130,7 @@ export const visiblePinnedModels = derived([pinnedModels, models], ([$pinnedMode
 
 export const audioQueue = writable<AudioQueue | null>(null);
 export const chatRequestQueues: Writable<
-	Record<string, { id: string; prompt: string; files: any[]; error?: string }[]>
+	Record<string, import('$lib/utils/drafts').QueuedDraft[]>
 > = writable({});
 
 export type ChannelQueuedMessage = {
@@ -194,6 +194,10 @@ export const playingNotificationSound = writable(false);
 export type Model = OpenAIModel | OllamaModel;
 
 type BaseModel = {
+	connection?: { id: string; name: string; protocol?: string };
+	aliases?: string[];
+	capabilities?: Record<string, any>;
+	upstream_id?: string;
 	id: string;
 	name: string;
 	info?: ModelConfig;

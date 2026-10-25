@@ -296,7 +296,7 @@ class STTConfigForm(BaseModel):
 
 class RealtimeConfigForm(BaseModel):
     ENABLED: bool = False
-    PROVIDER: Literal['openai', 'azure'] = 'openai'
+    PROVIDER: Literal['openai', 'azure', 'connection'] = 'openai'
     AUTH_TYPE: Literal['api_key', 'microsoft_entra_id'] = 'api_key'
     OPENAI_API_BASE_URL: str = 'https://api.openai.com/v1'
     OPENAI_API_KEY: str = ''
@@ -324,6 +324,17 @@ async def get_audio_config(request: Request, user=Depends(get_admin_user)):
 
 @router.post('/config/update')
 async def update_audio_config(request: Request, form_data: AudioConfigUpdateForm, user=Depends(get_admin_user)):
+    from open_webui.utils.oi.capability_calls import target_for
+
+    for capability, config in [('tts', form_data.tts), ('stt', form_data.stt)]:
+        if config.ENGINE == 'connection':
+            await target_for(config.MODEL, capability, user)
+    if form_data.realtime and form_data.realtime.ENABLED and form_data.realtime.PROVIDER == 'connection':
+        from open_webui.utils.oi.realtime import connection
+
+        await connection(
+            config_updates(form_data.realtime.model_dump(), REALTIME_CONFIG_KEYS), user, 'configuration-validation'
+        )
     if USE_SLIM:
         current = await Config.get_many('audio.stt.engine', 'audio.tts.engine')
         if form_data.stt.ENGINE == '' and current.get('audio.stt.engine') != '':
@@ -748,8 +759,26 @@ async def _tts_mistral(request, payload, file_path, file_body_path, user):
         await _raise_tts_error(exc, r)
 
 
+async def _tts_connection(request, payload, file_path, file_body_path, user):
+    from open_webui.utils.oi.capability_calls import speech as connected_speech
+
+    payload = dict(payload)
+    if not isinstance(payload.get('input'), str) or not payload['input'].strip():
+        raise HTTPException(400, 'Speech input must be nonempty text')
+    if not payload.get('voice'):
+        payload['voice'] = await Config.get('audio.tts.voice')
+    result = await connected_speech(await Config.get('audio.tts.model'), payload, user, request)
+    content_type = result.headers.get('content-type', 'audio/mpeg')
+    await _write_tts_cache(file_path, result.body, file_body_path, payload, content_type)
+    if not USE_SLIM:
+        async with aiofiles.open(file_path.with_suffix('.mime'), 'w') as f:
+            await f.write(content_type)
+    return FileResponse(file_path, media_type=content_type)
+
+
 # Dispatcher map: engine name -> handler
 _TTS_ENGINES = {
+    'connection': _tts_connection,
     'openai': _tts_openai,
     'openai-realtime': _tts_openai_realtime,
     'elevenlabs': _tts_elevenlabs,
@@ -778,7 +807,29 @@ async def speech(request: Request, user=Depends(get_verified_user)):
 
     body = await request.body()
     payload = None
-    if engine == 'openai-realtime':
+    if engine == 'connection':
+        from open_webui.utils.oi.capability_calls import target_for, billing_context
+
+        try:
+            payload = JSONCodec.loads(body)
+        except (ValueError, TypeError):
+            raise HTTPException(400, 'Invalid speech payload') from None
+        if not isinstance(payload, dict):
+            raise HTTPException(400, 'Speech payload must be an object')
+        request.state.metadata = await billing_context(payload.pop('_oi_context', None), user)
+
+        target, _ = await target_for(await Config.get('audio.tts.model'), 'tts', user)
+        # Recheck permissions before using the cache; a revoked connection cannot be bypassed by a hit.
+        cache_identity = {
+            'user': user.id,
+            'binding': target.binding.id,
+            'connection_revision': target.connection.revision,
+            'model_revision': target.binding.updated_at,
+            'params': target.params,
+            'voice': await Config.get('audio.tts.voice'),
+        }
+        name = hashlib.sha256(body + JSONCodec.dumps(cache_identity).encode()).hexdigest()
+    elif engine == 'openai-realtime':
         try:
             payload = JSONCodec.loads(body)
         except (ValueError, TypeError):
@@ -833,7 +884,7 @@ async def speech(request: Request, user=Depends(get_verified_user)):
             data={'engine': engine, 'cached': True},
         )
         content_type = 'audio/wav' if engine == 'openai-realtime' else None
-        if USE_SLIM and engine != 'openai-realtime':
+        if (USE_SLIM and engine != 'openai-realtime') or engine == 'connection':
             async with aiofiles.open(file_path.with_suffix('.mime')) as f:
                 content_type = await f.read()
         return FileResponse(file_path, media_type=content_type)
@@ -858,7 +909,11 @@ async def speech(request: Request, user=Depends(get_verified_user)):
         data={
             'engine': engine,
             'model': payload.get('model'),
-            **({'input_preview': str(payload.get('input', ''))[:300]} if engine != 'openai-realtime' else {}),
+            **(
+                {'input_preview': str(payload.get('input', ''))[:300]}
+                if engine not in {'openai-realtime', 'connection'}
+                else {}
+            ),
             'cached': False,
         },
     )
@@ -1176,7 +1231,22 @@ async def transcription_handler(request, file_path, metadata, user=None):
         None,  # Always fallback to None in case transcription fails
     ]
 
-    if await Config.get('audio.stt.engine') == '':
+    if await Config.get('audio.stt.engine') == 'connection':
+        from open_webui.utils.oi.capability_calls import transcription
+
+        async with aiofiles.open(file_path, 'rb') as audio_file:
+            result = await transcription(
+                await Config.get('audio.stt.model'),
+                filename,
+                await audio_file.read(),
+                user,
+                language=languages[0],
+                request_object=request,
+            )
+        if not isinstance(result.get('text'), str):
+            raise HTTPException(502, 'Speech provider returned no transcription')
+        return result
+    elif await Config.get('audio.stt.engine') == '':
         return await _transcribe_whisper(request, file_path, languages, file_dir, id)
     elif await Config.get('audio.stt.engine') == 'openai':
         return await _transcribe_openai(request, file_path, filename, languages, file_dir, id, user)

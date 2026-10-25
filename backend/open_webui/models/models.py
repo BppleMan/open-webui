@@ -78,15 +78,44 @@ class ModelControlOption(BaseModel):
     params: dict[str, JsonValue]
 
 
+class ModelControlBudget(BaseModel):
+    parameter: str = Field(pattern=r'^[a-zA-Z][a-zA-Z0-9_]*(?:\.[a-zA-Z][a-zA-Z0-9_]*)*$')
+    min: int = Field(strict=True)
+    max: int = Field(strict=True)
+    step: int = Field(strict=True, gt=0)
+    default: int | None = Field(default=None, strict=True)
+
+    @model_validator(mode='after')
+    def check_range(self):
+        if any(part in {'__proto__', 'constructor', 'prototype'} for part in self.parameter.split('.')):
+            raise ValueError('Invalid budget parameter path')
+        if self.max <= self.min:
+            raise ValueError('Budget maximum must exceed minimum')
+        if (self.max - self.min) % self.step:
+            raise ValueError('Budget range must align with the declared step')
+        if self.default is not None and not (
+            self.min <= self.default <= self.max and (self.default - self.min) % self.step == 0
+        ):
+            raise ValueError('Budget default must be a supported value')
+        return self
+
+
 class ModelControl(BaseModel):
-    display: Literal['menu', 'slider'] = Field(default='menu', exclude_if=lambda value: value == 'menu')
+    display: Literal['menu', 'slider', 'budget'] = Field(default='menu', exclude_if=lambda value: value == 'menu')
     label: str = Field(pattern=r'\S')
     description: str | None = Field(default=None, exclude_if=lambda value: value is None)
     default: str | None = Field(default=None, exclude_if=lambda value: value is None)
-    options: dict[ModelControlKey, ModelControlOption] = Field(min_length=1)
+    options: dict[ModelControlKey, ModelControlOption] = Field(default_factory=dict)
+    budget: ModelControlBudget | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode='after')
     def check_default(self):
+        if self.display == 'budget':
+            if self.budget is None or self.options or self.default is not None:
+                raise ValueError('A budget control requires a range and no discrete options')
+            return self
+        if not self.options or self.budget is not None:
+            raise ValueError('A choice control requires options and no budget')
         if self.display == 'slider' and len(self.options) < 2:
             raise ValueError('A slider needs at least two options.')
         if self.default is not None and self.default not in self.options:

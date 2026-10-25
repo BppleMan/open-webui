@@ -1,4 +1,5 @@
 import logging
+import re
 from copy import deepcopy
 from typing import Callable, Optional
 
@@ -22,16 +23,42 @@ def apply_model_controls(params: dict, controls: dict, model_options: dict) -> d
     if not isinstance(model_options, dict):
         raise HTTPException(400, 'Model control options must be an object.')
     for key, choice in model_options.items():
-        # Picks for removed controls are skipped: the user has no menu left to clear them.
-        if key in controls and (not isinstance(choice, str) or choice not in controls[key]['options']):
+        control = controls.get(key)
+        if not control or control.get('display') == 'budget':
+            continue
+        if not isinstance(choice, str) or choice not in control['options']:
             raise HTTPException(400, f'Model control {key}: the selected option is no longer available.')
     for key, control in controls.items():
-        choice = model_options.get(key, control.get('default'))
-        if choice is not None:
-            params['custom_params'] = deep_update(
-                deepcopy(params.get('custom_params') or {}), deepcopy(control['options'][choice]['params'])
-            )
+        if control.get('display') == 'budget':
+            option_params = resolve_budget_control(control, model_options.get(key))
+        else:
+            choice = model_options.get(key, control.get('default'))
+            option_params = control['options'][choice]['params'] if choice is not None else {}
+        if option_params:
+            params['custom_params'] = deep_update(deepcopy(params.get('custom_params') or {}), deepcopy(option_params))
     return params
+
+
+def resolve_budget_control(control, selected):
+    from open_webui.models.models import ModelControlBudget
+
+    budget = ModelControlBudget(**control['budget'])
+    value = budget.default if selected is None else selected
+    if value is None:
+        return {}
+    if isinstance(value, bool) or not re.fullmatch(r'-?\d+', str(value)):
+        raise HTTPException(400, 'Reasoning budget must be an integer')
+    value = int(value)
+    if not budget.min <= value <= budget.max or (value - budget.min) % budget.step:
+        raise HTTPException(400, 'Reasoning budget is outside the model capability range')
+    result, target = {}, None
+    target = result
+    parts = budget.parameter.split('.')
+    for part in parts[:-1]:
+        target[part] = {}
+        target = target[part]
+    target[parts[-1]] = value
+    return result
 
 
 async def resolve_system_prompt(

@@ -11,7 +11,9 @@
 		getVoices as _getVoices,
 		type RealtimeConfig
 	} from '$lib/apis/audio';
-	import { config } from '$lib/stores';
+	import { config, models as connectionModels } from '$lib/stores';
+	import ModelOptions from '$lib/components/models/ModelOptions.svelte';
+	import { modelConnection } from '$lib/utils/modelDirectory';
 
 	import Spinner from '$lib/components/common/Spinner.svelte';
 	import SensitiveInput from '$lib/components/common/SensitiveInput.svelte';
@@ -319,6 +321,7 @@
 					>
 						<option value="openai">{$i18n.t('settings.audio.realtime.openai')}</option>
 						<option value="azure">{$i18n.t('Azure OpenAI')}</option>
+						<option value="connection">连接模型</option>
 					</SettingsSelect>
 				</AdminSettingRow>
 				{#if realtime.PROVIDER === 'azure'}
@@ -334,32 +337,37 @@
 						</SettingsSelect>
 					</AdminSettingRow>
 				{/if}
-				<div class="grid grid-cols-1 gap-2" class:sm:grid-cols-2={realtime.AUTH_TYPE === 'api_key'}>
-					<AdminSettingField
-						label={$i18n.t(
-							realtime.PROVIDER === 'azure' ? 'settings.audio.realtime.azureUrl' : 'API Base URL'
-						)}
-						description={realtime.PROVIDER === 'azure'
-							? $i18n.t('settings.audio.realtime.azureUrlHelp')
-							: ''}
-						forId="realtime-api-base-url"
+				{#if realtime.PROVIDER !== 'connection'}
+					<div
+						class="grid grid-cols-1 gap-2"
+						class:sm:grid-cols-2={realtime.AUTH_TYPE === 'api_key'}
 					>
-						<input
-							id="realtime-api-base-url"
-							class={inputClass}
-							bind:value={realtime.OPENAI_API_BASE_URL}
-						/>
-					</AdminSettingField>
-					{#if realtime.AUTH_TYPE === 'api_key'}
-						<AdminSettingField label={$i18n.t('API Key')}>
-							<SensitiveInput
-								variant="settings"
-								placeholder={$i18n.t('API Key')}
-								bind:value={realtime.OPENAI_API_KEY}
+						<AdminSettingField
+							label={$i18n.t(
+								realtime.PROVIDER === 'azure' ? 'settings.audio.realtime.azureUrl' : 'API Base URL'
+							)}
+							description={realtime.PROVIDER === 'azure'
+								? $i18n.t('settings.audio.realtime.azureUrlHelp')
+								: ''}
+							forId="realtime-api-base-url"
+						>
+							<input
+								id="realtime-api-base-url"
+								class={inputClass}
+								bind:value={realtime.OPENAI_API_BASE_URL}
 							/>
 						</AdminSettingField>
-					{/if}
-				</div>
+						{#if realtime.AUTH_TYPE === 'api_key'}
+							<AdminSettingField label={$i18n.t('API Key')}>
+								<SensitiveInput
+									variant="settings"
+									placeholder={$i18n.t('API Key')}
+									bind:value={realtime.OPENAI_API_KEY}
+								/>
+							</AdminSettingField>
+						{/if}
+					</div>
+				{/if}
 				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 					<AdminSettingField
 						label={$i18n.t(
@@ -370,19 +378,43 @@
 							: ''}
 						forId="realtime-model"
 					>
-						<input
-							id="realtime-model"
-							class={inputClass}
-							bind:value={realtime.MODEL}
-							placeholder="gpt-realtime-2.1-mini"
-						/>
+						{#if realtime.PROVIDER === 'connection'}
+							<select id="realtime-model" class={inputClass} bind:value={realtime.MODEL} required
+								><option value="">选择实时语音模型</option><ModelOptions
+									items={$connectionModels}
+									capability="realtime"
+								/></select
+							>
+						{:else}
+							<input
+								id="realtime-model"
+								class={inputClass}
+								bind:value={realtime.MODEL}
+								placeholder="gpt-realtime-2.1-mini"
+							/>
+						{/if}
 					</AdminSettingField>
 					<AdminSettingField label={$i18n.t('Voice')}>
 						<input class={inputClass} bind:value={realtime.VOICE} placeholder="marin" />
 					</AdminSettingField>
 				</div>
 				<AdminSettingField label={$i18n.t('Input Transcription Model')}>
-					<input class={inputClass} bind:value={realtime.TRANSCRIPTION_MODEL} />
+					{#if realtime.PROVIDER === 'connection'}
+						<select
+							class={inputClass}
+							aria-label="实时转录连接模型"
+							bind:value={realtime.TRANSCRIPTION_MODEL}
+							required
+							><option value="">选择同一连接的语音识别模型</option><ModelOptions
+								items={$connectionModels.filter(
+									(model) => modelConnection(model).id === modelConnection(realtime.MODEL).id
+								)}
+								capability="stt"
+							/></select
+						>
+					{:else}
+						<input class={inputClass} bind:value={realtime.TRANSCRIPTION_MODEL} />
+					{/if}
 				</AdminSettingField>
 				<AdminSettingField
 					label={$i18n.t('settings.audio.realtime.inputParams')}
@@ -410,6 +442,7 @@
 				description={$i18n.t('settings.admin.audio.speechToTextEngine.description')}
 			>
 				<SettingsSelect bind:value={STT_ENGINE} placeholder={$i18n.t('Select an engine')}>
+					<option value="connection">连接模型</option>
 					<option value="" disabled={$config?.features?.slim === true}
 						>{$i18n.t('Whisper (Local)')}</option
 					>
@@ -434,7 +467,19 @@
 				</AdminSettingField>
 			{/if}
 
-			{#if STT_ENGINE === 'openai'}
+			{#if STT_ENGINE === 'connection'}
+				<AdminSettingField
+					label="语音识别模型"
+					description="从连接目录中选择已确认支持语音识别的模型。"
+				>
+					<select class={inputClass} aria-label="语音识别连接模型" bind:value={STT_MODEL} required>
+						<option value="">选择模型</option><ModelOptions
+							items={$connectionModels}
+							capability="stt"
+						/>
+					</select>
+				</AdminSettingField>
+			{:else if STT_ENGINE === 'openai'}
 				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 					<AdminSettingField label={$i18n.t('settings.admin.audio.sttOpenaiApiBaseUrl.label')}>
 						<input
@@ -654,12 +699,14 @@
 							TTS_MODEL = '';
 						}
 
+						if (value === 'connection') return;
 						await updateConfigHandler();
 						await getVoices();
 						await getModels();
 					}}
 				>
 					<option value="">{$i18n.t('Web API')}</option>
+					<option value="connection">连接模型</option>
 					<option value="transformers" disabled={$config?.features?.slim === true}
 						>{$i18n.t('Transformers')} ({$i18n.t('Local')})</option
 					>
@@ -744,7 +791,23 @@
 				</div>
 			{/if}
 
-			{#if TTS_ENGINE === ''}
+			{#if TTS_ENGINE === 'connection'}
+				<AdminSettingField label="语音合成模型" description="使用所选连接的地址、凭据和模型参数。">
+					<select class={inputClass} aria-label="语音合成连接模型" bind:value={TTS_MODEL} required>
+						<option value="">选择模型</option><ModelOptions
+							items={$connectionModels}
+							capability="tts"
+						/>
+					</select>
+				</AdminSettingField>
+				<AdminSettingField label={$i18n.t('Voice')}
+					><input
+						class={inputClass}
+						bind:value={TTS_VOICE}
+						placeholder="填写该模型支持的音色 ID"
+					/></AdminSettingField
+				>
+			{:else if TTS_ENGINE === ''}
 				<AdminSettingField label={$i18n.t('settings.admin.audio.ttsVoice.label')}>
 					<SettingsSelect bind:value={TTS_VOICE} className="w-full">
 						<option value="" selected={TTS_VOICE !== ''}>{$i18n.t('Default')}</option>

@@ -9,18 +9,14 @@
 	const labelId = `admin-setting-${uuidv4()}`;
 </script>
 
-<div class="flex items-center justify-between gap-4 {className}">
-	<div id={labelId} class="min-w-0 text-xs text-gray-600 dark:text-gray-400 {labelClassName}">
-		<slot name="label">{label}</slot>
-	</div>
-
+<div class="grid max-w-[48rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 {className}">
 	<div class="min-w-0">
-		<slot {labelId} />
+		<div id={labelId} class="text-xs leading-5 text-gray-700 dark:text-gray-300 {labelClassName}">
+			<slot name="label">{label}</slot>
+		</div>
+		{#if description}<p class="mt-1 text-[0.6875rem] leading-4 text-gray-500 dark:text-gray-400">
+				{description}
+			</p>{/if}
 	</div>
+	<div class="min-w-0 justify-self-end"><slot {labelId} /></div>
 </div>
-
-{#if description}
-	<p class="-mt-1 text-[0.6875rem] text-gray-400 dark:text-gray-600">
-		{description}
-	</p>
-{/if}

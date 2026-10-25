@@ -1,4 +1,10 @@
 <script lang="ts">
+	import {
+		modelConnection,
+		sortByConnection,
+		modelLabel as fullModelLabel,
+		modelMatches
+	} from '$lib/utils/modelDirectory';
 	import { getContext } from 'svelte';
 
 	import { models } from '$lib/stores';
@@ -21,18 +27,19 @@
 	let modelSearch = '';
 
 	$: modelLabel = model_id
-		? $models.find((m) => m.id === model_id)?.name || model_id
+		? fullModelLabel($models.find((m) => m.id === model_id)) || model_id
 		: $i18n.t('Select model');
 
-	$: filteredModels = (
-		modelSearch
+	$: filteredModels = sortByConnection(
+		(modelSearch
 			? $models.filter(
 					(m) =>
 						m.name.toLowerCase().includes(modelSearch.toLowerCase()) ||
 						m.id.toLowerCase().includes(modelSearch.toLowerCase())
 				)
 			: $models
-	).filter((m) => !(m?.info?.meta?.hidden ?? false));
+		).filter((m) => !(m?.info?.meta?.hidden ?? false))
+	);
 </script>
 
 <Dropdown bind:show={showDropdown} {side} {align}>
@@ -88,7 +95,12 @@
 				{$i18n.t('Models')}
 			</div>
 
-			{#each filteredModels as model (model.id)}
+			{#each filteredModels as model, index (model.id)}
+				{#if index === 0 || modelConnection(model).id !== modelConnection(filteredModels[index - 1]).id}<div
+						class="px-2 py-2 text-xs text-gray-500"
+					>
+						{modelConnection(model).name}
+					</div>{/if}
 				<button
 					class="h-[1.6875rem] px-2 rounded-xl w-full text-left text-[0.8125rem] {model_id ===
 					model.id

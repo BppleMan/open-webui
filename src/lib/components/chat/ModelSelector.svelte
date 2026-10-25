@@ -45,16 +45,6 @@
 		await updateUserSettings(localStorage.token, { ui: { pinnedModels: $settings.pinnedModels } });
 	};
 
-	$: if (selectedModels.length > 0 && $models.length > 0) {
-		const _selectedModels = selectedModels.map((model) =>
-			$models.map((m) => m.id).includes(model) ? model : ''
-		);
-
-		if (!equal(_selectedModels, selectedModels)) {
-			selectedModels = _selectedModels;
-		}
-	}
-
 	$: if (selectedModels.length > 1 && !compareModels) {
 		compareModels = true;
 	}

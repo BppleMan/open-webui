@@ -29,7 +29,7 @@ export const getAudioConfig = async (token: string) => {
 
 export type RealtimeConfig = {
 	ENABLED: boolean;
-	PROVIDER: 'openai' | 'azure';
+	PROVIDER: 'openai' | 'azure' | 'connection';
 	AUTH_TYPE: 'api_key' | 'microsoft_entra_id';
 	OPENAI_API_BASE_URL: string;
 	OPENAI_API_KEY: string;
@@ -113,7 +113,8 @@ export const synthesizeOpenAISpeech = async (
 	token: string = '',
 	speaker: string = 'alloy',
 	text: string = '',
-	model?: string
+	model?: string,
+	context?: { chat_id: string; message_id?: string }
 ) => {
 	let error = null;
 
@@ -126,7 +127,8 @@ export const synthesizeOpenAISpeech = async (
 		body: JSON.stringify({
 			input: text,
 			voice: speaker,
-			...(model && { model })
+			...(model && { model }),
+			...(context && { _oi_context: context })
 		})
 	})
 		.then(async (res) => {

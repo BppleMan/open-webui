@@ -1,3 +1,4 @@
+import { setModelDirectory, sortByConnection } from '$lib/utils/modelDirectory';
 import { get } from 'svelte/store';
 import { config } from '$lib/stores';
 import { WEBUI_BASE_URL } from '$lib/constants';
@@ -179,6 +180,8 @@ export const getModels = async (
 		models = Object.values(modelsMap);
 	}
 
+	models = sortByConnection(models);
+	setModelDirectory(models);
 	return models;
 };
 
@@ -1793,7 +1796,8 @@ export interface ModelMeta {
 }
 
 export interface ModelControl {
-	display?: 'menu' | 'slider';
+	display?: 'menu' | 'slider' | 'budget';
+	budget?: { min: number; max: number; step: number; default?: number | null };
 	label: string;
 	description?: string;
 	default?: string | null;

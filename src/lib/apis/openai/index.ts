@@ -445,7 +445,10 @@ export const generateOpenAIChatCompletion = async (
 			return res.json();
 		})
 		.catch((err) => {
-			error = getErrorMessage(err);
+			// Keep the idempotency receipt so a lost acceptance response can reconnect
+			// to its existing generation without replacing the stored answer with an error.
+			error =
+				err?.detail?.code === 'generation_already_accepted' ? err.detail : getErrorMessage(err);
 			return null;
 		});
 

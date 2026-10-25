@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelConnection, sortByConnection, groupModels } from '$lib/utils/modelDirectory';
 	import { marked } from 'marked';
 	import Fuse from 'fuse.js';
 	import { autoUpdate, computePosition, flip, offset, shift, size } from '@floating-ui/dom';
@@ -52,6 +53,7 @@
 	import TagSelector from '$lib/components/workspace/common/TagSelector.svelte';
 
 	import ModelItem from './ModelItem.svelte';
+	import Link from '$lib/components/icons/Link.svelte';
 
 	const i18n: any = getContext('i18n');
 	const dispatch = createEventDispatcher();
@@ -76,7 +78,7 @@
 		[key: string]: any;
 	}[] = [];
 
-	export let className = 'w-[20rem]';
+	export let className = 'w-[22rem]';
 	export let triggerClassName = 'text-lg';
 	export let placement: 'top' | 'bottom' | 'auto' = 'bottom';
 	export let align: 'start' | 'end' = 'start';
@@ -129,7 +131,9 @@
 		}
 	};
 	const focusChatInput = () => {
-		if (!$mobile) {
+		if ($mobile || selectionOnly) {
+			triggerElement?.focus();
+		} else {
 			document.getElementById('chat-input')?.focus();
 		}
 	};
@@ -138,7 +142,6 @@
 		show = !show;
 		if (show) {
 			searchValue = '';
-			listScrollTop = 0;
 			if (!selectionOnly) {
 				setOllamaVersion();
 				setProviderDownloadConnections();
@@ -180,7 +183,7 @@
 			e.preventDefault();
 			e.stopPropagation();
 			show = false;
-			document.getElementById(`model-selector-${id}-button`)?.blur();
+			document.getElementById(`model-selector-${id}-button`)?.focus();
 		}
 	};
 
@@ -195,8 +198,14 @@
 		? compareEnabled && selectedCount > 1
 			? `${selectedModel.label} +${selectedCount - 1}`
 			: selectedModel.label
-		: (placeholder ?? $i18n.t('Select a model'));
+		: primaryValue
+			? `${primaryValue} · 不可用，请重新选择`
+			: (placeholder ?? $i18n.t('Select a model'));
 
+	$: selectedConnectionLabel = selectedModel ? modelConnection(selectedModel).name : '';
+	$: connectionGroups = groupModels(
+		filteredItems.map((item, index) => ({ ...item, directoryIndex: index }))
+	);
 	let searchValue = '';
 
 	let selectedTag = '';
@@ -232,18 +241,20 @@
 				...item,
 				modelName: resolveLocalizedModelName(item.model, $i18n.language),
 				tags: (item.model?.tags ?? []).map((tag) => tag.name).join(' '),
-				desc: resolveLocalizedModelDescription(item.model, $i18n.language)
+				desc: resolveLocalizedModelDescription(item.model, $i18n.language),
+				connectionName: modelConnection(item).name,
+				upstreamId: item.model?.upstream_id || ''
 			};
 			return _item;
 		}),
 		{
-			keys: ['value', 'tags', 'modelName'],
+			keys: ['value', 'tags', 'modelName', 'connectionName', 'upstreamId'],
 			threshold: 0.4
 		}
 	);
 
-	$: filteredItems = (
-		searchValue
+	$: filteredItems = sortByConnection(
+		(searchValue
 			? fuse
 					.search(searchValue)
 					.map((e) => {
@@ -289,7 +300,8 @@
 							return item.model?.direct;
 						}
 					})
-	).filter((item) => includeHidden || !(item.model?.info?.meta?.hidden ?? false));
+		).filter((item) => includeHidden || !(item.model?.info?.meta?.hidden ?? false))
+	);
 
 	$: sanitizedSearchValue = searchValue.trim();
 	$: downloadTargets =
@@ -375,7 +387,7 @@
 
 		const selectedInFiltered = filteredItems.findIndex((item) => item.value === primaryValue);
 
-		if (selectedInFiltered >= 0) {
+		if (!searchValue.trim() && selectedInFiltered >= 0) {
 			// The selected model is visible in the current filter
 			selectedModelIdx = selectedInFiltered;
 		} else {
@@ -383,18 +395,8 @@
 			selectedModelIdx = 0;
 		}
 
-		// Set the virtual scroll position so the selected item is rendered and centered
-		const targetScrollTop = Math.max(0, selectedModelIdx * ITEM_HEIGHT - 128 + ITEM_HEIGHT / 2);
-		listScrollTop = targetScrollTop;
-
 		await tick();
-
-		if (listContainer) {
-			listContainer.scrollTop = targetScrollTop;
-		}
-
-		await tick();
-		const item = document.querySelector(`[data-arrow-selected="true"]`);
+		const item = listContainer?.querySelector(`[data-arrow-selected="true"]`);
 		item?.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
 	};
 
@@ -837,39 +839,7 @@
 		deleteModelTarget = null;
 	};
 
-	const ITEM_HEIGHT = 32;
-	const OVERSCAN = 10;
-
-	let listScrollTop = 0;
-	let listContainer;
-	let listViewportHeight = 288;
-
-	const trackListViewport = (node: HTMLElement) => {
-		const updateHeight = () => {
-			listViewportHeight = node.clientHeight || 288;
-		};
-
-		updateHeight();
-
-		if (!('ResizeObserver' in window)) {
-			return { destroy() {} };
-		}
-
-		const observer = new ResizeObserver(updateHeight);
-		observer.observe(node);
-
-		return {
-			destroy() {
-				observer.disconnect();
-			}
-		};
-	};
-
-	$: visibleStart = Math.max(0, Math.floor(listScrollTop / ITEM_HEIGHT) - OVERSCAN);
-	$: visibleEnd = Math.min(
-		filteredItems.length,
-		Math.ceil((listScrollTop + listViewportHeight) / ITEM_HEIGHT) + OVERSCAN
-	);
+	let listContainer: HTMLDivElement;
 </script>
 
 <ConfirmDialog
@@ -892,7 +862,9 @@
 			? ''
 			: 'outline-hidden focus:outline-hidden'}"
 		aria-label={selectedModel
-			? $i18n.t('Selected model: {{modelName}}', { modelName: triggerLabel })
+			? $i18n.t('Selected model: {{modelName}}', {
+					modelName: `${triggerLabel} · ${selectedConnectionLabel}`
+				})
 			: (placeholder ?? $i18n.t('Select a model'))}
 		aria-haspopup="listbox"
 		aria-expanded={show}
@@ -915,7 +887,18 @@
 				);
 			}}
 		>
-			<span class="min-w-0 flex-1 truncate">{triggerLabel}</span>
+			<span
+				class="min-w-0 flex-1 leading-tight"
+				title={selectedConnectionLabel
+					? `${triggerLabel} · ${selectedConnectionLabel}`
+					: triggerLabel}
+			>
+				<span class="block truncate">{triggerLabel}</span>
+				{#if selectedConnectionLabel}<span
+						class="mt-0.5 block truncate text-[0.6875rem] font-normal text-gray-500 dark:text-gray-400"
+						>{selectedConnectionLabel}</span
+					>{/if}
+			</span>
 			<ChevronDown className="ml-1 size-2.5 shrink-0 self-center" strokeWidth="2.5" />
 		</div>
 	</button>
@@ -940,11 +923,20 @@
 								id="model-search-input"
 								bind:value={searchValue}
 								class="w-full bg-transparent text-[0.8125rem] font-normal outline-hidden placeholder:text-gray-400 dark:placeholder:text-gray-500"
-								placeholder={searchPlaceholder ?? $i18n.t('Search a model')}
+								placeholder={searchPlaceholder ?? '搜索连接或模型'}
 								autocomplete="off"
-								aria-label={$i18n.t('Search In Models')}
-								on:keydown={(e) => {
+								role="combobox"
+								aria-label={searchPlaceholder ?? '搜索连接或模型'}
+								aria-expanded={show}
+								aria-controls={`model-selector-${id}-listbox`}
+								aria-activedescendant={filteredItems[selectedModelIdx]
+									? `model-selector-${id}-option-${selectedModelIdx}`
+									: undefined}
+								on:keydown={async (e) => {
+									if (e.isComposing) return;
 									if (e.code === 'Enter') {
+										e.preventDefault();
+										e.stopPropagation();
 										if (selectedModelIdx >= filteredItems.length) {
 											const target = downloadTargets[selectedModelIdx - filteredItems.length];
 											if (target && !target.download) {
@@ -955,12 +947,14 @@
 										}
 										return; // dont need to scroll on selection
 									} else if (e.code === 'ArrowDown') {
+										e.preventDefault();
 										e.stopPropagation();
 										selectedModelIdx = Math.min(
 											selectedModelIdx + 1,
 											Math.max(filteredItems.length - 1 + downloadTargets.length, 0)
 										);
 									} else if (e.code === 'ArrowUp') {
+										e.preventDefault();
 										e.stopPropagation();
 										selectedModelIdx = Math.max(selectedModelIdx - 1, 0);
 									} else {
@@ -968,7 +962,8 @@
 										selectedModelIdx = 0;
 									}
 
-									const item = document.querySelector(`[data-arrow-selected="true"]`);
+									await tick();
+									const item = contentElement?.querySelector(`[data-arrow-selected="true"]`);
 									item?.scrollIntoView({
 										block: 'center',
 										inline: 'nearest',
@@ -1062,38 +1057,72 @@
 							<!-- svelte-ignore a11y-no-static-element-interactions -->
 							<div
 								class="min-h-0 flex-1 overflow-y-auto"
-								style="max-height: 18rem;"
+								style="max-height: 22rem;"
+								id={`model-selector-${id}-listbox`}
 								role="listbox"
+								aria-multiselectable={compareEnabled}
 								aria-label={$i18n.t('Available models')}
 								bind:this={listContainer}
-								use:trackListViewport
-								on:scroll={() => {
-									listScrollTop = listContainer.scrollTop;
-								}}
 							>
-								<div style="height: {visibleStart * ITEM_HEIGHT}px;" />
-								{#each filteredItems.slice(visibleStart, visibleEnd) as item, i (item.value)}
-									{@const index = visibleStart + i}
-									<ModelItem
-										{selectedModelIdx}
-										{item}
-										{index}
-										value={primaryValue}
-										{pinModelHandler}
-										{unloadModelHandler}
-										{deleteModelHandler}
-										{selectionOnly}
-										{compareEnabled}
-										{selectedValues}
-										onClick={() => {
-											selectItem(item, index);
-										}}
-										onEdit={() => {
-											show = false;
-										}}
-									/>
+								{#each connectionGroups as group (group.connection.id)}
+									{@const groupKind = group.connection.id.startsWith('composite:')
+										? '组合'
+										: group.connection.id.startsWith('extension:')
+											? '扩展'
+											: group.connection.id === 'unresolved'
+												? '待映射'
+												: '连接'}
+									<div
+										role="group"
+										aria-label={`${groupKind}：${group.connection.name}`}
+										class="pb-2"
+									>
+										<div
+											aria-hidden="true"
+											class="sticky top-0 z-10 bg-white px-1 pt-2 pb-1 dark:bg-gray-850"
+										>
+											<div
+												class="flex min-w-0 items-center gap-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs dark:bg-white/[0.04]"
+											>
+												<Link className="size-3.5 shrink-0 text-gray-400" />
+												<span class="shrink-0 text-[0.6875rem] text-gray-500 dark:text-gray-400"
+													>{groupKind}</span
+												>
+												<span
+													class="min-w-0 flex-1 truncate font-semibold text-gray-600 dark:text-gray-300"
+													title={group.connection.name}>{group.connection.name}</span
+												>
+												<span class="shrink-0 text-[0.625rem] text-gray-400"
+													>{group.items.length}</span
+												>
+											</div>
+										</div>
+										<div class="ml-4 mr-1 border-l border-gray-100 pl-2 dark:border-white/[0.07]">
+											{#each group.items as item (item.value)}
+												<ModelItem
+													optionId={`model-selector-${id}-option-${item.directoryIndex}`}
+													connectionGrouped
+													{selectedModelIdx}
+													{item}
+													index={item.directoryIndex}
+													value={primaryValue}
+													{pinModelHandler}
+													{unloadModelHandler}
+													{deleteModelHandler}
+													{selectionOnly}
+													{compareEnabled}
+													{selectedValues}
+													onClick={() => {
+														selectItem(item, item.directoryIndex);
+													}}
+													onEdit={() => {
+														show = false;
+													}}
+												/>
+											{/each}
+										</div>
+									</div>
 								{/each}
-								<div style="height: {(filteredItems.length - visibleEnd) * ITEM_HEIGHT}px;" />
 							</div>
 						{/if}
 

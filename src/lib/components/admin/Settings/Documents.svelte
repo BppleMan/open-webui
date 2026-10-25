@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { config } from '$lib/stores';
+	import { config, models as connectionModels } from '$lib/stores';
+	import ModelOptions from '$lib/components/models/ModelOptions.svelte';
 	import { toast } from 'svelte-sonner';
 
 	import { onMount, getContext, createEventDispatcher } from 'svelte';
@@ -1022,6 +1023,7 @@
 							<option value="" disabled={$config?.features?.slim === true}
 								>{$i18n.t('Default (SentenceTransformers)')}</option
 							>
+							<option value="connection">连接模型</option>
 							<option value="ollama">{$i18n.t('Ollama')}</option>
 							<option value="openai">{$i18n.t('OpenAI')}</option>
 							<option value="azure_openai">{$i18n.t('Azure OpenAI')}</option>
@@ -1120,16 +1122,29 @@
 						description={$i18n.t('settings.admin.documents.embeddingModel.description')}
 					>
 						<div class="flex w-full gap-2">
-							<input
-								class={inputClass}
-								placeholder={RAG_EMBEDDING_ENGINE === 'ollama'
-									? $i18n.t('Set embedding model')
-									: $i18n.t('Set embedding model (e.g. {{model}})', {
-											model: RAG_EMBEDDING_MODEL.slice(-40)
-										})}
-								bind:value={RAG_EMBEDDING_MODEL}
-								required={RAG_EMBEDDING_ENGINE === 'ollama'}
-							/>
+							{#if RAG_EMBEDDING_ENGINE === 'connection'}
+								<select
+									aria-label="Embedding 连接模型"
+									class={inputClass}
+									bind:value={RAG_EMBEDDING_MODEL}
+									required
+									><option value="">选择支持 Embedding 的模型</option><ModelOptions
+										items={$connectionModels}
+										capability="embedding"
+									/></select
+								>
+							{:else}
+								<input
+									class={inputClass}
+									placeholder={RAG_EMBEDDING_ENGINE === 'ollama'
+										? $i18n.t('Set embedding model')
+										: $i18n.t('Set embedding model (e.g. {{model}})', {
+												model: RAG_EMBEDDING_MODEL.slice(-40)
+											})}
+									bind:value={RAG_EMBEDDING_MODEL}
+									required={RAG_EMBEDDING_ENGINE === 'ollama'}
+								/>
+							{/if}
 
 							{#if RAG_EMBEDDING_ENGINE === ''}
 								<button
@@ -1259,6 +1274,7 @@
 									<option value="" disabled={$config?.features?.slim === true}
 										>{$i18n.t('Default (SentenceTransformers)')}</option
 									>
+									<option value="connection">连接模型</option>
 									<option value="external">{$i18n.t('External')}</option>
 								</SettingsSelect>
 							</AdminSettingRow>
@@ -1300,13 +1316,25 @@
 								label={$i18n.t('settings.admin.documents.rerankingModel.label')}
 								description={$i18n.t('settings.admin.documents.rerankingModel.description')}
 							>
-								<input
-									class={inputClass}
-									placeholder={$i18n.t('Set reranking model (e.g. {{model}})', {
-										model: 'BAAI/bge-reranker-v2-m3'
-									})}
-									bind:value={RAGConfig.RAG_RERANKING_MODEL}
-								/>
+								{#if RAGConfig.RAG_RERANKING_ENGINE === 'connection'}
+									<select
+										aria-label="重排连接模型"
+										class={inputClass}
+										bind:value={RAGConfig.RAG_RERANKING_MODEL}
+										><option value="">选择支持重排的模型</option><ModelOptions
+											items={$connectionModels}
+											capability="rerank"
+										/></select
+									>
+								{:else}
+									<input
+										class={inputClass}
+										placeholder={$i18n.t('Set reranking model (e.g. {{model}})', {
+											model: 'BAAI/bge-reranker-v2-m3'
+										})}
+										bind:value={RAGConfig.RAG_RERANKING_MODEL}
+									/>
+								{/if}
 							</AdminSettingField>
 						{/if}
 

@@ -13,7 +13,7 @@
 
 <form
 	id="tab-interface"
-	class="flex flex-col h-full justify-between text-sm"
+	class="flex w-full max-w-[48rem] flex-col h-full justify-between text-sm"
 	on:submit|preventDefault={async () => {
 		await interfaceSettings?.save();
 		dispatch('save');
@@ -24,10 +24,15 @@
 	</h2>
 
 	<div class="flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1.5">
-		<InterfaceSettings bind:this={interfaceSettings} {saveSettings} {personalSettingsValue} />
+		<InterfaceSettings
+			showFirstSectionTitle={false}
+			bind:this={interfaceSettings}
+			{saveSettings}
+			{personalSettingsValue}
+		/>
 	</div>
 
-	<div class="shrink-0 flex justify-end text-sm font-normal">
+	<div class="shrink-0 flex justify-end pt-3 text-sm font-normal">
 		<button
 			class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-2.5 text-xs font-normal text-white transition hover:bg-black disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
 			type="submit"

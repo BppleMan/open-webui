@@ -893,6 +893,9 @@ app.include_router(users.router, prefix='/api/v1/users', tags=['users'])
 
 app.include_router(apps.router, prefix='/api/v1/apps', tags=['apps'])
 app.include_router(channels.router, prefix='/api/v1/channels', tags=['channels'])
+from open_webui.routers import customization
+
+app.include_router(customization.router, prefix='/api/v1', tags=['customization'])
 app.include_router(chats.router, prefix='/api/v1/chats', tags=['chats'])
 app.include_router(notes.router, prefix='/api/v1/notes', tags=['notes'])
 app.include_router(search.router, prefix='/api/v1/search', tags=['search'])
@@ -946,12 +949,15 @@ async def get_models(request: Request, refresh: bool = False, user=Depends(get_v
 
     # Access-filter first so the per-model payload work below only runs for
     # models the caller can actually see.
-    models = await get_filtered_models(models, user)
+    models = copy.deepcopy(await get_filtered_models(models, user))
 
     for model in models:
         info = model.get('info') if isinstance(model.get('info'), dict) else {}
         meta = info.get('meta') if isinstance(info.get('meta'), dict) else {}
 
+        from open_webui.utils.models import public_model_params
+
+        info['params'] = public_model_params(info.get('params', {}))
         # Remove profile image URL to reduce payload size
         meta.pop('profile_image_url', None)
 
@@ -1154,11 +1160,35 @@ async def chat_completion(
         await get_all_models(request, user=user)
 
     model_id = form_data.get('model', None)
+    if isinstance(model_id, str) and model_id.startswith('oi:') and model_id not in request.app.state.MODELS:
+        await get_all_models(request, user=user)
+    from open_webui.internal.db import get_async_db
+    from open_webui.utils.oi.legacy import alias_map
+
+    async with get_async_db() as db:
+        aliases = await alias_map(db, user)
+    if model_id in aliases:
+        if len(aliases[model_id]) != 1:
+            raise HTTPException(409, 'Ambiguous legacy model; select its connection')
+        form_data['model'] = model_id = aliases[model_id][0]
+        await get_all_models(request, user=user)
     request.state.model_id = model_id
     model_item = form_data.pop('model_item', {})
     tasks = form_data.pop('background_tasks', None)
 
     metadata = {}
+    reserved_generations = {}
+    from open_webui.utils.oi.runtime import reserve_generations, end_generation, active_generation
+
+    async def reserve_before_chat_write():
+        nonlocal reserved_generations
+        if not reserved_generations:
+            reserved_generations = await reserve_generations(user, metadata, message_ids)
+
+    async def abandon_reservations():
+        for generation_id in reserved_generations.values():
+            await end_generation(generation_id, 'failed')
+
     try:
         model_info = None
         fallback_model = None
@@ -1170,7 +1200,9 @@ async def chat_completion(
             model = request.app.state.MODELS[model_id]
             model_info = await Models.get_model_by_id(model_id)
             missing_base_model = bool(
-                model_info and model_info.base_model_id and model_info.base_model_id not in request.app.state.MODELS
+                model_info
+                and model_info.base_model_id
+                and (model.get('oi_base_binding') or model_info.base_model_id) not in request.app.state.MODELS
             )
 
             if missing_base_model and ENABLE_CUSTOM_MODEL_FALLBACK:
@@ -1209,8 +1241,17 @@ async def chat_completion(
         default_model_params = copy.deepcopy(await Config.get('models.default_params', {}) or {})
         model_info_params = merge_model_params(
             default_model_params,
-            model_info.params.model_dump() if model_info and model_info.params else {},
+            model_info.params.model_dump()
+            if model_info and model_info.params and not model.get('oi_base_binding')
+            else (model.get('info') or {}).get('params', {}),
         )
+        if model.get('oi_binding') or model.get('oi_base_binding'):
+            from open_webui.utils.oi.model_targets import resolve_native_target
+
+            async with get_async_db() as db:
+                native_target = await resolve_native_target(db, model_id, user)
+            if native_target is not None:
+                model_info_params = merge_model_params(default_model_params, native_target.params)
         model_info_params.pop('model_controls', None)
         request_params = {key: value for key, value in (form_data.get('params') or {}).items() if value is not None}
         model_controls = request_params.pop('model_controls', {})
@@ -1279,6 +1320,8 @@ async def chat_completion(
         else:
             # Single-model fallback
             message_ids = [{'model_id': model_id, 'message_id': form_data.pop('id', None)}]
+        if not message_ids or any(not isinstance(entry, dict) or not entry.get('model_id') for entry in message_ids):
+            raise HTTPException(422, 'At least one model response is required')
 
         user_message = form_data.pop('user_message', None) or form_data.pop('parent_message', None)
         chat_id = form_data.pop('chat_id', None) or ''
@@ -1323,6 +1366,8 @@ async def chat_completion(
             if approval_resume and approval_resume[:2] == (chat_id, form_data.get('assistant_message_id'))
             else None,
             'user_id': user.id,
+            'oi_request_id': form_data.pop('oi_request_id', None),
+            'oi_temporary_id': form_data.pop('oi_temporary_id', None),
             'user_agent': request.headers.get('user-agent', '') or '',
             'internal': getattr(request.state, 'internal', False) is True,
             'chat_id': chat_id,
@@ -1427,6 +1472,7 @@ async def chat_completion(
                             detail=ERROR_MESSAGES.NOT_FOUND,
                         )
 
+                    await reserve_before_chat_write()
                     # Build the full history upfront with ALL assistant placeholders
                     user_message = metadata.get('user_message') or {}
                     user_message_id = user_message.get('id') if user_message else None
@@ -1574,7 +1620,8 @@ async def chat_completion(
                         if any(entry.get('message_id') != assistant_message_id for entry in message_ids):
                             raise HTTPException(status_code=400, detail='Invalid response ID.')
                         metadata['user_message_id'] = message.get('parentId')
-                    else:
+                    await reserve_before_chat_write()
+                    if not assistant_message_id:
                         turn = await Chats.insert_chat_turn(chat_id, user, user_message, message_ids)
                         event_emitter = await get_event_emitter(
                             {**metadata, 'message_id': turn['currentId']}, update_db=False
@@ -1632,12 +1679,18 @@ async def chat_completion(
                             user.id,
                         )
 
+        await reserve_before_chat_write()
         request.state.metadata = metadata
         form_data['metadata'] = metadata
 
     except HTTPException:
+        await abandon_reservations()
+        raise
+    except asyncio.CancelledError:
+        await asyncio.shield(abandon_reservations())
         raise
     except Exception as e:
+        await abandon_reservations()
         log.warning(f'Error processing chat metadata: {e}')
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1646,7 +1699,16 @@ async def chat_completion(
 
     async def process_chat(request, form_data, user, metadata, model, tasks=None):
         error_detail = None
+        generation_id = None
+        defer_ledger_finish = False
+        generation_status = 'completed'
+        generation_context_token = None
         try:
+            generation_id = reserved_generations[metadata['message_id']]
+            metadata['oi_generation_id'] = generation_id
+            generation_context_token = active_generation.set((user, metadata))
+            request.state.metadata = metadata
+            form_data['metadata'] = metadata
             try:
                 if not metadata.get('direct'):
                     target = (
@@ -1654,7 +1716,34 @@ async def chat_completion(
                         if form_data['model'] == model_id
                         else await Models.get_model_by_id(form_data['model'])
                     )
-                    controls = target.params.model_dump().get('model_controls', {}) if target else {}
+                    controls = (
+                        target.params.model_dump().get('model_controls', {})
+                        if target
+                        else (model.get('info') or {}).get('params', {}).get('model_controls', {})
+                    )
+                    if model.get('oi_binding') or model.get('oi_base_binding'):
+                        from open_webui.utils.oi.model_targets import resolve_native_target
+
+                        async with get_async_db() as db:
+                            native_target = await resolve_native_target(db, form_data['model'], user)
+                        if native_target is not None:
+                            own_params = merge_model_params(default_model_params, native_target.params)
+                            controls = own_params.pop('model_controls', {})
+                            form_data['params'] = merge_model_params(own_params, request_params)
+                            metadata['params'] = {
+                                **metadata.get('params', {}),
+                                **{
+                                    key: form_data['params'][key]
+                                    for key in (
+                                        'stream_delta_chunk_size',
+                                        'reasoning_tags',
+                                        'compact_token_threshold',
+                                        'function_calling',
+                                        'tool_approval_mode',
+                                    )
+                                    if key in form_data['params']
+                                },
+                            }
                     form_data['params'] = apply_model_controls(
                         copy.deepcopy(form_data.get('params') or {}),
                         controls,
@@ -1683,8 +1772,30 @@ async def chat_completion(
                 else:
                     ctx.update(form_data=form_data, metadata=metadata, events=events)
 
-                return await process_chat_response(response, ctx)
+                processed_response = await process_chat_response(response, ctx)
+                if isinstance(processed_response, StreamingResponse):
+                    defer_ledger_finish = True
+
+                    async def finalize_response():
+                        stream_context = active_generation.set((user, metadata))
+                        outcome = 'interrupted'
+                        try:
+                            async for item in processed_response.body_iterator:
+                                yield item
+                            outcome = 'completed'
+                        finally:
+                            active_generation.reset(stream_context)
+                            await asyncio.shield(end_generation(generation_id, outcome))
+
+                    return StreamingResponse(
+                        finalize_response(),
+                        status_code=processed_response.status_code,
+                        headers={k: v for k, v in processed_response.headers.items() if k != 'content-length'},
+                        background=processed_response.background,
+                    )
+                return processed_response
             except asyncio.CancelledError:
+                generation_status = 'interrupted'
                 log.info('Chat processing was cancelled')
                 try:
 
@@ -1736,6 +1847,13 @@ async def chat_completion(
                         except Exception:
                             log.exception('Failed to publish chat failed event')
         finally:
+            if generation_context_token is not None:
+                active_generation.reset(generation_context_token)
+            if generation_id and not defer_ledger_finish:
+                try:
+                    await asyncio.shield(end_generation(generation_id, 'failed' if error_detail else generation_status))
+                except Exception:
+                    log.exception('Failed to finalize OI generation ledger')
             # Clean up MCP clients.  Each client is isolated so one
             # failure doesn't skip the rest.
             #
@@ -1855,8 +1973,11 @@ async def chat_completion(
 
             # Only the first model runs chat-level background tasks;
             # subsequent models only run follow-ups.
+            from open_webui.utils.oi.runtime import fork_request
+
+            task_request = fork_request(request, per_model_metadata)
             process = process_chat(
-                request,
+                task_request,
                 model_form_data,
                 user,
                 per_model_metadata,

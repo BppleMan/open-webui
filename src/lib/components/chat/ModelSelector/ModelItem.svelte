@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelConnection } from '$lib/utils/modelDirectory';
 	import { marked } from 'marked';
 
 	import { getContext, tick } from 'svelte';
@@ -31,6 +32,8 @@
 	export let pinModelHandler: (modelId: string) => void = () => {};
 	export let deleteModelHandler: (model: any) => void = () => {};
 	export let selectionOnly = false;
+	export let connectionGrouped = false;
+	export let optionId: string | undefined = undefined;
 
 	export let onClick: () => void = () => {};
 	export let onEdit: () => void = () => {};
@@ -55,10 +58,13 @@
 </script>
 
 <button
+	id={optionId}
 	role="option"
 	aria-selected={isSelected}
-	aria-label={$i18n.t('Select {{modelName}} model', { modelName: item.label })}
-	class="focus-ring group/item flex h-8 w-full cursor-pointer select-none items-center rounded-xl px-2 text-left text-[0.8125rem] font-normal text-gray-700 outline-hidden transition-colors duration-75 dark:text-gray-100 {($settings?.highContrastMode ??
+	aria-label={$i18n.t('Select {{modelName}} model', {
+		modelName: `${item.label} · ${modelConnection(item).name}`
+	})}
+	class="focus-ring group/item flex min-h-10 w-full cursor-pointer select-none items-center rounded-lg px-2.5 py-2 text-left text-[0.8125rem] font-normal text-gray-700 outline-hidden transition-colors duration-75 dark:text-gray-100 {($settings?.highContrastMode ??
 	false)
 		? 'hover:bg-gray-200 dark:hover:bg-gray-800'
 		: 'hover:bg-gray-50/40 dark:hover:bg-gray-800/40'} {index === selectedModelIdx &&
@@ -229,7 +235,7 @@
 							</svg>
 						</div>
 					</Tooltip>
-				{:else if item.model.connection_type === 'external'}
+				{:else if item.model.connection_type === 'external' && !connectionGrouped}
 					<Tooltip content={`${$i18n.t('External')}`}>
 						<div class="translate-y-[1px]">
 							<svg

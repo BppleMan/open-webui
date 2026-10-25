@@ -1,4 +1,8 @@
 .github
+.oi-local
+.venv-oi
+private-deployment
+private-backups
 .DS_Store
 docs
 kubernetes

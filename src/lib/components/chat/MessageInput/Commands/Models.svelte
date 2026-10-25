@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelConnection, sortByConnection } from '$lib/utils/modelDirectory';
 	import Fuse from 'fuse.js';
 
 	import { createEventDispatcher, onDestroy, onMount } from 'svelte';
@@ -38,11 +39,13 @@
 		}
 	);
 
-	$: filteredItems = query
-		? fuse.search(query).map((e) => {
-				return e.item;
-			})
-		: $models.filter((model) => !model?.info?.meta?.hidden);
+	$: filteredItems = sortByConnection(
+		query
+			? fuse.search(query).map((e) => {
+					return e.item;
+				})
+			: $models.filter((model) => !model?.info?.meta?.hidden)
+	);
 
 	$: if (query) {
 		selectedIdx = 0;
@@ -70,6 +73,11 @@
 
 {#if filteredItems.length > 0}
 	{#each filteredItems as model, modelIdx}
+		{#if modelIdx === 0 || modelConnection(model).id !== modelConnection(filteredItems[modelIdx - 1]).id}<div
+				class="px-2 pt-3 pb-1 text-xs text-gray-500"
+			>
+				{modelConnection(model).name}
+			</div>{/if}
 		<Tooltip content={model.id} placement="top-start">
 			<button
 				class="flex h-[1.6875rem] w-full items-center rounded-xl px-2 text-left text-[0.8125rem] hover:bg-gray-50/40 dark:hover:bg-gray-800/40 {modelIdx ===
