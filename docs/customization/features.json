@@ -798,7 +798,7 @@
   "latest_checks": {
     "backend_tests": 151,
     "frontend_tests": 37,
-    "type_gate": "no_new_diagnostics_5798_upstream_remain",
+    "type_gate": "no_new_diagnostics_5781_upstream_remain",
     "frontend_build": "stage4_production_build_passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
     "postgres_archive_restore": "OI5_15_table_hashes_match_with_concurrent_migration_and_server_copy",
@@ -842,8 +842,7 @@
       "deployment": "not_deployed",
       "CI_result": "success",
       "image_digest": "sha256:628572adc5a45f41264ba41013924b9360b227fc656d39c174504ddd98870ed2"
-    },
-    "type_check": "no_new_diagnostics_5781_upstream_remain"
+    }
   },
   "review_remediation": {
     "review": "code-review-2026-10-25",
