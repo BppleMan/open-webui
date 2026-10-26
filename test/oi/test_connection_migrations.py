@@ -365,3 +365,15 @@ def test_browser_alias_cannot_replace_existing_legacy_server_model():
         == 'preset'
     )
     assert remap_legacy_reference('oi:browser-a', aliases, {}) == 'oi:browser-a'
+
+
+@pytest.mark.asyncio
+async def test_invalid_legacy_url_preview_does_not_echo_embedded_credentials(db, monkeypatch):
+    user, legacy = await seed(db, monkeypatch)
+    legacy['OPENAI_API_BASE_URLS'][0] = 'https://user:private-url-secret@host.invalid/v1?key=private-url-secret'
+    row = await db.get(User, user.id)
+    row.settings = {'ui': {'directConnections': legacy}}
+    await db.commit()
+    view = await migration.preview(db, user, 'personal')
+    assert view['entries'][0]['issue'] == 'invalid_legacy_url'
+    assert 'private-url-secret' not in json.dumps(view)

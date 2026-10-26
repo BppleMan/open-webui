@@ -304,7 +304,7 @@ async def preview(db, user, scope):
             {
                 'id': item['id'],
                 'name': item['name'],
-                'base_url': item['url'],
+                'base_url': '' if item['issue'] == 'invalid_legacy_url' else item['url'],
                 'protocol': item['protocol'],
                 'transport': item['transport'],
                 'models': [m for m in item['models'] if m],
