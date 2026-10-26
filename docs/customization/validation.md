@@ -155,3 +155,5 @@ Prior source CI failures were verified: Python's standard-library `test` package
 Remaining full-plan gates: all22 entrypoint call/permission evidence, real vector indexing/search, full auth/PWA matrix, real provider/CPA native matrix, cost/archive edge cases and isolated GitOps preview/release. Browser direct currently preserves the existing OpenAI Chat/Responses protocols; other native protocols use server transport. Unsupported legacy proprietary engines stay explicit compatibility/manual items. No production deployment.
 
 Final PostgreSQL17 OI5 dump/restore: all15 table counts/content hashes match, including users, configuration and migration receipts; six concurrent migrations produce one receipt/two browser connections, and six server-copy retries produce one mapped server copy.
+
+Stage3 final review: removed/disabled connection identities remain in legacy-alias ambiguity checks. Public model catalogs expose only unambiguous aliases, so deleting A cannot silently reroute an old shared model ID to B. Regression checks cover both backend mapping and the returned frontend catalog. Full122 backend tests still pass.

@@ -128,6 +128,11 @@ async def test_browser_config_owner_only_no_store_and_soft_delete_preserves_othe
     with pytest.raises(HTTPException):
         await customization.browser_config(cid, user=user, db=db)
     assert {model['id'] for model in await catalog.model_catalog(db, user)} == set(b['binding_ids'])
+    remaining = await catalog.model_catalog(db, user)
+    assert all('same-model' not in model['aliases'] for model in remaining)
+    from open_webui.utils.oi.legacy import alias_map
+
+    assert set((await alias_map(db, user))['same-model']) == set(a['binding_ids'] + b['binding_ids'])
     await customization.set_connection_removed(db, user, cid, 2, False)
     assert (await db.get(Connection, cid)).enabled is False
     assert (await db.get(ModelBinding, a['binding_ids'][0])).upstream_id == 'same-model'

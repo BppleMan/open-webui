@@ -43,12 +43,17 @@ def credentials(connection):
         raise ValueError('Connection credentials cannot be decrypted with the current server key') from None
 
 
-def visible(connection, user):
-    if (connection.settings or {}).get('deleted'):
-        return False
+def identity_visible(connection, user):
+    """Historical identity remains relevant after soft removal; never resolve its alias to a sibling."""
     if getattr(connection, 'transport', None) == 'browser':
         return bool(user and connection.owner_id == user.id)
     return bool(connection.shared or (user and (connection.owner_id == user.id or user.role == 'admin')))
+
+
+def visible(connection, user):
+    if (connection.settings or {}).get('deleted'):
+        return False
+    return identity_visible(connection, user)
 
 
 def editable(connection, user):
@@ -203,6 +208,17 @@ async def model_catalog(db, user, *, internal=False):
         from open_webui.models.config import Config
 
         direct_enabled = bool(await Config.get('direct.enable'))
+    # Include disabled/removed bindings in ambiguity counts. A disappearing row must
+    # never turn an ambiguous historic reference into an automatic reroute. Internal
+    # catalogs conservatively count all owners; public catalogs use the caller scope.
+    from collections import Counter
+
+    alias_counts = Counter(
+        alias
+        for binding, connection in pairs
+        if internal or identity_visible(connection, user)
+        for alias in set(binding.aliases or [])
+    )
     result = []
     for binding, connection in pairs:
         if connection.transport == 'browser' and not direct_enabled:
@@ -231,7 +247,7 @@ async def model_catalog(db, user, *, internal=False):
                 },
                 'direct': getattr(connection, 'transport', None) == 'browser',
                 'oi_binding': True,
-                'aliases': binding.aliases or [],
+                'aliases': [alias for alias in binding.aliases or [] if alias_counts[alias] == 1],
                 'upstream_id': binding.upstream_id,
                 'capabilities': caps,
                 'info': {

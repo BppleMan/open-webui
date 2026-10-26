@@ -139,7 +139,7 @@ async def alias_map(db, user):
     ).all()
     result = {}
     for binding, connection in pairs:
-        if catalog.visible(connection, user):
+        if catalog.identity_visible(connection, user):
             for alias in binding.aliases or []:
                 result.setdefault(alias, []).append(binding.id)
     return result
