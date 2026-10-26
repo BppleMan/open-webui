@@ -17,4 +17,4 @@ Completed candidate/access and explicit task-target regressions. Before repair:7
 
 
 ## 4B–4D local acceptance
-All M01–M22 rows contain individual evidence, including actual dispatch and ledger attribution. Full synthetic HTTP/WS/pgvector integration and PostgreSQL restore passed. Final type/build and push-triggered CI are the remaining closure steps; production deployment is excluded.
+All M01–M22 rows contain individual evidence, including actual dispatch and ledger attribution. Full synthetic HTTP/WS/pgvector integration and PostgreSQL restore passed. Final type/build and [push-triggered CI](https://github.com/BppleMan/open-webui/actions/runs/40338819017) passed; registry digest is verified in stage4-release.json. Stage4 is complete. Stages5–8 and production deployment remain separate gates.

@@ -1,6 +1,6 @@
 {
   "phase": "stage4",
-  "status": "local_acceptance_passed_CI_pending",
+  "status": "verified_stage4",
   "source_baseline": "4bfa67f4a",
   "surfaces": [
     {
@@ -334,5 +334,7 @@
       ]
     }
   ],
-  "verification_scope": "Synthetic providers; actual HTTP, authenticated WebSocket, browser UI, SQLite and PostgreSQL/pgvector. Real supplier protocol matrix and physical PWA remain stages 5/6."
+  "verification_scope": "Synthetic providers; actual HTTP, authenticated WebSocket, browser UI, SQLite and PostgreSQL/pgvector. Real supplier protocol matrix and physical PWA remain stages 5/6.",
+  "source_commit": "f2140a3d000b13f25ec8ef187a42fa37c84ceaf0",
+  "CI": "https://github.com/BppleMan/open-webui/actions/runs/40338819017"
 }

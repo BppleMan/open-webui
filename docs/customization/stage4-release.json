@@ -1,0 +1,19 @@
+{
+  "stage": 4,
+  "date": "2026-10-26",
+  "source_commit": "f2140a3d000b13f25ec8ef187a42fa37c84ceaf0",
+  "branch": "oi/main",
+  "CI": "https://github.com/BppleMan/open-webui/actions/runs/40338819017",
+  "jobs": {
+    "backend": "success",
+    "frontend": "success",
+    "image": "success"
+  },
+  "image": "ghcr.io/bppleman/open-webui-oi:sha-f2140a3d000b13f25ec8ef187a42fa37c84ceaf0",
+  "digest": "sha256:628572adc5a45f41264ba41013924b9360b227fc656d39c174504ddd98870ed2",
+  "registry_digest_verified": true,
+  "platform": "linux/amd64",
+  "deployment": "not_deployed",
+  "full_plan_complete": false,
+  "next_stage": 5
+}

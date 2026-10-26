@@ -14,7 +14,7 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
+    "latest_code_commit": "f2140a3d000b13f25ec8ef187a42fa37c84ceaf0",
     "latest_push": "origin/oi/main"
   },
   "status_definitions": {
@@ -370,15 +370,15 @@
         "P22"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "template_connection_models_flow_with_native_components_and_persisted_defaults",
-      "verification": "template_http_persistence_native_request_builder_and_local_browser_flow_passed_broader_acceptance_pending",
+      "status": "verified",
+      "implementation": "all_22_connection_model_surfaces_implemented",
+      "verification": "stage4_per_entry_HTTP_UI_ledger_pgvector_and_authenticated_WS_accepted",
       "deployment": "not_deployed",
       "architecture_role": "shared_foundation_for_all_model_lists_and_selection",
       "coverage": {
         "inventory_groups": 22,
-        "implementation": "partial_conversational_and_capability_surfaces_implemented",
-        "runtime_verification": "M01_unavailable_selection_and_M17_M18_M19_local_UI_partial_acceptance; all_22_not_complete",
+        "implementation": "all_22_implemented_with_explicit_legacy_engine_compatibility",
+        "runtime_verification": "M01-M22_stage4_acceptance_passed",
         "completion_rule": "all_applicable_entries_verified_and_no_unexplained_omissions"
       },
       "acceptance": [
@@ -404,9 +404,7 @@
         "templates": 17,
         "evidence": "validation.md#connection-template-acceptance-2026-10-25",
         "remaining": [
-          "all_22_model_surfaces",
-          "personal_browser_direct_migration",
-          "real_provider_acceptance"
+          "real_provider_acceptance_stage6"
         ]
       },
       "ui_revision": "U21_corrected_and_locally_verified_not_production_deployed",
@@ -426,12 +424,10 @@
       "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
       "capability_routing": {
         "implementation": "connection_scoped_embedding_rerank_TTS_STT_image_and_realtime_paths_implemented",
-        "verification": "stage1_HTTP_WS_plus_stage2_desktop_mobile_selectors_and_parallel_retrieval_ledger_passed; real_vector_store_and_full_surface_acceptance_pending",
+        "verification": "stage4_real_pgvector_and_HTTP_WS_plus_UI_passed",
         "deployment": "not_deployed",
         "remaining": [
-          "legacy_auxiliary_config_migration",
-          "full_22_surface_acceptance",
-          "real_provider_checks"
+          "real_provider_checks_stage6"
         ]
       },
       "stage2": {
@@ -468,12 +464,16 @@
         "requirement": "R42",
         "prototype": "P28",
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI",
         "deployment": "not_deployed",
         "plan": "stage4-plan.md",
         "full_plan_complete": false,
         "completion_boundary": "complete_entire_stage4_with_CI_no_production_deployment",
-        "evidence": "validation.md#stage-4--global-models-and-capability-paths"
+        "evidence": "validation.md#stage-4--global-models-and-capability-paths",
+        "source_submission": "f2140a3d000b13f25ec8ef187a42fa37c84ceaf0",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40338819017",
+        "pushed": true,
+        "checkpoint": "stage4_complete_full_plan_incomplete"
       }
     },
     {
@@ -742,20 +742,20 @@
       "deployment": "not_deployed",
       "postgres_rehearsal": {
         "environment": "local_synthetic_postgres17",
-        "migration": "v0.12.3_to_oi0000000004_passed",
-        "backup_restore": "12_table_content_hashes_match_including_non_generation_anchor",
+        "migration": "v0.12.3_to_oi0000000005_passed",
+        "backup_restore": "15_table_content_hashes_match_and_canonical_statistics_pass",
         "concurrency": "six_draft_writers_and_six_generation_reservations_each_have_one_winner",
         "production_copy_rehearsal": "not_run",
-        "remote_CI": "configured_not_run",
-        "archive": "archive_restore_included; 12_table_hashes_match_after_pg_dump_restore"
+        "remote_CI": "stage4_success",
+        "archive": "archive_restore_included; stage4_15_table_hashes_match_after_pg_dump_restore"
       },
       "session_checkpoint": {
         "date": "2026-10-26",
-        "requirement": "R39",
-        "prototype": "P26",
-        "state": "stage2_locally_verified_closed",
+        "requirement": "R42",
+        "prototype": "P28",
+        "state": "stage4_verified_and_CI_published",
         "plan_complete": false,
-        "next": "remaining_model_surface_migration_and_real_retrieval_auth_PWA_protocol_release_gates"
+        "next": "stage5_auth_drafts_physical_PWA"
       },
       "source_submission": {
         "requirement": "R38",
@@ -782,20 +782,24 @@
         "requirement": "R42",
         "prototype": "P28",
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI",
         "deployment": "not_deployed",
         "plan": "stage4-plan.md",
         "full_plan_complete": false,
         "completion_boundary": "complete_entire_stage4_with_CI_no_production_deployment",
-        "evidence": "validation.md#stage-4--global-models-and-capability-paths"
+        "evidence": "validation.md#stage-4--global-models-and-capability-paths",
+        "source_submission": "f2140a3d000b13f25ec8ef187a42fa37c84ceaf0",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40338819017",
+        "pushed": true,
+        "checkpoint": "stage4_complete_full_plan_incomplete"
       }
     }
   ],
   "latest_checks": {
-    "backend_tests": 123,
-    "frontend_tests": 35,
+    "backend_tests": 151,
+    "frontend_tests": 37,
     "type_gate": "no_new_diagnostics_5798_upstream_remain",
-    "frontend_build": "stage3_final_8GiB_Vite_build_passed",
+    "frontend_build": "stage4_production_build_passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
     "postgres_archive_restore": "OI5_15_table_hashes_match_with_concurrent_migration_and_server_copy",
     "production_deployment": "unchanged",
@@ -834,9 +838,12 @@
       "postgresql": "15-table restore and canonical statistics passed",
       "type_delta": "no_new_diagnostics_5781_upstream_remain",
       "build": "production_frontend_build_passed",
-      "CI": "pending_push",
-      "deployment": "not_deployed"
-    }
+      "CI": "https://github.com/BppleMan/open-webui/actions/runs/40338819017",
+      "deployment": "not_deployed",
+      "CI_result": "success",
+      "image_digest": "sha256:628572adc5a45f41264ba41013924b9360b227fc656d39c174504ddd98870ed2"
+    },
+    "type_check": "no_new_diagnostics_5781_upstream_remain"
   },
   "review_remediation": {
     "review": "code-review-2026-10-25",
