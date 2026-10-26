@@ -32,8 +32,9 @@ ARG USE_SLIM
 ARG UID
 ARG GID
 
-# Set Node.js options (heap limit Allocation failed - JavaScript heap out of memory)
-# ENV NODE_OPTIONS="--max-old-space-size=4096"
+# Match the validated frontend build budget; this applies only to the Node build stage.
+ARG BUILD_NODE_OPTIONS="--max-old-space-size=8192"
+ENV NODE_OPTIONS=${BUILD_NODE_OPTIONS}
 
 WORKDIR /app
 

@@ -159,3 +159,5 @@ Final PostgreSQL17 OI5 dump/restore: all15 table counts/content hashes match, in
 Stage3 final review: removed/disabled connection identities remain in legacy-alias ambiguity checks. Public model catalogs expose only unambiguous aliases, so deleting A cannot silently reroute an old shared model ID to B. Regression checks cover both backend mapping and the returned frontend catalog. Full122 backend tests still pass.
 
 Additional migration security regression: malformed legacy URLs containing userinfo/query credentials are not echoed by preview; they remain explicit manual-resolution items. Final backend suite:123 passed.
+
+Actual CI run40311798163: frontend (type gate/tests/production build) and backend (tests/PostgreSQL restore) passed; image build failed with Node heap exhaustion (exit134). Docker frontend build now receives the same8GiB heap budget as the passing frontend job through BUILD_NODE_OPTIONS, scoped to the build stage. Final image/CI verification must use the subsequent commit.
