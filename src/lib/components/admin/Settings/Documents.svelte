@@ -431,7 +431,7 @@
 	{/if}
 
 	{#if RAGConfig}
-		<div class="flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1.5">
+		<div class="flex-1 min-h-0 w-full max-w-[48rem] overflow-y-auto scrollbar-hover pr-1.5">
 			<AdminSettingSection
 				title={$i18n.t('settings.admin.documents.sections.contentExtraction.title')}
 				first

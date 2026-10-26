@@ -139,7 +139,7 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
     from open_webui.utils.oi.catalog import model_catalog
 
     async with get_async_db() as db:
-        native_models = await model_catalog(db, SimpleNamespace(id='', role='admin'))
+        native_models = await model_catalog(db, SimpleNamespace(id='', role='admin'), internal=True)
         from open_webui.utils.oi.legacy import alias_map
 
         migrated_aliases = set(await alias_map(db, SimpleNamespace(id='', role='admin')))
@@ -310,6 +310,10 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
                 from open_webui.utils.misc import merge_model_params
 
                 model['oi_base_binding'] = base_model['id']
+                model['direct'] = base_model.get('direct', False)
+                model['upstream_id'] = base_model.get('upstream_id')
+                # Endpoint capabilities come from the binding, not workspace tool/UI feature switches.
+                model['capabilities'] = copy.deepcopy(base_model.get('capabilities', {}))
                 info['base_model_id'] = base_model['id']
                 info['params'] = merge_model_params(
                     copy.deepcopy(base_model.get('info', {}).get('params', {})),

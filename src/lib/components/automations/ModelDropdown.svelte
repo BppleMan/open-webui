@@ -7,7 +7,7 @@
 	} from '$lib/utils/modelDirectory';
 	import { getContext } from 'svelte';
 
-	import { models } from '$lib/stores';
+	import { chatModels as models } from '$lib/stores';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
@@ -38,7 +38,7 @@
 						m.id.toLowerCase().includes(modelSearch.toLowerCase())
 				)
 			: $models
-		).filter((m) => !(m?.info?.meta?.hidden ?? false))
+		).filter((m) => !m.direct && !(m?.info?.meta?.hidden ?? false))
 	);
 </script>
 

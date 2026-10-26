@@ -475,6 +475,8 @@ async def query_doc_with_native_hybrid_search(
             'documents': [documents],
             'metadatas': [metadatas],
         }
+    except HTTPException:
+        raise
     except Exception as e:
         log.debug('Native hybrid search failed for %s, falling back to legacy hybrid search: %s', collection_name, e)
         return None
@@ -720,6 +722,8 @@ async def query_collection(
                 hybrid_bm25_weight=config.get('rag.hybrid_bm25_weight'),
                 enable_enriched_texts=config.get('rag.enable_hybrid_search_enriched_texts'),
             )
+        except HTTPException:
+            raise
         except Exception as e:
             log.debug('Hybrid search failed, falling back to vector search: %s', e)
 
@@ -852,6 +856,8 @@ async def query_collection_with_hybrid_search(
                 native_hybrid_search=False,
             )
             return result, None, collection_name
+        except HTTPException:
+            raise
         except Exception as e:
             return None, e, collection_name
 
@@ -1706,6 +1712,8 @@ async def get_sources_from_items(
                         k=k,
                         user=user,
                     )
+            except HTTPException:
+                raise
             except Exception as e:
                 log.exception(e)
 

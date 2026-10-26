@@ -14,6 +14,7 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    field_serializer,
     model_validator,
 )
 from sqlalchemy import (
@@ -217,6 +218,12 @@ class UserModel(BaseModel):
     )
 
     # validation schema logic
+    @field_serializer('settings')
+    def public_settings(self, value):
+        from open_webui.utils.oi.connection_migrations import public_user_settings
+
+        return public_user_settings(value) if value is not None else None
+
     # --- model validators ---
     @model_validator(mode='after')
     def _ensure_profile_image(self) -> 'UserModel':
@@ -826,7 +833,9 @@ class UsersTable:
         self, id: str, updated: dict, db: AsyncSession | None = None
     ) -> UserModel | None:
         async with get_async_db_context(db) as session:
-            user = await session.get(User, id)
+            # Serialize patches with connection migration so a stale settings read cannot restore plaintext keys.
+            await session.execute(update(User).where(User.id == id).values(updated_at=User.updated_at))
+            user = await session.get(User, id, populate_existing=True)
             if not user:
                 return None
             user_settings = dict(user.settings or {})

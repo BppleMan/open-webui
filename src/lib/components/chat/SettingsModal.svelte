@@ -820,12 +820,7 @@
 			{:else if selectedTab === 'shortcuts'}
 				<Shortcuts {saveSettings} />
 			{:else if selectedTab === 'connections'}
-				<Connections
-					saveSettings={async (updated: Record<string, any>) => {
-						await saveSettings(updated);
-						toast.success($i18n.t('Settings saved successfully!'));
-					}}
-				/>
+				<Connections />
 			{:else if selectedTab === 'tools'}
 				<Integrations
 					saveSettings={async (updated: Record<string, any>) => {

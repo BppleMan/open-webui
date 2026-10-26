@@ -185,6 +185,8 @@ async def track_call(request, form, user, dispatch, binding=None, connection=Non
     from open_webui.utils.oi.context import observe_context
 
     context = observe_context(form, capabilities(binding) if binding else {})
+    if connection is not None:
+        context['transport'] = getattr(connection, 'transport', None) or 'server'
     started, first_token = time.monotonic(), None
     usage, actual, source, status, ending = {}, None, None, 'interrupted', None
 

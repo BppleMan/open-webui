@@ -130,7 +130,9 @@ async def export_records(db, user_id, chat_id, directory=None):
         descriptor = {key: copy.deepcopy(public[key]) for key in ('id', 'name', 'upstream_id') if key in public}
         if isinstance(public.get('connection'), dict):
             descriptor['connection'] = {
-                key: public['connection'][key] for key in ('id', 'name', 'protocol') if key in public['connection']
+                key: public['connection'][key]
+                for key in ('id', 'name', 'protocol', 'transport')
+                if key in public['connection']
             }
         descriptors.append(descriptor)
     manifest = {
@@ -341,7 +343,7 @@ async def restore_records(db, user_id, manifest, chat_id, model_mapping=None):
     for message in messages.values():
         message['user_id'] = user_id
         message.pop('user', None)
-        message.pop('feedbackId',None)
+        message.pop('feedbackId', None)
         original = message.get('model')
         if original:
             message['model'] = mapping.get(original, original)

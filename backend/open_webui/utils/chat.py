@@ -194,14 +194,22 @@ async def generate_chat_completion(
 
     async with get_async_db() as db:
         aliases = await alias_map(db, user)
-    if model_id in aliases:
-        if len(aliases[model_id]) != 1:
-            raise HTTPException(409, 'Ambiguous legacy model; select its connection')
-        form_data['model'] = model_id = aliases[model_id][0]
-    from open_webui.utils.oi.model_targets import resolve_native_target
+    from open_webui.utils.oi.model_targets import resolve_native_target, remap_legacy_reference
 
+    form_data['model'] = model_id = remap_legacy_reference(model_id, aliases, models)
+    registered = models.get(model_id)
     async with get_async_db() as db:
-        native_target = await resolve_native_target(db, model_id, user)
+        native_target = (
+            await resolve_native_target(db, model_id, user)
+            if registered is None or registered.get('oi_binding') or registered.get('oi_base_binding')
+            else None
+        )
+    if native_target is not None:
+        from open_webui.utils.oi.catalog import capabilities
+        from open_webui.utils.oi.model_capabilities import chat_capable
+
+        if not chat_capable(capabilities(native_target.binding)):
+            raise HTTPException(422, 'The selected model is not configured for chat')
     # Single lookup — membership check plus getitem would be two Redis
     # round trips on a Redis-backed model pool.
     model = models.get(model_id)
@@ -210,7 +218,11 @@ async def generate_chat_completion(
     if model is None:
         raise Exception('Model not found')
 
-    if getattr(request.state, 'direct', False) and model_id == getattr(request.state, 'model', {}).get('id'):
+    if (
+        native_target is None
+        and getattr(request.state, 'direct', False)
+        and model_id == getattr(request.state, 'model', {}).get('id')
+    ):
         return await track_call(
             request,
             form_data,
@@ -240,22 +252,9 @@ async def generate_chat_completion(
         if not selected_model_id and model.get('owned_by') == 'arena':
             model_ids = model.get('info', {}).get('meta', {}).get('model_ids')
             filter_mode = model.get('info', {}).get('meta', {}).get('filter_mode')
-            if model_ids and filter_mode == 'exclude':
-                model_ids = [
-                    available_model['id']
-                    for available_model in list(request.app.state.MODELS.values())
-                    if available_model.get('owned_by') != 'arena' and available_model['id'] not in model_ids
-                ]
+            from open_webui.utils.oi.model_capabilities import arena_candidates
 
-            if isinstance(model_ids, list) and model_ids:
-                selected_model_id = random.choice(model_ids)
-            else:
-                model_ids = [
-                    available_model['id']
-                    for available_model in list(request.app.state.MODELS.values())
-                    if available_model.get('owned_by') != 'arena'
-                ]
-                selected_model_id = random.choice(model_ids)
+            selected_model_id = random.choice(arena_candidates(request.app.state.MODELS, model_ids, filter_mode))
 
             form_data['model'] = selected_model_id
 
@@ -304,6 +303,18 @@ async def generate_chat_completion(
             from open_webui.utils.oi.protocols import generate
 
             binding, connection = native_target.binding, native_target.connection
+            browser_transport = None
+            if connection.transport == 'browser':
+                from open_webui.utils.oi.browser_transport import (
+                    BrowserTransport,
+                    require_browser_owner,
+                    require_live_session,
+                )
+
+                await require_browser_owner(connection, user)
+                browser_metadata = form_data.get('metadata') or getattr(request.state, 'metadata', {}) or {}
+                require_live_session(browser_metadata, user)
+                browser_transport = BrowserTransport(user, browser_metadata, binding, connection)
             if not bypass_filter:
                 await check_model_access(user, models.get(model_id) or {'id': model_id, 'oi_binding': True})
                 if model_id != binding.id:
@@ -318,7 +329,15 @@ async def generate_chat_completion(
                 request,
                 form_data,
                 user,
-                lambda call_id: generate(request, form_data, user, binding, connection, call_id),
+                lambda call_id: generate(
+                    request,
+                    form_data,
+                    user,
+                    binding,
+                    connection,
+                    call_id,
+                    **({'transport': browser_transport} if browser_transport else {}),
+                ),
                 binding,
                 connection,
             )

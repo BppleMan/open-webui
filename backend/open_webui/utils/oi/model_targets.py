@@ -18,6 +18,17 @@ class NativeTarget:
     preset_ids: list[str]
 
 
+def remap_legacy_reference(reference, aliases, registry):
+    if reference not in aliases:
+        return reference
+    existing = registry.get(reference)
+    if existing and existing.get('preset'):
+        return reference
+    if len(aliases[reference]) != 1 or (existing and not existing.get('oi_binding')):
+        raise HTTPException(409, 'Ambiguous legacy model; select a connection-specific model')
+    return aliases[reference][0]
+
+
 async def resolve_native_target(db, reference, user):
     aliases = await alias_map(db, user)
     seen, presets = set(), []
@@ -25,6 +36,13 @@ async def resolve_native_target(db, reference, user):
         if reference in seen:
             raise HTTPException(409, 'Model preset contains a cycle')
         seen.add(reference)
+        preset = await Models.get_model_by_id(reference, db=db) if not reference.startswith('oi:') else None
+        if preset is not None and preset.base_model_id:
+            if not preset.is_active:
+                raise HTTPException(404, 'Model preset unavailable')
+            presets.append(preset)
+            reference = preset.base_model_id
+            continue
         if reference in aliases:
             if len(aliases[reference]) != 1:
                 raise HTTPException(409, 'Ambiguous legacy model; select its connection')

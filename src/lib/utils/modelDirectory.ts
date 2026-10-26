@@ -1,4 +1,9 @@
-export type ConnectionIdentity = { id: string; name: string; protocol?: string };
+export type ConnectionIdentity = {
+	id: string;
+	name: string;
+	protocol?: string;
+	transport?: 'server' | 'browser';
+};
 export type DirectoryModel = {
 	id: string;
 	name?: string;
@@ -52,17 +57,39 @@ export function groupModels<T>(items: T[]): { connection: ConnectionIdentity; it
 export const sortByConnection = <T>(items: T[]) => groupModels(items).flatMap((g) => g.items);
 export const modelLabel = (model: any) => {
 	const item = typeof model === 'string' ? directory.get(model) || { id: model } : model;
-	return `${modelConnection(item).name} / ${item?.name || item?.id || ''}`;
+	const connection = modelConnection(item);
+	return `${connection.name}${connection.transport === 'browser' ? ' · 浏览器直连' : ''} / ${item?.name || item?.id || ''}`;
 };
 export const modelMatches = (model: DirectoryModel, query: string) =>
 	`${modelConnection(model).name} ${model.name || ''} ${model.id} ${model.upstream_id || ''}`
 		.toLocaleLowerCase()
 		.includes(query.toLocaleLowerCase());
+const specializedCapabilities = [
+	'embedding',
+	'rerank',
+	'tts',
+	'stt',
+	'realtime',
+	'image_generation',
+	'image_edit'
+];
+export function chatCapable(model: DirectoryModel): boolean {
+	const caps = model.capabilities || {};
+	if (model.info?.meta?.capabilities?.chat === false) return false;
+	if (typeof caps.chat === 'boolean') return caps.chat;
+	// Legacy/unknown chat models remain manually selectable; declared specialized models require chat opt-in.
+	return !specializedCapabilities.some((capability) => caps[capability] === true);
+}
 export const capableModels = (models: DirectoryModel[], capability?: string) =>
 	models.filter(
 		(model) =>
 			!capability ||
-			(model.info?.meta?.capabilities?.[capability] ?? model.capabilities?.[capability]) === true
+			(capability === 'chat'
+				? chatCapable(model)
+				: specializedCapabilities.includes(capability)
+					? model.capabilities?.[capability] === true && !model.direct
+					: (model.info?.meta?.capabilities?.[capability] ?? model.capabilities?.[capability]) ===
+						true)
 	);
 
 export function resolveModelReference(
@@ -73,3 +100,8 @@ export function resolveModelReference(
 	const matches = models.filter((model) => model.aliases?.includes(reference));
 	return matches.length === 1 ? matches[0].id : null;
 }
+
+export const preserveModelReferences = (
+	models: { id: string; aliases?: string[] }[],
+	references: string[]
+) => references.map((id) => resolveModelReference(models, id) ?? id);

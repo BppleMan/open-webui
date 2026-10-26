@@ -54,6 +54,10 @@ async def target_for(reference, capability, user=None):
         target = await resolve_native_target(db, reference, user)
         if target is None or not await catalog.binding_readable(db, target.binding, target.connection, user):
             raise HTTPException(404, 'Connection model unavailable')
+        if target.connection.transport == 'browser':
+            raise HTTPException(
+                422, 'This capability requires a server connection; browser connections only support interactive chat'
+            )
         try:
             await check_model_access(user, {'id': reference, 'oi_binding': reference.startswith('oi:')}, db=db)
         except Exception:

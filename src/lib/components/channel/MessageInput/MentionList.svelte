@@ -6,7 +6,7 @@
 
 	import { getChannelMentionApps } from '$lib/apis/channels';
 	import { mentionAttributes } from '$lib/utils/channelMentions';
-	import { channels, models, config } from '$lib/stores';
+	import { channels, chatModels as models, config } from '$lib/stores';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Grid from '$lib/components/icons/Grid.svelte';
 	import Hashtag from '$lib/components/icons/Hashtag.svelte';

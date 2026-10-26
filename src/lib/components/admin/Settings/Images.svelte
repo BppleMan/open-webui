@@ -324,7 +324,7 @@
 		{$i18n.t('settings.admin.images.title')}
 	</h2>
 
-	<div class="flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1.5">
+	<div class="flex-1 min-h-0 w-full max-w-[48rem] overflow-y-auto scrollbar-hover pr-1.5">
 		{#if config}
 			<div class="flex flex-col">
 				<AdminSettingSection first>

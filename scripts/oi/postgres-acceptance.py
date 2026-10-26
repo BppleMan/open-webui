@@ -161,13 +161,13 @@ async def run():
             await accounting.finish_generation(db, g.id)
             await accounting.set_baseline(db, 'pg-user', 'pg-imported', 'batch', actual_usd='12.50')
             await accounting.inherit_history_baseline(db, 'pg-user', 'pg-import-fork', 'pg-imported', 'old-message')
-            manifest=await archive.export_records(db,'pg-user','pg-chat')
-            await archive.restore_records(db,'pg-user',manifest,'pg-archive')
+            manifest = await archive.export_records(db, 'pg-user', 'pg-chat')
+            await archive.restore_records(db, 'pg-user', manifest, 'pg-archive')
             await db.commit()
         assert (await accounting.get_totals(db, 'pg-chat'))['actual_usd'] == '0.12'
         assert (await accounting.get_totals(db, 'pg-fork'))['actual_usd'] == '0.14'
         assert (await accounting.get_totals(db, 'pg-import-fork'))['actual_usd'] == '12.50'
-        assert (await accounting.get_totals(db,'pg-archive'))['actual_usd']=='0.12'
+        assert (await accounting.get_totals(db, 'pg-archive'))['actual_usd'] == '0.12'
         draft = await drafts.get_draft(db, 'pg-user', 'pg-chat')
         assert len(draft['payload']['prompt']) == 6000 and draft['revision'] == 1
         c = await db.get(Connection, 'pg-connection')
@@ -213,6 +213,98 @@ async def run():
                 len((await db.execute(sa.select(Generation).where(Generation.chat_id == 'pg-race'))).scalars().all())
                 == 1
             )
+        from open_webui.models.users import User
+        from open_webui.models.customization import ConnectionMigration
+        from open_webui.utils.oi import connection_migrations
+
+        async with get_async_db() as db:
+            db.add(
+                User(
+                    id='pg-browser-user',
+                    email='pg-browser@example.invalid',
+                    name='Synthetic browser',
+                    role='user',
+                    created_at=1,
+                    updated_at=1,
+                    last_active_at=1,
+                    settings={
+                        'ui': {
+                            'directConnections': {
+                                'OPENAI_API_BASE_URLS': ['https://a.invalid/v1', 'https://b.invalid/v1'],
+                                'OPENAI_API_KEYS': ['synthetic-a', 'synthetic-b'],
+                                'OPENAI_API_CONFIGS': {
+                                    '0': {'model_ids': ['same-model']},
+                                    '1': {'model_ids': ['same-model']},
+                                },
+                            }
+                        }
+                    },
+                )
+            )
+            await db.commit()
+            owner = SimpleNamespace(id='pg-browser-user', role='user')
+            view = await connection_migrations.preview(db, owner, 'personal')
+        choices = [
+            {'source_id': entry['id'], 'action': 'create', 'connection_id': None, 'acknowledge_duplicate': False}
+            for entry in view['entries']
+        ]
+
+        async def migrate():
+            async with get_async_db() as db:
+                result = await connection_migrations.apply(db, owner, 'personal', view['version'], choices)
+                await db.commit()
+                return result
+
+        results = await asyncio.gather(*(migrate() for _ in range(6)))
+        assert all(result == results[0] for result in results)
+        async with get_async_db() as db:
+            assert (
+                len((await db.execute(sa.select(Connection).where(Connection.owner_id == owner.id))).scalars().all())
+                == 2
+            )
+            assert (
+                len(
+                    (await db.execute(sa.select(ConnectionMigration).where(ConnectionMigration.scope == 'personal')))
+                    .scalars()
+                    .all()
+                )
+                == 1
+            )
+            assert 'OPENAI_API_KEYS' not in str((await db.get(User, owner.id)).settings)
+        from unittest.mock import AsyncMock, patch
+        from uuid import uuid4
+        from open_webui.models.config import Config as AppConfig
+        from open_webui.routers.customization import copy_browser_to_server, ServerCopyForm
+
+        async with get_async_db() as db:
+            await AppConfig.upsert({'direct.enable': True}, db=db)
+            await db.commit()
+
+        async def copy_connection():
+            async with get_async_db() as db:
+                return await copy_browser_to_server(
+                    results[0]['connections'][0]['connection_id'],
+                    ServerCopyForm(revision=1, request_id=uuid4()),
+                    owner,
+                    db,
+                )
+
+        with patch.object(catalog, 'fetch_models', AsyncMock(return_value=[{'id': 'same-model'}])):
+            copies = await asyncio.gather(*(copy_connection() for _ in range(6)))
+        assert all(value == copies[0] for value in copies)
+        async with get_async_db() as db:
+            assert (
+                len((await db.execute(sa.select(Connection).where(Connection.owner_id == owner.id))).scalars().all())
+                == 3
+            )
+            assert (
+                len(
+                    (await db.execute(sa.select(ConnectionMigration).where(ConnectionMigration.scope == 'server-copy')))
+                    .scalars()
+                    .all()
+                )
+                == 1
+            )
     await async_engine.dispose()
 
 
@@ -223,6 +315,9 @@ with engine.connect() as db:
         'chat',
         'chat_message',
         'oi_connection',
+        'oi_connection_migration',
+        'user',
+        'config',
         'oi_model_binding',
         'oi_chat_draft',
         'oi_chat_ledger',
@@ -242,7 +337,7 @@ with engine.connect() as db:
         ).encode()
         manifest[name] = {'count': len(rows), 'sha256': hashlib.sha256(encoded).hexdigest()}
     revision = db.execute(sa.text('SELECT version_num FROM alembic_version')).scalar_one()
-    assert revision == 'oi0000000004'
+    assert revision == 'oi0000000005'
 path = repo / '.oi-local/pg-before-restore.json'
 if mode == 'prepare':
     path.write_text(json.dumps(manifest, indent=2))
@@ -260,6 +355,9 @@ print(
             'tables_verified': len(manifest),
             'native_replay': 'passed',
             'credential_roundtrip': 'passed',
+            'concurrent_migration': 'one_migration_receipt_two_browser_connections_one_server_copy'
+            if mode == 'prepare'
+            else 'restored_manifest_matches',
             'concurrent_writers': 'single_winner' if mode == 'prepare' else 'restored_manifest_matches',
         }
     )

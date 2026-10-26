@@ -129,3 +129,29 @@ Local HTTP export/preview/import restored 9 messages, 2 revisions, the original 
 ## 2026-10-26 source submission
 
 Current stage is submitted as source only. Pre-commit checks cover the full changed-file inventory, credential/private-runtime pattern scan, excluded local/private assets, and whitespace errors. Prior stage evidence remains 107 backend and 29 frontend tests, no additional type/a11y diagnostics, and local synthetic HTTP/WebSocket/PostgreSQL acceptance. Latest production build, real providers, physical PWA and full-plan acceptance remain pending. No cluster deployment is part of this submission.
+
+
+## 2026-10-26 stage 2 — capability selectors and retrieval boundaries
+
+Audio/Images/Documents use bounded48rem forms and connection-qualified collapsed model labels. Desktop and390px layouts verified; TTS connectionB persists after reopening and HTTP readback. Native realtime transcription options stay on the same connection. Document selections were previewed without saving retrieval settings.
+
+Specialized-only endpoints are excluded from conversational candidate stores and Arena selection; unknown legacy chat models remain selectable. Endpoint capabilities are distinct from workspace tool toggles and propagate through presets. Backend rejects specialized chat dispatch with422 before provider calls. Saved unavailable selections remain visible rather than becoming default substitutions; rejected send preserves draft and creates no generation/call.
+
+Native/hybrid retrieval propagates HTTP errors instead of retrying through a fallback. Concurrent real retrieval adapters plus a synthetic HTTP transport and SQLite ledger verify six embedding/rerank calls retain their own generation/binding. Real vector-store upload/search remains unverified.
+
+111 backend tests,32 frontend tests pass; no new type/a11y diagnostics (5862 upstream remain); final8GiB production Vite build passes. No deployment or source push in this stage; full22-surface, real provider, authentication/PWA and release acceptance remain open.
+
+
+## Stage 3 — connection identity and legacy migration
+
+OI5 adds explicit server/browser transport and durable migration receipts. Browser requests reuse native protocol parsing and accounting through authenticated session RPC. Ordinary catalogs/settings/profile serialization exclude direct credentials; the owner-only browser configuration endpoint is no-store. Soft removal preserves historical identities; server copy verifies reachability, returns an explicit mapping and keeps the source.
+
+Local acceptance: 122 backend and 35 frontend tests; no new type/a11y diagnostics (5,798 inherited diagnostics remain); final 8 GiB Vite production build passes. Tests cover stale preview, duplicate-source acknowledgement, late transactional rollback, retained user overrides, credential encryption, duplicate discovery, preset/legacy alias collision, partial usage, HTTP429, UTF8 fragments and cancellation. Real local browser HTTP proves A/B/server same upstream IDs use their own bindings and execution locations; rename/reorder/removing A/reopening a B draft preserves B. HTTP permission probes reject another user's catalog/config/call access. A 429 makes one provider request; browser disconnection retains123 confirmed input tokens with failed status and unknown cost. Existing interactive title/follow-up calls remain attributed; independent tasks require server transport.
+
+Synthetic PostgreSQL17 OI5 migration exercises six concurrent draft writes, generation reservations, identical migration applies and server copies. Final backup/restore verification is tracked separately below. This is not a production-database-copy rehearsal. Desktop/mobile390/430,1.1 application scale and keyboard selection were exercised; wide-screen2560 overflow metrics passed. Loading migration dialogs have an always-focusable close action.
+
+Prior source CI failures were verified: Python's standard-library `test` package shadowed namespace imports on Linux; ANSI-colored svelte-check output defeated diagnostic parsing. Explicit project test packages and ANSI normalization fix the harness, with a parser regression test. Actual CI for this stage is pending source push; local success does not imply CI success or deployment.
+
+Remaining full-plan gates: all22 entrypoint call/permission evidence, real vector indexing/search, full auth/PWA matrix, real provider/CPA native matrix, cost/archive edge cases and isolated GitOps preview/release. Browser direct currently preserves the existing OpenAI Chat/Responses protocols; other native protocols use server transport. Unsupported legacy proprietary engines stay explicit compatibility/manual items. No production deployment.
+
+Final PostgreSQL17 OI5 dump/restore: all15 table counts/content hashes match, including users, configuration and migration receipts; six concurrent migrations produce one receipt/two browser connections, and six server-copy retries produce one mapped server copy.

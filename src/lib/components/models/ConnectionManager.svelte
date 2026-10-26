@@ -4,6 +4,8 @@
 	import { models, user } from '$lib/stores';
 	import { getModels } from '$lib/apis';
 	import { oiApi } from '$lib/apis/customization';
+	import { discoverBrowserModels } from '$lib/utils/browserConnections';
+	import ConnectionMigrationModal from './ConnectionMigrationModal.svelte';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import Switch from '$lib/components/common/Switch.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
@@ -27,6 +29,8 @@
 		templateSearch = '';
 	let expanded = new Set<string>();
 	export let personal = false;
+	let showMigration = false;
+	let showRemoved = false;
 	const inputClass =
 		'w-full min-w-0 rounded-lg border border-gray-100/50 bg-gray-50/40 px-2.5 py-2 text-sm text-gray-700 outline-hidden transition-colors focus:border-blue-400 dark:border-white/[0.04] dark:bg-white/[0.03] dark:text-gray-200 dark:focus:border-blue-500';
 	const iconClass =
@@ -64,6 +68,7 @@
 	let connectionEdit: any = null,
 		modelEdit: any = null;
 	let originalCapabilities: Record<string, any> = {};
+	let customHeaders = '';
 	let apiKey = '',
 		nativeSettings = '{}',
 		connectionAuth = 'bearer',
@@ -117,7 +122,7 @@
 		loadError = '';
 		try {
 			[connections, bindings, templates] = await Promise.all([
-				oiApi('/connections'),
+				oiApi('/connections?include_deleted=true'),
 				oiApi('/model-bindings'),
 				oiApi('/connections/templates')
 			]);
@@ -150,6 +155,7 @@
 			name: uniqueConnectionName(template.name),
 			template: template.id,
 			protocol: template.protocol,
+			transport: 'server',
 			base_url: template.base_url,
 			shared: !personal && $user?.role === 'admin',
 			enabled: true,
@@ -169,6 +175,7 @@
 	};
 	const initializeConnectionOptions = (connection: any) => {
 		apiKey = '';
+		customHeaders = '';
 		const settings = { ...(connection.settings || {}) };
 		connectionAuth = settings.auth || selectedTemplate(connection)?.auth || 'bearer';
 		delete settings.auth;
@@ -185,6 +192,14 @@
 			const options = JSON.parse(nativeSettings);
 			if (!options || Array.isArray(options) || typeof options !== 'object')
 				throw new Error('连接选项需要是 JSON 对象');
+			const headers = customHeaders.trim() ? JSON.parse(customHeaders) : undefined;
+			if (
+				headers &&
+				(Array.isArray(headers) ||
+					typeof headers !== 'object' ||
+					Object.values(headers).some((value) => typeof value !== 'string'))
+			)
+				throw new Error('请求头需要是字符串值的 JSON 对象');
 			const created = !connectionEdit.id;
 			const saved = await oiApi(
 				'/connections' + (connectionEdit.id ? '/' + connectionEdit.id : ''),
@@ -192,7 +207,8 @@
 				{
 					...connectionEdit,
 					settings: { ...options, ...templateFields, auth: connectionAuth },
-					...(apiKey ? { api_key: apiKey } : {})
+					...(apiKey ? { api_key: apiKey } : {}),
+					...(headers !== undefined ? { headers } : {})
 				}
 			);
 			expanded = new Set([...expanded, saved.id]);
@@ -202,7 +218,10 @@
 		});
 	const discoverModels = (connection: any) =>
 		run(async () => {
-			const found = await oiApi(`/connections/${connection.id}/discover`, 'POST');
+			const found =
+				connection.transport === 'browser'
+					? await discoverBrowserModels(connection)
+					: await oiApi(`/connections/${connection.id}/discover`, 'POST');
 			expanded = new Set([...expanded, connection.id]);
 			toast.success(`已刷新 ${found.length} 个模型，新发现的模型需要手动启用`);
 		});
@@ -281,7 +300,9 @@
 			);
 			modelEdit = null;
 		});
-	$: scopedConnections = connections.filter((c) => !personal || !c.shared);
+	$: scopedConnections = connections.filter(
+		(c) => (!personal || !c.shared) && (showRemoved ? c.deleted : !c.deleted)
+	);
 	$: visible = scopedConnections
 		.map((connection) => ({
 			...connection,
@@ -312,6 +333,14 @@
 </script>
 
 <AdminSettingSection first>
+	<div class="mb-2 flex justify-end">
+		<button
+			type="button"
+			class="text-xs text-gray-500"
+			on:click={() => (showRemoved = !showRemoved)}
+			>{showRemoved ? '返回有效连接' : '已移除连接'}</button
+		>
+	</div>
 	<div class="flex flex-wrap items-center justify-between gap-3 pb-1">
 		<p class="text-xs text-gray-500 dark:text-gray-400">连接下独立管理模型、能力与价格</p>
 		<button
@@ -359,7 +388,9 @@
 								>
 							</div>
 							<p class="mt-0.5 truncate text-[0.6875rem] text-gray-400 dark:text-gray-500">
-								{templateName(connection)}{connection.base_url ? ` · ${connection.base_url}` : ''}
+								{connection.transport === 'browser' ? '浏览器直连' : '服务器'} · {templateName(
+									connection
+								)}{connection.base_url ? ` · ${connection.base_url}` : ''}
 							</p>
 						</div>
 						<span
@@ -368,7 +399,20 @@
 								: '-rotate-90'}"><ChevronDown className="size-3.5" /></span
 						>
 					</button>
-					{#if connection.owner_id}
+					{#if connection.deleted && connection.owner_id}
+						<button
+							type="button"
+							class="text-xs text-blue-600"
+							disabled={busy}
+							on:click={() =>
+								run(() =>
+									oiApi(
+										`/connections/${connection.id}/restore?revision=${connection.revision}`,
+										'POST'
+									)
+								)}>恢复为停用状态</button
+						>
+					{:else if connection.owner_id}
 						<Tooltip content="编辑连接"
 							><button
 								type="button"
@@ -383,6 +427,18 @@
 							ariaLabel={`启用连接 ${connection.name}`}
 							on:change={(e) => toggleConnection(connection, e.detail)}
 						/>
+						<Tooltip content="移除连接（可恢复）"
+							><button
+								type="button"
+								class={iconClass}
+								disabled={busy}
+								aria-label={`移除连接 ${connection.name}`}
+								on:click={() =>
+									run(() =>
+										oiApi(`/connections/${connection.id}?revision=${connection.revision}`, 'DELETE')
+									)}><XMark className="size-3.5" /></button
+							></Tooltip
+						>
 					{/if}
 				</div>
 				{#if expanded.has(connection.id) || search.trim()}
@@ -456,16 +512,25 @@
 		>
 			没有找到匹配的连接或模型
 		</p>{/if}
-	{#if $user?.role === 'admin' && !personal}<div class="pt-2">
+	{#if personal || $user?.role === 'admin'}<div class="pt-2">
 			<button
 				type="button"
 				class="text-[0.6875rem] text-gray-400 transition-colors hover:text-gray-700 dark:text-gray-600 dark:hover:text-gray-300"
 				disabled={busy}
-				on:click={() => run(() => oiApi('/connections/import-legacy', 'POST'))}
-				>从原版配置导入连接</button
+				on:click={() => (showMigration = true)}
+				>{personal ? '迁移旧浏览器直连' : '预览并迁移原版配置'}</button
 			>
 		</div>{/if}
 </AdminSettingSection>
+
+{#if showMigration}<ConnectionMigrationModal
+		scope={personal ? 'personal' : 'server'}
+		onClose={() => (showMigration = false)}
+		onApplied={async () => {
+			await load();
+			await models.set(await getModels());
+		}}
+	/>{/if}
 
 {#if chooseTemplate}
 	<Modal show size="md" ariaLabel="选择连接模板" onRequestClose={() => (chooseTemplate = false)}>
@@ -536,6 +601,38 @@
 				>连接名称<input required bind:value={connectionEdit.name} class={inputClass} /></label
 			>
 			<label class="block space-y-1.5 text-xs text-gray-500"
+				>请求执行位置
+				<select
+					class={inputClass}
+					bind:value={connectionEdit.transport}
+					disabled={!!connectionEdit.id}
+					on:change={() => {
+						if (connectionEdit.transport === 'browser') connectionEdit.shared = false;
+					}}
+				>
+					<option value="server">服务器</option><option
+						value="browser"
+						disabled={!['openai-chat', 'openai-responses'].includes(connectionEdit.protocol)}
+						>浏览器直连</option
+					>
+				</select>
+			</label>
+			{#if connectionEdit.id && connectionEdit.transport === 'browser'}<button
+					type="button"
+					class="text-xs text-blue-600"
+					disabled={busy}
+					on:click={() =>
+						run(async () => {
+							const copied = await oiApi(`/connections/${connectionEdit.id}/server-copy`, 'POST', {
+								revision: connectionEdit.revision,
+								request_id: crypto.randomUUID()
+							});
+							expanded = new Set([...expanded, copied.connection_id]);
+							connectionEdit = null;
+							toast.success('已验证服务器可达并创建个人连接，原直连保留');
+						})}>验证并复制为服务器个人连接</button
+				>{/if}
+			<label class="block space-y-1.5 text-xs text-gray-500"
 				>API 根地址<input
 					required
 					type="url"
@@ -569,7 +666,9 @@
 			<div class="flex items-center gap-4 text-xs text-gray-500">
 				<span>启用连接</span><Switch bind:state={connectionEdit.enabled} ariaLabel="启用连接" />
 			</div>
-			{#if $user?.role === 'admin'}<div class="flex items-center gap-4 text-xs text-gray-500">
+			{#if $user?.role === 'admin' && connectionEdit.transport !== 'browser'}<div
+					class="flex items-center gap-4 text-xs text-gray-500"
+				>
 					<span>对其他用户共享</span><Switch
 						bind:state={connectionEdit.shared}
 						ariaLabel="共享连接"
@@ -593,6 +692,17 @@
 								>api-key</option
 							><option value="none">无需认证</option>
 						</SettingsSelect></label
+					><label class="block space-y-1.5"
+						>自定义请求头<textarea
+							aria-label="自定义请求头 JSON"
+							class={inputClass + ' font-mono text-xs'}
+							rows="3"
+							bind:value={customHeaders}
+							placeholder={'留空保留现有请求头；{} 清空'}
+							autocomplete="off"
+						></textarea><span class="text-xs text-gray-500"
+							>加密保存；不会在普通连接列表中回显。</span
+						></label
 					><label class="block space-y-1.5"
 						>连接选项<textarea
 							aria-label="连接选项 JSON"

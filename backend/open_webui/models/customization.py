@@ -12,6 +12,7 @@ class Connection(Base):
     name = Column(Text, nullable=False)
     template = Column(Text, nullable=False)
     protocol = Column(Text, nullable=False)
+    transport = Column(Text, nullable=False, default='server', server_default='server')
     base_url = Column(Text, nullable=False)
     credentials = Column(Text, nullable=False, default='')
     settings = Column(JSON, nullable=False, default=dict)
@@ -38,6 +39,15 @@ class ModelBinding(Base):
     aliases = Column(JSON, nullable=False, default=list)
     updated_at = Column(BigInteger, nullable=False)
     __table_args__ = (UniqueConstraint('connection_id', 'upstream_id', 'protocol', name='uq_oi_binding'),)
+
+
+class ConnectionMigration(Base):
+    __tablename__ = 'oi_connection_migration'
+    id = Column(Text, primary_key=True)
+    user_id = Column(Text, nullable=False)
+    scope = Column(Text, nullable=False)
+    result = Column(JSON, nullable=False)
+    created_at = Column(BigInteger, nullable=False)
 
 
 class ChatDraft(Base):

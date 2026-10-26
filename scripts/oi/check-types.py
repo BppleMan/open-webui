@@ -13,6 +13,8 @@ BASELINE = ROOT / 'scripts/oi/upstream-type-diagnostics.json'
 
 
 def diagnostics(text):
+    # GitHub Actions enables colored svelte-check output even when stdout is piped.
+    text = re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]', '', text)
     result = collections.Counter()
     path = None
     for line in text.splitlines():

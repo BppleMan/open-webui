@@ -467,14 +467,17 @@ async def get_user_settings_by_session_user(
     user=Depends(get_verified_user),
 ):
     # user already fetched by get_verified_user — no need to refetch
+    from open_webui.utils.oi.connection_migrations import public_user_settings
+
+    sanitized = public_user_settings(user.settings)
     if raw:
-        return user.settings
+        return sanitized
 
     default_interface_settings = await Config.get('ui.default_interface_settings')
     if not isinstance(default_interface_settings, dict) or not default_interface_settings:
-        return user.settings
+        return sanitized
 
-    user_settings = user.settings.model_dump() if isinstance(user.settings, UserSettings) else dict(user.settings or {})
+    user_settings = sanitized
     ui_settings = user_settings.get('ui') if isinstance(user_settings.get('ui'), dict) else {}
     user_settings['ui'] = merge_user_ui_settings(default_interface_settings, ui_settings)
 
@@ -495,6 +498,8 @@ async def update_user_settings_by_session_user(
 ):
     updated_user_settings = form_data.model_dump(exclude_unset=True)
     ui_settings = updated_user_settings.get('ui')
+    if isinstance(ui_settings, dict) and 'directConnections' in ui_settings:
+        raise HTTPException(409, 'Manage browser connections through the connection registry or migration preview')
 
     if isinstance(ui_settings, dict):
         if user.role != 'admin' and not await has_permission(
@@ -561,7 +566,9 @@ async def update_user_settings_by_session_user(
             actor=user,
             subject_id=user.id,
         )
-        return user.settings
+        from open_webui.utils.oi.connection_migrations import public_user_settings
+
+        return public_user_settings(user.settings)
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

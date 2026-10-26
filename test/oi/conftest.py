@@ -13,6 +13,7 @@ from alembic.operations import Operations
 from open_webui.migrations.versions.oi0000000001_add_customization_records import upgrade
 from open_webui.migrations.versions.oi0000000002_snapshot_totals import upgrade as upgrade_snapshots
 from open_webui.migrations.versions.oi0000000004_baseline_anchors import upgrade as upgrade_anchors
+from open_webui.migrations.versions.oi0000000005_connection_transport import upgrade as upgrade_transport
 from open_webui.models.chat_messages import ChatMessage
 from open_webui.models.chats import Chat
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -32,6 +33,7 @@ async def db(monkeypatch):
                 upgrade()
                 upgrade_snapshots()
                 upgrade_anchors()
+                upgrade_transport()
 
         await conn.run_sync(migrate)
     factory = async_sessionmaker(engine, expire_on_commit=False)

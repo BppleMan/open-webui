@@ -216,7 +216,7 @@
 								}}
 							>
 								<option value="" selected>{$i18n.t('Current Model')}</option>
-								<ModelOptions items={modelOptions} />
+								<ModelOptions items={modelOptions} capability="chat" serverOnly />
 							</SettingsSelect>
 						</AdminSettingField>
 
@@ -232,7 +232,7 @@
 								}}
 							>
 								<option value="" selected>{$i18n.t('Current Model')}</option>
-								<ModelOptions items={modelOptions} />
+								<ModelOptions items={modelOptions} capability="chat" serverOnly />
 							</SettingsSelect>
 						</AdminSettingField>
 					</div>
@@ -303,7 +303,7 @@
 							}}
 						>
 							<option value="" selected>{$i18n.t('Current Model')}</option>
-							<ModelOptions items={modelOptions} />
+							<ModelOptions items={modelOptions} capability="chat" serverOnly />
 						</SettingsSelect>
 					</AdminSettingField>
 

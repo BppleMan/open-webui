@@ -202,7 +202,10 @@
 			? `${primaryValue} · 不可用，请重新选择`
 			: (placeholder ?? $i18n.t('Select a model'));
 
-	$: selectedConnectionLabel = selectedModel ? modelConnection(selectedModel).name : '';
+	$: selectedConnectionLabel = selectedModel
+		? modelConnection(selectedModel).name +
+			(modelConnection(selectedModel).transport === 'browser' ? ' · 浏览器直连' : '')
+		: '';
 	$: connectionGroups = groupModels(
 		filteredItems.map((item, index) => ({ ...item, directoryIndex: index }))
 	);
@@ -1090,7 +1093,10 @@
 												>
 												<span
 													class="min-w-0 flex-1 truncate font-semibold text-gray-600 dark:text-gray-300"
-													title={group.connection.name}>{group.connection.name}</span
+													title={group.connection.name}
+													>{group.connection.name}{group.connection.transport === 'browser'
+														? ' · 浏览器直连'
+														: ''}</span
 												>
 												<span class="shrink-0 text-[0.625rem] text-gray-400"
 													>{group.items.length}</span

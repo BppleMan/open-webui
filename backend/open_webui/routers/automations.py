@@ -58,6 +58,16 @@ async def check_automations_permission(request, user):
         )
 
 
+async def check_automation_transport(db, user, model_id):
+    from open_webui.utils.oi.model_targets import resolve_native_target
+
+    target = await resolve_native_target(db, model_id, user)
+    if target is not None and target.connection.transport == 'browser':
+        raise HTTPException(
+            422, 'Automations require a server connection; browser connections cannot run independently'
+        )
+
+
 def check_automation_access(automation, user):
     if not automation or user.id != automation.user_id:
         raise HTTPException(
@@ -213,6 +223,7 @@ async def create_new_automation(
     db: AsyncSession = Depends(get_async_session),
 ):
     await check_automations_permission(request, user)
+    await check_automation_transport(db, user, form_data.data.model_id)
     await check_automation_folder_access(form_data.folder_id, user, db)
     await check_automation_channel_access(form_data, user, db)
     try:
@@ -270,6 +281,7 @@ async def update_automation_by_id(
     db: AsyncSession = Depends(get_async_session),
 ):
     await check_automations_permission(request, user)
+    await check_automation_transport(db, user, form_data.data.model_id)
     automation = await Automations.get_by_id(id, db=db)
     check_automation_access(automation, user)
     await check_automation_folder_access(form_data.folder_id, user, db)

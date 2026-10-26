@@ -1,4 +1,5 @@
 import json
+import asyncio
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -10,6 +11,79 @@ from sqlalchemy import select
 from open_webui.models.customization import Connection, ModelBinding, ModelCall
 from open_webui.models.models import Models
 from open_webui.utils.oi import capability_calls, catalog, runtime
+
+
+@pytest.mark.asyncio
+async def test_parallel_retrieval_and_followup_keep_their_generation_and_model_binding(db, monkeypatch):
+    from open_webui.retrieval.utils import get_embedding_function, get_reranking_function, RerankCompressor
+    from langchain_core.documents import Document
+
+    user = await fixtures(db, monkeypatch)
+    lock = asyncio.Lock()
+
+    @asynccontextmanager
+    async def session():
+        async with lock:
+            yield db
+
+    monkeypatch.setattr(runtime, 'get_async_db', session)
+    monkeypatch.setattr(capability_calls, 'get_async_db', session)
+
+    async def provider(request):
+        await asyncio.sleep(0)
+        payload = json.loads(request.content)
+        if request.url.path.endswith('/embeddings'):
+            return httpx.Response(
+                200,
+                json={
+                    'data': [{'index': i, 'embedding': [1.0, 0.1]} for i, _ in enumerate(payload['input'])],
+                    'usage': {'prompt_tokens': 8},
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                'results': [{'index': i, 'relevance_score': i + 0.1} for i, _ in enumerate(payload['documents'])],
+                'usage': {'prompt_tokens': 5, 'completion_tokens': 0},
+            },
+        )
+
+    client = httpx.AsyncClient
+    monkeypatch.setattr(
+        capability_calls.httpx,
+        'AsyncClient',
+        lambda **kwargs: client(**{**kwargs, 'transport': httpx.MockTransport(provider)}),
+    )
+
+    async def branch(name):
+        metadata = {'chat_id': 'retrieval-' + name, 'message_id': name, 'oi_request_id': name}
+        generation = await runtime.start_generation(user, metadata, 'oi:' + name)
+        token = runtime.active_generation.set((user, metadata))
+        try:
+            embedding = get_embedding_function('connection', 'oi:' + name, None, '', '', 1)
+            assert len(await embedding(['literal first', 'literal second'])) == 2
+            rerank = get_reranking_function('connection', 'oi:' + name, None)
+            compressor = RerankCompressor(
+                embedding_function=embedding, reranking_function=lambda q, d: rerank(q, d), top_n=1, r_score=0
+            )
+            assert (
+                await compressor.acompress_documents(
+                    [Document(page_content='first'), Document(page_content='second')], 'literal query'
+                )
+            )[0].page_content == 'second'
+        finally:
+            runtime.active_generation.reset(token)
+        await runtime.end_generation(generation)
+
+    await asyncio.gather(branch('a'), branch('b'))
+    calls = (await db.execute(select(ModelCall))).scalars().all()
+    assert len(calls) == 6
+    for name in ('a', 'b'):
+        owned = [call for call in calls if call.chat_id == 'retrieval-' + name]
+        assert len(owned) == 3 and {call.binding_id for call in owned} == {'oi:' + name}
+        assert len({call.generation_id for call in owned}) == 1
+        assert sorted(call.usage['context']['purpose'] for call in owned) == ['embedding', 'embedding', 'rerank']
+    assert runtime.active_generation.get() is None
 
 
 async def fixtures(db, monkeypatch, protocol='openai-chat'):

@@ -304,7 +304,7 @@
 		</p>
 	{/if}
 
-	<div class="flex-1 min-h-0 overflow-y-auto scrollbar-hover pr-1.5">
+	<div class="flex-1 min-h-0 w-full max-w-[48rem] overflow-y-auto scrollbar-hover pr-1.5">
 		<AdminSettingSection title={$i18n.t('Voice calls')} first>
 			<AdminSettingRow label={$i18n.t('Call mode')}>
 				<SettingsSelect bind:value={realtime.ENABLED} ariaLabel={$i18n.t('Call mode')}>

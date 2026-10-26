@@ -1139,6 +1139,21 @@ async def embeddings(request: Request, form_data: dict, user=Depends(get_verifie
 
 
 async def _set_direct_model(request: Request, model_item: dict, user) -> None:
+    from open_webui.internal.db import get_async_db
+    from open_webui.utils.oi.model_targets import resolve_native_target
+    from open_webui.utils.oi.browser_transport import require_browser_owner
+
+    async with get_async_db() as db:
+        target = await resolve_native_target(db, model_item.get('id', ''), user)
+        if target is None or target.connection.transport != 'browser':
+            raise HTTPException(409, 'Migrate this legacy browser connection before using it')
+        await require_browser_owner(target.connection, user)
+        await check_model_access(
+            user, {'id': model_item['id'], 'oi_binding': model_item['id'].startswith('oi:')}, db=db
+        )
+    model_item = dict(request.app.state.MODELS.get(model_item['id']) or {})
+    if not model_item:
+        raise HTTPException(404, 'Browser model unavailable')
     model_meta = (model_item.get('info') or {}).get('meta') or {}
     knowledge_items = model_meta.get('knowledge')
     if knowledge_items:
@@ -1167,13 +1182,16 @@ async def chat_completion(
 
     async with get_async_db() as db:
         aliases = await alias_map(db, user)
-    if model_id in aliases:
-        if len(aliases[model_id]) != 1:
-            raise HTTPException(409, 'Ambiguous legacy model; select its connection')
-        form_data['model'] = model_id = aliases[model_id][0]
+    from open_webui.utils.oi.model_targets import remap_legacy_reference
+
+    mapped_id = remap_legacy_reference(model_id, aliases, request.app.state.MODELS)
+    if mapped_id != model_id:
+        form_data['model'] = model_id = mapped_id
         await get_all_models(request, user=user)
     request.state.model_id = model_id
     model_item = form_data.pop('model_item', {})
+    if request.app.state.MODELS.get(model_id, {}).get('direct'):
+        model_item = dict(request.app.state.MODELS[model_id])
     tasks = form_data.pop('background_tasks', None)
 
     metadata = {}
@@ -1198,6 +1216,10 @@ async def chat_completion(
                 raise Exception('Model not found')
 
             model = request.app.state.MODELS[model_id]
+            from open_webui.utils.oi.model_capabilities import chat_model
+
+            if not chat_model(model):
+                raise HTTPException(422, 'The selected model is not configured for chat')
             model_info = await Models.get_model_by_id(model_id)
             missing_base_model = bool(
                 model_info

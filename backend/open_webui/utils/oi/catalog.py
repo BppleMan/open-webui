@@ -44,10 +44,16 @@ def credentials(connection):
 
 
 def visible(connection, user):
+    if (connection.settings or {}).get('deleted'):
+        return False
+    if getattr(connection, 'transport', None) == 'browser':
+        return bool(user and connection.owner_id == user.id)
     return bool(connection.shared or (user and (connection.owner_id == user.id or user.role == 'admin')))
 
 
 def editable(connection, user):
+    if getattr(connection, 'transport', None) == 'browser':
+        return bool(user and connection.owner_id == user.id)
     return bool(user and (connection.owner_id == user.id or user.role == 'admin'))
 
 
@@ -59,6 +65,7 @@ def connection_json(connection, user):
             'name',
             'template',
             'protocol',
+            'transport',
             'shared',
             'enabled',
             'revision',
@@ -72,6 +79,7 @@ def connection_json(connection, user):
             settings=connection.settings,
             has_credentials=bool(connection.credentials),
             owner_id=connection.owner_id,
+            deleted=bool((connection.settings or {}).get('deleted')),
         )
     return result
 
@@ -100,6 +108,7 @@ def binding_json(binding, connection):
         )
     } | {
         'connection_name': connection.name,
+        'transport': getattr(connection, 'transport', None) or 'server',
         'capabilities': capabilities(binding),
         'capability_overrides': (binding.capabilities or {}).get('overrides', {}),
     }
@@ -185,13 +194,22 @@ def reasoning_controls(binding):
     return {}
 
 
-async def model_catalog(db, user):
+async def model_catalog(db, user, *, internal=False):
     pairs = (
         await db.execute(select(ModelBinding, Connection).join(Connection, ModelBinding.connection_id == Connection.id))
     ).all()
+    direct_enabled = True
+    if not internal and any(connection.transport == 'browser' for _, connection in pairs):
+        from open_webui.models.config import Config
+
+        direct_enabled = bool(await Config.get('direct.enable'))
     result = []
     for binding, connection in pairs:
-        if not await binding_readable(db, binding, connection, user):
+        if connection.transport == 'browser' and not direct_enabled:
+            continue
+        if not (connection.enabled and binding.enabled and binding.available):
+            continue
+        if not internal and not await binding_readable(db, binding, connection, user):
             continue
         caps = capabilities(binding)
         controls = {**(binding.params or {}).get('model_controls', {}), **reasoning_controls(binding)}
@@ -205,7 +223,13 @@ async def model_catalog(db, user):
                 'connection_type': connection.settings.get(
                     'connection_type', 'local' if binding.protocol == 'ollama' else 'external'
                 ),
-                'connection': {'id': connection.id, 'name': connection.name, 'protocol': binding.protocol},
+                'connection': {
+                    'id': connection.id,
+                    'name': connection.name,
+                    'protocol': binding.protocol,
+                    'transport': getattr(connection, 'transport', None) or 'server',
+                },
+                'direct': getattr(connection, 'transport', None) == 'browser',
                 'oi_binding': True,
                 'aliases': binding.aliases or [],
                 'upstream_id': binding.upstream_id,
@@ -309,9 +333,15 @@ def discovered_capabilities(model):
 
 
 async def discover(db, connection, transport=None):
-    protocol = connection.protocol
+    if getattr(connection, 'transport', None) == 'browser':
+        raise ValueError('Browser connections must discover models from the browser')
     # Fetch all pages before changing availability; a partial failure must preserve the catalog.
     models = await fetch_models(connection, transport)
+    return await apply_discovered_models(db, connection, models)
+
+
+async def apply_discovered_models(db, connection, models):
+    protocol = connection.protocol
     seen, result = set(), []
     for model in models:
         upstream = model.get('id') or model.get('name') or model.get('model')

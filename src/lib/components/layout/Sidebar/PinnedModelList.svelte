@@ -7,7 +7,7 @@
 	import {
 		chatId,
 		mobile,
-		models,
+		chatModels as models,
 		pinnedModels,
 		settings,
 		showSidebar,

@@ -9,7 +9,7 @@
 	} from '@xyflow/svelte';
 
 	import { writable } from 'svelte/store';
-	import { models, user } from '$lib/stores';
+	import { chatModels as models, user } from '$lib/stores';
 
 	import '@xyflow/svelte/dist/style.css';
 

@@ -5,7 +5,7 @@
 	import { createEventDispatcher, onDestroy, onMount } from 'svelte';
 	import { tick, getContext } from 'svelte';
 
-	import { models } from '$lib/stores';
+	import { chatModels as models } from '$lib/stores';
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import {

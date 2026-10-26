@@ -159,7 +159,12 @@ async def test_dispatch_preserves_preset_identity_and_explicit_request_params(db
 
     monkeypatch.setattr(chat, 'track_call', track)
     monkeypatch.setattr(protocols, 'generate', generate)
-    request = Request({'type': 'http', 'app': SimpleNamespace(state=SimpleNamespace(MODELS={'rp': {'id': 'rp'}}))})
+    request = Request(
+        {
+            'type': 'http',
+            'app': SimpleNamespace(state=SimpleNamespace(MODELS={'rp': {'id': 'rp', 'oi_base_binding': 'oi:leaf'}})),
+        }
+    )
     form = {'model': 'rp', 'messages': [{'role': 'user', 'content': 'Hello'}], 'temperature': 0.9}
     url, body = await chat.generate_chat_completion(request, form, SimpleNamespace(id='u', role='user'))
     assert url.endswith('/messages') and body['temperature'] == 0.9 and body['max_tokens'] == 2000

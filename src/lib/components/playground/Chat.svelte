@@ -15,7 +15,7 @@
 		WEBUI_API_BASE_URL,
 		WEBUI_BASE_URL
 	} from '$lib/constants';
-	import { WEBUI_NAME, config, user, models, settings } from '$lib/stores';
+	import { WEBUI_NAME, config, user, chatModels as models, settings } from '$lib/stores';
 
 	import { chatCompletion } from '$lib/apis/openai';
 

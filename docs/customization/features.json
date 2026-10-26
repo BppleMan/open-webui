@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "OI Open WebUI customization",
-  "updated_on": "2026-10-25",
+  "updated_on": "2026-10-26",
   "phase": "implementation",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
@@ -375,8 +375,8 @@
       "architecture_role": "shared_foundation_for_all_model_lists_and_selection",
       "coverage": {
         "inventory_groups": 22,
-        "implementation": "all_groups_pending",
-        "runtime_verification": "not_run",
+        "implementation": "partial_conversational_and_capability_surfaces_implemented",
+        "runtime_verification": "M01_unavailable_selection_and_M17_M18_M19_local_UI_partial_acceptance; all_22_not_complete",
         "completion_rule": "all_applicable_entries_verified_and_no_unexplained_omissions"
       },
       "acceptance": [
@@ -424,13 +424,41 @@
       "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
       "capability_routing": {
         "implementation": "connection_scoped_embedding_rerank_TTS_STT_image_and_realtime_paths_implemented",
-        "verification": "10_unit_tests_and_local_HTTP_WebSocket_passed; full_UI_and_22_surface_acceptance_pending",
+        "verification": "stage1_HTTP_WS_plus_stage2_desktop_mobile_selectors_and_parallel_retrieval_ledger_passed; real_vector_store_and_full_surface_acceptance_pending",
         "deployment": "not_deployed",
         "remaining": [
           "legacy_auxiliary_config_migration",
           "full_22_surface_acceptance",
           "real_provider_checks"
         ]
+      },
+      "stage2": {
+        "requirements": [
+          "R17",
+          "R35",
+          "R39"
+        ],
+        "implementation": "qualified_native_options_chat_eligibility_preset_capabilities_arena_filter_and_preserved_unavailable_selections",
+        "verification": "111_backend_32_frontend_type_gate_build_and_local_UI_HTTP_passed",
+        "deployment": "not_deployed",
+        "remaining": [
+          "real_vector_store_upload_search",
+          "full_22_surface_matrix",
+          "personal_direct_and_legacy_auxiliary_migration",
+          "real_provider_checks",
+          "realtime_revocation_interruption_matrix"
+        ]
+      },
+      "stage3": {
+        "requirement": "R40",
+        "prototype": "P27",
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
+        "deployment": "not_deployed",
+        "transport_policy": "preserve_browser_direct",
+        "completion": "commit_push_and_check_actual_CI; no_production_deployment",
+        "evidence": "validation.md#stage-3--connection-identity-and-legacy-migration",
+        "source_submission": "pending"
       }
     },
     {
@@ -480,7 +508,18 @@
           "real_provider_acceptance"
         ]
       },
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "stage3": {
+        "requirement": "R40",
+        "prototype": "P27",
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
+        "deployment": "not_deployed",
+        "transport_policy": "preserve_browser_direct",
+        "completion": "commit_push_and_check_actual_CI; no_production_deployment",
+        "evidence": "validation.md#stage-3--connection-identity-and-legacy-migration",
+        "source_submission": "pending"
+      }
     },
     {
       "id": "F15",
@@ -596,7 +635,7 @@
       "priority": "P1",
       "status": "in_progress",
       "implementation": "aligned_settings_rows_with_grouped_text_trailing_controls_and_width_limits",
-      "verification": "personal_interface_390px_1275px_2560px_light_dark_110_percent_long_labels_verified_other_settings_audit_pending",
+      "verification": "prior_personal_interface_checks_plus_Audio_Images_Documents_1275px_and_390px_bounded_forms_verified; remaining_settings_pending",
       "deployment": "not_deployed",
       "acceptance": [
         "开关与标题属于同一紧凑视觉组，不随视口加宽被推到最右端",
@@ -695,11 +734,11 @@
       },
       "session_checkpoint": {
         "date": "2026-10-26",
-        "requirement": "R37",
-        "prototype": "P24",
-        "state": "stage_closed_at_user_request",
+        "requirement": "R39",
+        "prototype": "P26",
+        "state": "stage2_locally_verified_closed",
         "plan_complete": false,
-        "next": "22_surface_and_capability_UI_acceptance_then_auth_PWA_protocol_release_gates"
+        "next": "remaining_model_surface_migration_and_real_retrieval_auth_PWA_protocol_release_gates"
       },
       "source_submission": {
         "requirement": "R38",
@@ -708,17 +747,31 @@
         "scope": "source_commit_and_push_only",
         "deployment": "not_requested_in_this_submission",
         "full_plan_complete": false
+      },
+      "stage3": {
+        "requirement": "R40",
+        "prototype": "P27",
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
+        "deployment": "not_deployed",
+        "transport_policy": "preserve_browser_direct",
+        "completion": "commit_push_and_check_actual_CI; no_production_deployment",
+        "evidence": "validation.md#stage-3--connection-identity-and-legacy-migration",
+        "source_submission": "pending"
       }
     }
   ],
   "latest_checks": {
-    "backend_tests": 107,
-    "frontend_tests": 29,
-    "type_gate": "no_new_diagnostics_5862_upstream_remain",
-    "frontend_build": "earlier_8GiB_build_passed_latest_changes_build_deferred_at_stage_checkpoint",
+    "backend_tests": 122,
+    "frontend_tests": 35,
+    "type_gate": "no_new_diagnostics_5798_upstream_remain",
+    "frontend_build": "stage3_final_8GiB_Vite_build_passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
-    "postgres_archive_restore": "12_table_hashes_match",
-    "production_deployment": "unchanged"
+    "postgres_archive_restore": "OI5_15_table_hashes_match_with_concurrent_migration_and_server_copy",
+    "production_deployment": "unchanged",
+    "stage2_HTTP": "specialized_chat422_no_provider_call_saved_B_and_unavailable_draft_preservation_passed",
+    "stage3_HTTP": "owner_only_no_store_same_model_A_B_server_reorder_remove_draft_429_partial_usage_passed",
+    "actual_CI": "pending_new_commit"
   },
   "review_remediation": {
     "review": "code-review-2026-10-25",

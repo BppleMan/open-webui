@@ -1,6 +1,6 @@
 """Authenticated OI catalog, draft, billing and navigation APIs."""
 
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -158,7 +158,8 @@ async def import_archive(
         await db.rollback()
         await archive_files.cleanup(created)
         import logging
-        logging.getLogger(__name__).warning('archive_restore_failed kind=%s',type(error).__name__)
+
+        logging.getLogger(__name__).warning('archive_restore_failed kind=%s', type(error).__name__)
         if isinstance(error, HTTPException):
             raise
         if not isinstance(error, Exception):
@@ -192,6 +193,7 @@ class ConnectionForm(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     template: str
     protocol: str | None = None
+    transport: Literal['server', 'browser'] = 'server'
     base_url: str | None = None
     api_key: SecretStr | None = None
     headers: dict[str, SecretStr] | None = None
@@ -210,26 +212,134 @@ async def templates(user=Depends(get_verified_user)):
 async def import_legacy(
     request: Request, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)
 ):
-    if user.role != 'admin':
-        raise HTTPException(403, 'Administrator required')
-    from open_webui.utils.oi.legacy import import_connections
+    raise HTTPException(409, 'Preview the legacy configuration migration before applying it')
 
-    result = await import_connections(db, request, user)
-    await db.commit()
+
+class MigrationPreviewForm(BaseModel):
+    scope: Literal['personal', 'server']
+
+
+class MigrationChoice(BaseModel):
+    source_id: str
+    action: Literal['create', 'reuse']
+    connection_id: str | None = None
+    acknowledge_duplicate: bool = False
+
+
+class MigrationApplyForm(MigrationPreviewForm):
+    version: str = Field(min_length=64, max_length=64)
+    choices: list[MigrationChoice] = Field(min_length=1, max_length=1000)
+
+
+@router.post('/connections/migration/preview')
+async def migration_preview(
+    form: MigrationPreviewForm, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)
+):
+    from open_webui.utils.oi.connection_migrations import preview
+
+    return await preview(db, user, form.scope)
+
+
+@router.post('/connections/migration/apply')
+async def migration_apply(
+    form: MigrationApplyForm,
+    request: Request,
+    user=Depends(get_verified_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    from open_webui.utils.oi.connection_migrations import apply
+
+    try:
+        result = await apply(db, user, form.scope, form.version, [choice.model_dump() for choice in form.choices])
+        await db.commit()
+    except BaseException:
+        await db.rollback()
+        raise
+    try:
+        if form.scope == 'server':
+            # Reload lazily-bound retrieval callables; no embedding or generation is performed here.
+            from open_webui.models.config import Config
+            from open_webui.retrieval.utils import get_embedding_function, get_reranking_function
+
+            c = await Config.get_many(
+                'rag.embedding_engine',
+                'rag.embedding_model',
+                'rag.embedding_batch_size',
+                'rag.reranking_engine',
+                'rag.reranking_model',
+            )
+            if c.get('rag.embedding_engine') == 'connection':
+                request.app.state.EMBEDDING_FUNCTION = get_embedding_function(
+                    'connection', c['rag.embedding_model'], None, '', '', c.get('rag.embedding_batch_size') or 1
+                )
+            if c.get('rag.reranking_engine') == 'connection':
+                request.app.state.RERANKING_FUNCTION = get_reranking_function(
+                    'connection', c['rag.reranking_model'], None
+                )
+    except Exception:
+        # The transaction is already committed. Never report an applied batch as rolled back.
+        result = {**result, 'warnings': ['Migration saved; restart the application to reload retrieval configuration.']}
     return result
 
 
 @router.get('/connections')
-async def connections(user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)):
+async def connections(
+    include_deleted: bool = False, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)
+):
     rows = (await db.execute(select(Connection).order_by(Connection.created_at))).scalars()
-    return [catalog.connection_json(row, user) for row in rows if catalog.visible(row, user)]
+    return [
+        catalog.connection_json(row, user)
+        for row in rows
+        if catalog.visible(row, user) or (include_deleted and catalog.editable(row, user))
+    ]
+
+
+async def set_connection_removed(db, user, connection_id, revision, removed):
+    row = await connection_access(db, user, connection_id, True)
+    result = await db.execute(
+        update(Connection)
+        .where(Connection.id == row.id, Connection.revision == revision)
+        .values(
+            settings={**row.settings, 'deleted': removed},
+            enabled=False,
+            revision=Connection.revision + 1,
+            updated_at=catalog.now(),
+        )
+        .returning(Connection.id)
+        .execution_options(synchronize_session=False)
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(409, 'Connection changed; reload before updating')
+    await db.commit()
+    await db.refresh(row)
+    return catalog.connection_json(row, user)
+
+
+@router.delete('/connections/{connection_id}')
+async def remove_connection(
+    connection_id: str, revision: int, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)
+):
+    return await set_connection_removed(db, user, connection_id, revision, True)
+
+
+@router.post('/connections/{connection_id}/restore')
+async def restore_connection(
+    connection_id: str, revision: int, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)
+):
+    return await set_connection_removed(db, user, connection_id, revision, False)
 
 
 async def save_connection(db, user, form, row=None):
+    if row is not None and form.transport != (row.transport or 'server'):
+        raise HTTPException(409, 'Use the explicit transport migration flow to change request execution')
+    if form.transport == 'browser' and form.shared:
+        raise HTTPException(422, 'Browser connections belong to their owner and cannot be shared')
     if form.shared and user.role != 'admin':
         raise HTTPException(403, 'Only administrators may publish shared connections')
     try:
         defaults = catalog.connection_defaults(form, row)
+        if form.transport == 'browser' and defaults['protocol'] not in {'openai-chat', 'openai-responses'}:
+            raise ValueError('Browser connections currently support OpenAI Chat and Responses protocols')
         url = catalog.validate_url(defaults['base_url'])
         secrets = catalog.credentials(row) if row else {}
     except ValueError as error:
@@ -238,7 +348,7 @@ async def save_connection(db, user, form, row=None):
         secrets['api_key'] = form.api_key.get_secret_value()
     if form.headers is not None:
         secrets['headers'] = {key: value.get_secret_value() for key, value in form.headers.items()}
-    values = {key: getattr(form, key) for key in ('name', 'template', 'shared', 'enabled')}
+    values = {key: getattr(form, key) for key in ('name', 'template', 'shared', 'enabled', 'transport')}
     values.update(defaults)
     values['name'] = values['name'].strip()
     if not values['name']:
@@ -294,6 +404,146 @@ async def discover_models(
         raise HTTPException(502, 'Model discovery failed; existing configuration was preserved') from None
     await db.commit()
     return [catalog.binding_json(row, connection) for row in rows]
+
+
+@router.get('/connections/{connection_id}/browser-config')
+async def browser_config(
+    connection_id: str,
+    revision: int | None = None,
+    user=Depends(get_verified_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    from starlette.responses import JSONResponse
+    from open_webui.utils.oi.browser_transport import require_browser_owner
+
+    connection = await db.get(Connection, connection_id)
+    if connection is None:
+        raise HTTPException(404, 'Browser connection unavailable', headers={'Cache-Control': 'no-store'})
+    await require_browser_owner(connection, user)
+    if revision is not None and revision != connection.revision:
+        raise HTTPException(409, 'Connection changed; reload before sending', headers={'Cache-Control': 'no-store'})
+    return JSONResponse(
+        {
+            'id': connection.id,
+            'revision': connection.revision,
+            'base_url': connection.base_url,
+            'protocol': connection.protocol,
+            'headers': catalog.request_headers(connection),
+        },
+        headers={'Cache-Control': 'no-store, private', 'Pragma': 'no-cache', 'Vary': 'Authorization, Cookie'},
+    )
+
+
+class BrowserDiscoveryForm(BaseModel):
+    revision: int
+    models: list[dict] = Field(max_length=10000)
+
+
+@router.post('/connections/{connection_id}/browser-models')
+async def browser_models(
+    connection_id: str,
+    form: BrowserDiscoveryForm,
+    user=Depends(get_verified_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    from open_webui.utils.oi.browser_transport import require_browser_owner
+
+    connection = (
+        await db.execute(select(Connection).where(Connection.id == connection_id).with_for_update())
+    ).scalar_one_or_none()
+    if connection is None:
+        raise HTTPException(404, 'Browser connection unavailable')
+    await require_browser_owner(connection, user)
+    if connection.revision != form.revision:
+        raise HTTPException(409, 'Connection changed; reload before discovering models')
+    try:
+        rows = await catalog.apply_discovered_models(db, connection, form.models)
+    except (ValueError, TypeError):
+        await db.rollback()
+        raise HTTPException(422, 'Invalid discovered model list; previous configuration preserved') from None
+    await db.commit()
+    return [catalog.binding_json(row, connection) for row in rows]
+
+
+class ServerCopyForm(BaseModel):
+    revision: int
+    request_id: UUID
+
+
+@router.post('/connections/{connection_id}/server-copy')
+async def copy_browser_to_server(
+    connection_id: str,
+    form: ServerCopyForm,
+    user=Depends(get_verified_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    import copy
+    from open_webui.models.customization import ConnectionMigration
+    from open_webui.utils.oi.storage import identifier, now
+    from open_webui.utils.oi.browser_transport import require_browser_owner
+
+    receipt_id = f'copy:{user.id}:{connection_id}:{form.revision}'
+    receipt = await db.get(ConnectionMigration, receipt_id)
+    if receipt:
+        if receipt.result['source_id'] != connection_id:
+            raise HTTPException(409, 'Migration request ID was used for another connection')
+        return receipt.result
+    # Serialize copy retries on SQLite as well as PostgreSQL.
+    await db.execute(update(Connection).where(Connection.id == connection_id).values(updated_at=Connection.updated_at))
+    source = (
+        await db.execute(select(Connection).where(Connection.id == connection_id).with_for_update())
+    ).scalar_one_or_none()
+    if source is None:
+        raise HTTPException(404, 'Browser connection unavailable')
+    await require_browser_owner(source, user)
+    receipt = await db.get(ConnectionMigration, receipt_id, populate_existing=True)
+    if receipt:
+        return receipt.result
+    if source.revision != form.revision:
+        raise HTTPException(409, 'Connection changed; reload migration preview')
+    target = Connection(
+        id=identifier(),
+        owner_id=user.id,
+        name=source.name + ' · 服务器',
+        template=source.template,
+        protocol=source.protocol,
+        transport='server',
+        base_url=source.base_url,
+        credentials=source.credentials,
+        settings=copy.deepcopy(source.settings),
+        shared=False,
+        enabled=source.enabled,
+        revision=1,
+        created_at=now(),
+        updated_at=now(),
+    )
+    try:
+        await catalog.fetch_models(target)
+    except Exception:
+        raise HTTPException(502, 'Server cannot verify this connection; browser connection was preserved') from None
+    db.add(target)
+    mapping = {}
+    for old in (await db.execute(select(ModelBinding).where(ModelBinding.connection_id == source.id))).scalars():
+        new = ModelBinding(
+            id='oi:' + identifier(),
+            connection_id=target.id,
+            upstream_id=old.upstream_id,
+            protocol=old.protocol,
+            name=old.name,
+            enabled=old.enabled,
+            available=old.available,
+            capabilities=copy.deepcopy(old.capabilities),
+            pricing=copy.deepcopy(old.pricing),
+            params=copy.deepcopy(old.params),
+            aliases=[],
+            updated_at=now(),
+        )
+        db.add(new)
+        mapping[old.id] = new.id
+    result = {'source_id': source.id, 'connection_id': target.id, 'model_mapping': mapping, 'source_preserved': True}
+    db.add(ConnectionMigration(id=receipt_id, user_id=user.id, scope='server-copy', result=result, created_at=now()))
+    await db.commit()
+    return result
 
 
 @router.get('/model-bindings/catalog')

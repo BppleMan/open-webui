@@ -36,7 +36,7 @@
 	import {
 		config,
 		mobile,
-		models,
+		chatModels as models,
 		settings,
 		showSidebar,
 		socket,

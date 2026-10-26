@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { preserveModelReferences } from '$lib/utils/modelDirectory';
 	import {
 		DraftManager,
 		createQueuedDraft,
@@ -29,7 +30,7 @@
 		chatId,
 		config,
 		type Model,
-		models,
+		chatModels as models,
 		tags as allTags,
 		settings,
 		showSidebar,
@@ -2719,6 +2720,7 @@
 				$page.url.searchParams.get('model') ||
 				''
 			)?.split(',');
+			selectedModels = preserveModelReferences($models, urlModels);
 
 			if (urlModels.length === 1) {
 				if (!$models.find((m) => m.id === urlModels[0])) {
@@ -2733,10 +2735,7 @@
 				selectedModels = urlModels;
 			}
 
-			// Unavailable models filtering
-			selectedModels = selectedModels.filter((modelId) =>
-				$models.map((m) => m.id).includes(modelId)
-			);
+			// Keep explicit unavailable choices visible; never silently fall back to another connection.
 		} else {
 			if ($selectedFolder) {
 				// Folder defaults are explicit; never inherit a previous chat's selection.
@@ -2897,9 +2896,7 @@
 			messageInput?.setText(q);
 		}
 
-		selectedModels = selectedModels.map((modelId) =>
-			$models.map((m) => m.id).includes(modelId) ? modelId : ''
-		);
+		selectedModels = preserveModelReferences($models, selectedModels);
 
 		await tick();
 		messageInput?.focus({ preventScroll: true });
@@ -2961,12 +2958,7 @@
 						? chatContent.models
 						: [chatContent.models ?? ''];
 
-				// An empty model list is not evidence that the chat's models are gone.
-				if ($models.length > 0) {
-					selectedModels = selectedModels.filter((modelId) =>
-						$models.map((m) => m.id).includes(modelId)
-					);
-				}
+				selectedModels = preserveModelReferences($models, selectedModels);
 
 				if (!($user?.role === 'admin' || ($user?.permissions?.chat?.multiple_models ?? true))) {
 					selectedModels = selectedModels.length > 0 ? [selectedModels[0]] : [''];
@@ -3930,14 +3922,6 @@
 		if (bridgeRequest && (selectedModelIds.length !== 1 || !bridgeRequest.modelId))
 			return { status: 'rejected' };
 
-		const _selectedModels = selectedModels.map((modelId) =>
-			$models.map((m) => m.id).includes(modelId) ? modelId : ''
-		);
-
-		if (!equal(selectedModels, _selectedModels)) {
-			selectedModels = _selectedModels;
-		}
-
 		if (String(userPrompt).trim() === '/compact') {
 			clearCommandInput();
 			await handleManualCompact();
@@ -3971,6 +3955,13 @@
 		}
 		if (selectedModels.includes('')) {
 			toast.error($i18n.t('Model not selected'));
+			return { status: 'rejected' };
+		}
+		if (
+			!selectedModelIds.length ||
+			selectedModelIds.some((id) => !$models.some((model) => model.id === id))
+		) {
+			toast.error('所选模型当前不可用于聊天，请重新选择。');
 			return { status: 'rejected' };
 		}
 		const form = getChatVariablesForm(selectedModelIds, chatVariables, $models);

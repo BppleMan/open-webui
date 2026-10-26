@@ -14,3 +14,6 @@ Approved by the user on 2026-10-25. This is the implementation index; requiremen
 10. Build immutable image; isolated preview DB/Redis/attachments; backup and restore drill; GitOps cutover only after accounting and user-path checks. No simultaneous upstream/custom writers. Roll back only to schema-compatible custom versions after new writes. Feature status separates code, tests and deployment.
 
 Deferred: canon/state injection, automatic memories, campaign/character systems, RP writing rules/request inspector, dice, GM knowledge scopes, independent RP sampling presets. Existing background generation and advanced parameter controls are reused.
+
+
+Stage3 implements transport-aware connection identity, versioned migration and owner-only browser credentials. See validation.md for local acceptance and actual CI status. Continue with stages4–8 after this checkpoint; no production release in stage3.
