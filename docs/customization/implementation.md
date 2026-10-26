@@ -17,3 +17,13 @@ Deferred: canon/state injection, automatic memories, campaign/character systems,
 
 
 Stage3 implements transport-aware connection identity, versioned migration and owner-only browser credentials. See validation.md for local acceptance and actual CI status. Continue with stages4–8 after this checkpoint; no production release in stage3.
+
+### Stage 3 contracts for continuation
+
+- `Connection.transport` is immutable after creation. `server` executes on OI; `browser` executes through the authenticated initiating socket. Native model IDs remain `oi:<uuid>`; display names, legacy array positions and provider IDs never identify the dispatch target.
+- `POST /api/v1/connections/migration/preview` takes `scope=personal|server`, returns a credential-free source list and HMAC version. Apply takes that version and explicit per-source create/reuse decisions. Source locks, version comparison and durable receipts make retries atomic/idempotent; changing choices for an applied preview returns409. Existing target overrides are retained. Unsupported engines remain explicit compatibility items.
+- `GET /api/v1/connections/{id}/browser-config?revision=...` is owner-only with no-store/private headers. The ordinary directory, profile/settings serialization and archives exclude credentials. Browser discovery uploads only model descriptors through the versioned `browser-models` endpoint. Legacy secrets are removed from migrated configuration in the same transaction that persists encrypted credentials.
+- `POST /api/v1/connections/{id}/server-copy` verifies server model discovery before creating a private server connection. It returns source→target model mappings, preserves the source, and deduplicates concurrent retries by source revision. It does not silently redirect existing chats or drafts.
+- Connection removal/restore uses revision checks. Removal preserves model/call records; restore leaves the connection disabled. Historical alias ambiguity includes removed identities, preventing deletion from redirecting old references to a sibling model.
+- Browser RPC forwards the normalized native request and raw UTF8 response stream through the initiating browser; it reuses native protocol parsing, usage snapshots and ledger attribution. No active browser means no dispatch; loss of that session fails the call while preserving confirmed usage. HTTP429 is propagated without retry. Separate background execution must select server transport.
+- Resume from OI5 with the same persistent server secret; additive migration does not reconstruct old accounting. Test fixtures use only synthetic input and loopback providers. Stage4 must prove each model entrypoint end-to-end rather than inferring correctness from shared components.

@@ -161,3 +161,10 @@ Stage3 final review: removed/disabled connection identities remain in legacy-ali
 Additional migration security regression: malformed legacy URLs containing userinfo/query credentials are not echoed by preview; they remain explicit manual-resolution items. Final backend suite:123 passed.
 
 Actual CI run40311798163: frontend (type gate/tests/production build) and backend (tests/PostgreSQL restore) passed; image build failed with Node heap exhaustion (exit134). Docker frontend build now receives the same8GiB heap budget as the passing frontend job through BUILD_NODE_OPTIONS, scoped to the build stage. Final image/CI verification must use the subsequent commit.
+
+
+### Stage 3 final CI acceptance
+
+Code commit `4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc` is pushed to `oi/main`. [GitHub Actions run 40313069562](https://github.com/BppleMan/open-webui/actions/runs/40313069562) completed successfully: backend, frontend and image jobs all passed. Actual CI confirms123 backend tests,35 frontend tests, no new type/a11y diagnostics (5798 upstream remain), production frontend build, OI5 PostgreSQL migration/concurrency and15-table restore hashes.
+
+Published image: `ghcr.io/bppleman/open-webui-oi:sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc`. Immutable digest: `sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216`. The image was built/pushed by CI; no cluster deployment or production-data rehearsal has been performed. Follow-up documentation-only commits do not change the validated application image. Stage3 is complete; the full customization plan still requires stages4–8.

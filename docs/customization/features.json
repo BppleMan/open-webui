@@ -13,7 +13,9 @@
     "application_code_modified": true,
     "customization_committed": true,
     "deployment_changed": false,
-    "fork": "https://github.com/BppleMan/open-webui"
+    "fork": "https://github.com/BppleMan/open-webui",
+    "latest_code_commit": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
+    "latest_push": "origin/oi/main"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -453,12 +455,14 @@
         "requirement": "R40",
         "prototype": "P27",
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI",
         "deployment": "not_deployed",
         "transport_policy": "preserve_browser_direct",
         "completion": "commit_push_and_check_actual_CI; no_production_deployment",
         "evidence": "validation.md#stage-3--connection-identity-and-legacy-migration",
-        "source_submission": "pending"
+        "source_submission": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40313069562",
+        "checkpoint": "stage3_complete_full_plan_incomplete"
       }
     },
     {
@@ -513,12 +517,14 @@
         "requirement": "R40",
         "prototype": "P27",
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI",
         "deployment": "not_deployed",
         "transport_policy": "preserve_browser_direct",
         "completion": "commit_push_and_check_actual_CI; no_production_deployment",
         "evidence": "validation.md#stage-3--connection-identity-and-legacy-migration",
-        "source_submission": "pending"
+        "source_submission": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40313069562",
+        "checkpoint": "stage3_complete_full_plan_incomplete"
       }
     },
     {
@@ -752,12 +758,14 @@
         "requirement": "R40",
         "prototype": "P27",
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI",
         "deployment": "not_deployed",
         "transport_policy": "preserve_browser_direct",
         "completion": "commit_push_and_check_actual_CI; no_production_deployment",
         "evidence": "validation.md#stage-3--connection-identity-and-legacy-migration",
-        "source_submission": "pending"
+        "source_submission": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40313069562",
+        "checkpoint": "stage3_complete_full_plan_incomplete"
       }
     }
   ],
@@ -771,7 +779,20 @@
     "production_deployment": "unchanged",
     "stage2_HTTP": "specialized_chat422_no_provider_call_saved_B_and_unavailable_draft_preservation_passed",
     "stage3_HTTP": "owner_only_no_store_same_model_A_B_server_reorder_remove_draft_429_partial_usage_passed",
-    "actual_CI": "pending_new_commit"
+    "actual_CI": {
+      "commit": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
+      "run_id": 40313069562,
+      "url": "https://github.com/BppleMan/open-webui/actions/runs/40313069562",
+      "conclusion": "success",
+      "jobs": {
+        "backend": "success",
+        "frontend": "success",
+        "image": "success"
+      },
+      "image": "ghcr.io/bppleman/open-webui-oi",
+      "tag": "sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
+      "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
+    }
   },
   "review_remediation": {
     "review": "code-review-2026-10-25",
