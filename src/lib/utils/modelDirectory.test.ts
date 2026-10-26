@@ -8,7 +8,9 @@ import {
 	modelMatches,
 	resolveModelReference,
 	preserveModelReferences,
-	setModelDirectory
+	setModelDirectory,
+	setHistoricalModelDirectory,
+	modelIdentity
 } from './modelDirectory';
 const a = {
 	id: 'oi:a',
@@ -22,7 +24,10 @@ const b = {
 	connection: { id: 'b', name: 'Connection B' },
 	aliases: ['ambiguous']
 };
-beforeEach(() => setModelDirectory([a, b]));
+beforeEach(() => {
+	setHistoricalModelDirectory([]);
+	setModelDirectory([a, b]);
+});
 describe('connection directory identities', () => {
 	it('searches same-name models by connection and retains unavailable saved identities', () => {
 		expect(
@@ -86,4 +91,16 @@ describe('connection directory identities', () => {
 		];
 		expect(capableModels(models, 'vision').map((m) => m.id)).toEqual(['known']);
 	});
+});
+
+it('keeps historical labels separate from selectable models and clears previous user history', () => {
+	setHistoricalModelDirectory([{ ...a, historical: true }]);
+	setModelDirectory([b]);
+	expect(modelLabel(a.id)).toBe('Connection A / Same model');
+	expect(resolveModelReference([b], a.id)).toBeNull();
+	setModelDirectory([{ ...a, name: 'Current name' }]);
+	expect(modelIdentity(a.id)?.name).toBe('Current name');
+	setHistoricalModelDirectory([]);
+	setModelDirectory([b]);
+	expect(modelIdentity(a.id)).toBeUndefined();
 });

@@ -356,6 +356,44 @@ async def _get_realtime_connection(config: dict) -> tuple[str, dict[str, str]]:
     return ws_url, headers
 
 
+async def validate_bridge_access(app, token, redis, model_id, ledger=None):
+    """Check current session, call permission and every selected model before forwarding."""
+    current = await get_verified_user_by_token(token, redis)
+    if not current or not await Config.get('audio.realtime.enabled'):
+        raise ValueError('Call authorization expired')
+    if current.role != 'admin' and not await has_permission(
+        current.id, 'chat.call', await Config.get('user.permissions') or {}
+    ):
+        raise ValueError('Call permission revoked')
+    model = app.state.MODELS.get(model_id)
+    info = await Models.get_model_by_id(model_id)
+    if not model or model.get('direct') or (info and not info.is_active):
+        raise ValueError('Chat model unavailable')
+    if not BYPASS_MODEL_ACCESS_CONTROL and (current.role != 'admin' or not BYPASS_ADMIN_ACCESS_CONTROL):
+        await check_model_access(current, model, model_info=info)
+    if ledger:
+        from open_webui.utils.oi.capability_calls import target_for
+        from open_webui.utils.oi import catalog
+
+        for previous, capability in [(ledger.voice, 'realtime'), (ledger.transcription, 'stt')]:
+            target, _ = await target_for(previous.binding.id, capability, current)
+            if (
+                target.connection.id,
+                target.connection.base_url,
+                target.binding.upstream_id,
+                target.binding.protocol,
+                catalog.credentials(target.connection),
+            ) != (
+                previous.connection.id,
+                previous.connection.base_url,
+                previous.binding.upstream_id,
+                previous.binding.protocol,
+                catalog.credentials(previous.connection),
+            ):
+                raise ValueError('Voice connection changed; start a new call')
+    return current
+
+
 @router.websocket('/realtime')
 async def realtime_call(ws: WebSocket):
     await ws.accept()
@@ -496,10 +534,8 @@ async def realtime_call(ws: WebSocket):
         await ws.send_json({'type': 'bridge.ready', 'model': voice_model, 'voice': voice, 'sample_rate': 24000})
 
         async def send_command(command):
+            await validate_bridge_access(ws.app, token, redis, model_id, ledger)
             if ledger:
-                if command.get('type') == 'response.create':
-                    from open_webui.utils.oi.capability_calls import target_for
-                    await target_for(connected_models[0],'realtime',user)
                 command = await ledger.prepare(command)
             async with asyncio.timeout(5):
                 await upstream.send_json(command)
@@ -511,6 +547,7 @@ async def realtime_call(ws: WebSocket):
                     raise ValueError('Call event is too large')
                 event = JSONCodec.loads(raw)
                 if event == {'type': 'bridge.ping'}:
+                    await validate_bridge_access(ws.app, token, redis, model_id, ledger)
                     await ws.send_json({'type': 'bridge.pong'})
                     continue
                 command = protocol.command(event)
@@ -534,6 +571,7 @@ async def realtime_call(ws: WebSocket):
                     raise ValueError('Voice provider rejected a request')
                 if ledger:
                     await ledger.observe(event)
+                await validate_bridge_access(ws.app, token, redis, model_id, ledger)
                 command = protocol.observe(event)
                 if command:
                     # Clean up before the client can request another response.
@@ -544,21 +582,10 @@ async def realtime_call(ws: WebSocket):
             raise ValueError('Voice provider connection closed')
 
         async def check_auth():
-            # Also limits a call to the provider's one-hour session lifetime.
-            for _ in range(60):
-                await asyncio.sleep(60)
-                current = await get_verified_user_by_token(token, redis)
-                if not current or not await Config.get('audio.realtime.enabled'):
-                    raise ValueError('Call authorization expired')
-                if connected_models:
-                    from open_webui.utils.oi.capability_calls import target_for
-
-                    await target_for(connected_models[0], 'realtime', current)
-                    await target_for(connected_models[1], 'stt', current)
-                if current.role != 'admin' and not await has_permission(
-                    current.id, 'chat.call', await Config.get('user.permissions') or {}
-                ):
-                    raise ValueError('Call permission revoked')
+            # Revoke idle sessions promptly; command forwarding also checks without a cache.
+            for _ in range(720):
+                await asyncio.sleep(5)
+                await validate_bridge_access(ws.app, token, redis, model_id, ledger)
             raise ValueError('Call session expired. Start a new call.')
 
         tasks = [asyncio.create_task(fn()) for fn in (client_events, provider_events, check_auth)]
@@ -587,7 +614,7 @@ async def realtime_call(ws: WebSocket):
             try:
                 await asyncio.shield(ledger.close())
             except Exception as error:
-                log.error('Voice accounting finalization failed: error_type=%s',type(error).__name__)
+                log.error('Voice accounting finalization failed: error_type=%s', type(error).__name__)
         if upstream is not None:
             await upstream.close()
         with contextlib.suppress(Exception):

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelLabel } from '$lib/utils/modelDirectory';
 	import { getContext } from 'svelte';
 	import type { Readable } from 'svelte/store';
 
@@ -13,6 +14,7 @@
 
 	const i18n = getContext<Readable<{ t: (value: string) => string }>>('i18n');
 
+	export let modelId = '';
 	export let content: string;
 	export let result: SubagentResult;
 
@@ -60,6 +62,7 @@
 		<div
 			class="mt-2 ml-3 border-l border-gray-100 dark:border-white/8 pl-3 text-[0.78125rem] leading-relaxed text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words"
 		>
+			{#if modelId}<div class="mb-1 text-xs text-gray-400">{modelLabel(modelId)}</div>{/if}
 			{content}
 		</div>
 	{/if}

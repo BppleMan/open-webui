@@ -79,6 +79,9 @@ class SharedChatsTable:
             if not chat:
                 return None
 
+            from open_webui.utils.oi.history import decorate_conversation
+
+            content = await decorate_conversation(db, chat.id, chat.chat)
             share_id = str(uuid.uuid4())
             now = int(time.time())
 
@@ -87,7 +90,7 @@ class SharedChatsTable:
                 chat_id=chat_id,
                 user_id=user_id,
                 title=chat.title,
-                chat={**chat.chat, 'share_mode': share_mode},
+                chat={**content, 'share_mode': share_mode},
                 created_at=now,
                 updated_at=now,
             )
@@ -114,9 +117,12 @@ class SharedChatsTable:
             if not chat:
                 return None
 
+            from open_webui.utils.oi.history import decorate_conversation
+
+            content = await decorate_conversation(db, chat.id, chat.chat)
             shared_chat.title = chat.title
             shared_chat.chat = {
-                **chat.chat,
+                **content,
                 'share_mode': shared_chat.chat.get('share_mode'),
                 **(form_data.model_dump(exclude_unset=True) if form_data else {}),
             }

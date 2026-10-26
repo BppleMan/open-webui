@@ -269,11 +269,14 @@
 		return `${minutes}m`;
 	};
 
-	const modelName = (id: string | null) => (id ? (modelNames.get(id) ?? id) : '-');
+	const modelName = (id: string | null) => (id ? (modelNames.get(id) ?? modelLabel(id)) : '-');
 
 	onMount(loadUsage);
 </script>
 
+<p class="mb-2 text-xs text-gray-500">
+	Token 为已确认用量小计；缺失用量不代表免费。费用以会话账本为准。
+</p>
 <div class="flex h-full min-h-0 flex-col">
 	<div class="mb-4">
 		<h2 class="text-sm font-medium text-gray-900 dark:text-white">
@@ -465,7 +468,7 @@
 							<UserSettingRow label={modelName(model.model_id)}>
 								<span class="text-xs text-gray-500 dark:text-gray-400">
 									{model.messages.toLocaleString()}
-									{$i18n.t('messages')} · {formatNumber(model.total_tokens)}
+									次调用（旧记录按消息） · {formatNumber(model.total_tokens)}
 								</span>
 							</UserSettingRow>
 						{/each}

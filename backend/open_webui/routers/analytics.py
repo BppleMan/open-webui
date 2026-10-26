@@ -225,6 +225,7 @@ class TokenUsageEntry(BaseModel):
     output_tokens: int
     total_tokens: int
     message_count: int
+    unknown_usage_calls: int = 0
 
 
 class TokenUsageResponse(BaseModel):

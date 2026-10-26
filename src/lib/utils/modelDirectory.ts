@@ -14,8 +14,13 @@ export type DirectoryModel = {
 };
 
 let directory = new Map<string, DirectoryModel>();
+let historical: DirectoryModel[] = [];
+export const setHistoricalModelDirectory = (models: DirectoryModel[]) => {
+	historical = models;
+};
+export const modelIdentity = (id: string): DirectoryModel | undefined => directory.get(id);
 export const setModelDirectory = (models: DirectoryModel[]) => {
-	directory = new Map(models.map((m) => [m.id, m]));
+	directory = new Map([...historical, ...models].map((m) => [m.id, m]));
 };
 
 export function modelConnection(model: any): ConnectionIdentity {

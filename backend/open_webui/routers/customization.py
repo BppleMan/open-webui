@@ -546,6 +546,13 @@ async def copy_browser_to_server(
     return result
 
 
+@router.get('/model-bindings/history')
+async def historical_model_identities(user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)):
+    from open_webui.utils.oi.history import identities
+
+    return await identities(db, user)
+
+
 @router.get('/model-bindings/catalog')
 async def binding_catalog(user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)):
     from open_webui.utils.models import public_model_params

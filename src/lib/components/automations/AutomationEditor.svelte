@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelLabel } from '$lib/utils/modelDirectory';
 	import { formatSchedule } from '$lib/utils/schedule';
 	import { onMount, getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -270,7 +271,7 @@
 				{$i18n.t('Model')}
 			</span>
 			<span class="min-w-0 truncate text-xs text-gray-700 dark:text-gray-300">
-				{automation.data.model_id}
+				{modelLabel(automation.data.model_id)}
 			</span>
 		</div>
 

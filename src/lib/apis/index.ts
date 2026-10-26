@@ -1,4 +1,8 @@
-import { setModelDirectory, sortByConnection } from '$lib/utils/modelDirectory';
+import {
+	setModelDirectory,
+	setHistoricalModelDirectory,
+	sortByConnection
+} from '$lib/utils/modelDirectory';
 import { get } from 'svelte/store';
 import { config } from '$lib/stores';
 import { WEBUI_BASE_URL } from '$lib/constants';
@@ -65,6 +69,17 @@ export const getModels = async (
 	// Browser connections are owner-scoped server catalog entries with stable binding IDs.
 	// Legacy browser arrays are migrated explicitly, never merged by provider model ID.
 
+	if (!base) {
+		try {
+			const history = await fetch(`${WEBUI_BASE_URL}/api/v1/model-bindings/history`, {
+				headers: { Authorization: `Bearer ${token}` },
+				cache: 'no-store'
+			});
+			setHistoricalModelDirectory(history.ok ? await history.json() : []);
+		} catch {
+			setHistoricalModelDirectory([]);
+		}
+	}
 	models = sortByConnection(models);
 	setModelDirectory(models);
 	return models;

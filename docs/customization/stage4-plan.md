@@ -14,3 +14,7 @@ All entrypoints stay open until their own evidence is recorded. Shared component
 ## 4A local checkpoint
 
 Completed candidate/access and explicit task-target regressions. Before repair:7 failures/1 pass. After expanded coverage:135 backend and36 frontend tests pass, no new type/a11y diagnostics (5798 inherited remain), production frontend build succeeds. UI/HTTP per-entry acceptance remains4B. No stage4 CI/image publication or deployment yet; this checkpoint must not be called full stage4 completion.
+
+
+## 4B–4D local acceptance
+All M01–M22 rows contain individual evidence, including actual dispatch and ledger attribution. Full synthetic HTTP/WS/pgvector integration and PostgreSQL restore passed. Final type/build and push-triggered CI are the remaining closure steps; production deployment is excluded.

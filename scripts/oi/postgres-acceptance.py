@@ -305,6 +305,16 @@ async def run():
                 )
                 == 1
             )
+    # Statistics use the same canonical projection on PostgreSQL and SQLite.
+    from open_webui.utils.oi.statistics import by
+    from open_webui.models.chat_messages import ChatMessages
+
+    async with get_async_db() as db:
+        totals = await by(db)
+        daily = await ChatMessages.get_daily_message_counts_by_model(db=db)
+        hourly = await ChatMessages.get_hourly_message_counts_by_model(db=db)
+        assert sum(x['count'] for x in totals.values()) == sum(sum(x.values()) for x in daily.values())
+        assert sum(x['count'] for x in totals.values()) == sum(sum(x.values()) for x in hourly.values())
     await async_engine.dispose()
 
 

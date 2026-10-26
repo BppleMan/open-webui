@@ -140,6 +140,9 @@ async def shared_chat_response(chat, user=None, db=None):
     from open_webui.models.users import Users
 
     data = ChatResponse.model_validate(chat, from_attributes=True).model_dump()
+    from open_webui.utils.oi.history import decorate_conversation
+
+    data['chat'] = await decorate_conversation(db, chat.id, data['chat'])
     if user is None or chat.user_id != user.id:
         data['variables'] = {}
         for key in ('params', 'tool_servers', 'tool_ids', 'filter_ids', 'variables'):
@@ -865,9 +868,12 @@ async def import_chats(
     try:
         chats = await Chats.import_chats(user.id, form_data.chats, db=db)
         from open_webui.utils.oi.accounting import set_baseline
+
         for imported in chats:
             if (imported.chat.get('history') or {}).get('messages') or imported.chat.get('messages'):
-                await set_baseline(db,user.id,imported.id,'imported-history',note='Imported history; cost has not been supplied')
+                await set_baseline(
+                    db, user.id, imported.id, 'imported-history', note='Imported history; cost has not been supplied'
+                )
         await db.commit()
         await Tags.ensure_tags_exist(
             list({tag_id for chat in chats for tag_id in (chat.meta or {}).get('tags', [])}), user.id, db=db

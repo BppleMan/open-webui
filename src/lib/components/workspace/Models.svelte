@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { sortByConnection, modelConnection } from '$lib/utils/modelDirectory';
+	import { sortByConnection, modelConnection, modelLabel } from '$lib/utils/modelDirectory';
 	import WorkspaceAccessModal from './common/WorkspaceAccessModal.svelte';
 	let accessModal: WorkspaceAccessModal;
 	import dayjs from 'dayjs';
@@ -869,7 +869,7 @@
 											content={(
 												resolveLocalizedModelDescription(model, $i18n.language) ?? ''
 											).trim() ||
-												model.base_model_id ||
+												(model.base_model_id ? modelLabel(model.base_model_id) : '') ||
 												$i18n.t('No description')}
 											className="min-w-0"
 											placement="top-start"
@@ -878,7 +878,7 @@
 												class="truncate text-[0.6875rem] leading-4 text-gray-400 dark:text-gray-600"
 											>
 												{(resolveLocalizedModelDescription(model, $i18n.language) ?? '').trim() ||
-													model.base_model_id ||
+													(model.base_model_id ? modelLabel(model.base_model_id) : '') ||
 													$i18n.t('No description')}
 											</div>
 										</Tooltip>

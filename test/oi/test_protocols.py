@@ -220,3 +220,25 @@ def test_parallel_requests_do_not_share_generation_state():
     assert left.state.metadata['message_id'] == 'left'
     assert right.state.metadata['message_id'] == 'right'
     assert 'oi_generation_id' not in parent.state.metadata
+
+
+@pytest.mark.parametrize(
+    'protocol', ['openai-chat', 'openai-responses', 'anthropic', 'gemini', 'gemini-interactions', 'cpa-agy', 'ollama']
+)
+def test_display_identity_does_not_change_outbound_context(protocol):
+    body = {
+        'model': 'oi:binding',
+        'messages': [
+            {'role': 'user', 'content': 'Synthetic question'},
+            {'role': 'assistant', 'content': 'Unchanged answer'},
+        ],
+    }
+    decorated = copy.deepcopy(body)
+    decorated['messages'][1]['oi_model_identity'] = {
+        'id': 'oi:binding',
+        'name': 'Display only',
+        'connection': {'id': 'connection', 'name': 'Origin'},
+    }
+    assert build_request(body, binding(protocol), connection(protocol)) == build_request(
+        decorated, binding(protocol), connection(protocol)
+    )

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelIdentity, modelLabel } from '$lib/utils/modelDirectory';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import MessageUsage from '$lib/components/chat/MessageUsage.svelte';
 	import ReplyRevisionTools from './ReplyRevisionTools.svelte';
@@ -79,6 +80,8 @@
 		user_id?: string;
 		id: string;
 		model: string;
+		modelName?: string;
+		oi_model_identity?: import("$lib/utils/modelDirectory").DirectoryModel;
 		content: string;
 		output?: OutputItem[];
 		finish_reason?: string;
@@ -195,9 +198,14 @@
 	let buttonsContainerElement: HTMLDivElement;
 	let showDeleteConfirm = false;
 
-	let model = null;
-	$: localizedModelName = model ? resolveLocalizedModelName(model, $i18n.language) : message.model;
-	$: model = $models.find((m) => m.id === message.model);
+	let model: any = null;
+	$: localizedModelName = model
+		? modelLabel({ ...model, name: resolveLocalizedModelName(model, $i18n.language) })
+		: modelLabel({ id: message.model, name: message.modelName || message.model });
+	$: model =
+		$models.find((m) => m.id === message.model) ||
+		modelIdentity(message.model) ||
+		message.oi_model_identity;
 
 	$: statusEntries = message?.statusHistory ?? [...(message?.status ? [message?.status] : [])];
 	$: hasVisibleStatus =

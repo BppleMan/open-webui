@@ -539,25 +539,13 @@ class ChatMessageTable:
         group_id: Optional[str] = None,
         db: Optional[AsyncSession] = None,
     ) -> dict[str, int]:
-        async with get_async_db_context(db) as db:
-            from open_webui.models.groups import group_user_memberships
+        from open_webui.utils.oi.statistics import by
 
-            stmt = select(ChatMessage.model_id, func.count(ChatMessage.id).label('count')).filter(
-                ChatMessage.role == 'assistant',
-                ChatMessage.model_id.isnot(None),
-            )
-
-            if start_date:
-                stmt = stmt.filter(ChatMessage.created_at >= start_date)
-            if end_date:
-                stmt = stmt.filter(ChatMessage.created_at <= end_date)
-            if group_id:
-                group_users = select(group_user_memberships([group_id], True).c.user_id).scalar_subquery()
-                stmt = stmt.filter(ChatMessage.user_id.in_(group_users))
-
-            stmt = stmt.group_by(ChatMessage.model_id)
-            result = await db.execute(stmt)
-            return {row.model_id: row.count for row in result.all()}
+        async with get_async_db_context(db) as session:
+            return {
+                key: row['count']
+                for key, row in (await by(session, start=start_date, end=end_date, group_id=group_id)).items()
+            }
 
     async def get_unique_counts_by_model(
         self,
@@ -566,35 +554,12 @@ class ChatMessageTable:
         group_id: Optional[str] = None,
         db: Optional[AsyncSession] = None,
     ) -> dict[str, dict]:
-        """Count distinct users and chats per model."""
-        async with get_async_db_context(db) as db:
-            from open_webui.models.groups import group_user_memberships
+        from open_webui.utils.oi.statistics import by
 
-            stmt = select(
-                ChatMessage.model_id,
-                func.count(distinct(ChatMessage.user_id)).label('unique_users'),
-                func.count(distinct(ChatMessage.chat_id)).label('unique_chats'),
-            ).filter(
-                ChatMessage.role == 'assistant',
-                ChatMessage.model_id.isnot(None),
-            )
-
-            if start_date:
-                stmt = stmt.filter(ChatMessage.created_at >= start_date)
-            if end_date:
-                stmt = stmt.filter(ChatMessage.created_at <= end_date)
-            if group_id:
-                group_users = select(group_user_memberships([group_id], True).c.user_id).scalar_subquery()
-                stmt = stmt.filter(ChatMessage.user_id.in_(group_users))
-
-            stmt = stmt.group_by(ChatMessage.model_id)
-            result = await db.execute(stmt)
+        async with get_async_db_context(db) as session:
             return {
-                row.model_id: {
-                    'unique_users': row.unique_users,
-                    'unique_chats': row.unique_chats,
-                }
-                for row in result.all()
+                key: {'unique_users': row['unique_users'], 'unique_chats': row['unique_chats']}
+                for key, row in (await by(session, start=start_date, end=end_date, group_id=group_id)).items()
             }
 
     async def get_token_usage_by_model(
@@ -604,47 +569,19 @@ class ChatMessageTable:
         group_id: Optional[str] = None,
         db: Optional[AsyncSession] = None,
     ) -> dict[str, dict]:
-        """Aggregate token usage by model using database-level aggregation."""
-        async with get_async_db_context(db) as db:
-            from open_webui.models.groups import group_user_memberships
+        from open_webui.utils.oi.statistics import by
 
-            # We need the dialect to determine JSON extraction syntax
-            # For async sessions, access via get_bind()
-            bind = await db.connection()
-            dialect = bind.dialect.name
-
-            input_tokens, output_tokens = _token_columns(dialect)
-
-            stmt = select(
-                ChatMessage.model_id,
-                func.coalesce(func.sum(input_tokens), 0).label('input_tokens'),
-                func.coalesce(func.sum(output_tokens), 0).label('output_tokens'),
-                func.count(ChatMessage.id).label('message_count'),
-            ).filter(
-                ChatMessage.role == 'assistant',
-                ChatMessage.model_id.isnot(None),
-                ChatMessage.usage.isnot(None),
-            )
-
-            if start_date:
-                stmt = stmt.filter(ChatMessage.created_at >= start_date)
-            if end_date:
-                stmt = stmt.filter(ChatMessage.created_at <= end_date)
-            if group_id:
-                group_users = select(group_user_memberships([group_id], True).c.user_id).scalar_subquery()
-                stmt = stmt.filter(ChatMessage.user_id.in_(group_users))
-
-            stmt = stmt.group_by(ChatMessage.model_id)
-            result = await db.execute(stmt)
-
+        async with get_async_db_context(db) as session:
+            rows = await by(session, 'model_id', start=start_date, end=end_date, group_id=group_id)
             return {
-                row.model_id: {
-                    'input_tokens': row.input_tokens,
-                    'output_tokens': row.output_tokens,
-                    'total_tokens': row.input_tokens + row.output_tokens,
-                    'message_count': row.message_count,
+                key: {
+                    'input_tokens': row['input_tokens'],
+                    'output_tokens': row['output_tokens'],
+                    'total_tokens': row['input_tokens'] + row['output_tokens'],
+                    'message_count': row['count'],
+                    'unknown_usage_calls': row['unknown_usage_calls'],
                 }
-                for row in result.all()
+                for key, row in rows.items()
             }
 
     async def get_token_usage_by_user(
@@ -654,45 +591,19 @@ class ChatMessageTable:
         group_id: Optional[str] = None,
         db: Optional[AsyncSession] = None,
     ) -> dict[str, dict]:
-        """Aggregate token usage by user using database-level aggregation."""
-        async with get_async_db_context(db) as db:
-            from open_webui.models.groups import group_user_memberships
+        from open_webui.utils.oi.statistics import by
 
-            bind = await db.connection()
-            dialect = bind.dialect.name
-
-            input_tokens, output_tokens = _token_columns(dialect)
-
-            stmt = select(
-                ChatMessage.user_id,
-                func.coalesce(func.sum(input_tokens), 0).label('input_tokens'),
-                func.coalesce(func.sum(output_tokens), 0).label('output_tokens'),
-                func.count(ChatMessage.id).label('message_count'),
-            ).filter(
-                ChatMessage.role == 'assistant',
-                ChatMessage.user_id.isnot(None),
-                ChatMessage.usage.isnot(None),
-            )
-
-            if start_date:
-                stmt = stmt.filter(ChatMessage.created_at >= start_date)
-            if end_date:
-                stmt = stmt.filter(ChatMessage.created_at <= end_date)
-            if group_id:
-                group_users = select(group_user_memberships([group_id], True).c.user_id).scalar_subquery()
-                stmt = stmt.filter(ChatMessage.user_id.in_(group_users))
-
-            stmt = stmt.group_by(ChatMessage.user_id)
-            result = await db.execute(stmt)
-
+        async with get_async_db_context(db) as session:
+            rows = await by(session, 'user_id', start=start_date, end=end_date, group_id=group_id)
             return {
-                row.user_id: {
-                    'input_tokens': row.input_tokens,
-                    'output_tokens': row.output_tokens,
-                    'total_tokens': row.input_tokens + row.output_tokens,
-                    'message_count': row.message_count,
+                key: {
+                    'input_tokens': row['input_tokens'],
+                    'output_tokens': row['output_tokens'],
+                    'total_tokens': row['input_tokens'] + row['output_tokens'],
+                    'message_count': row['count'],
+                    'unknown_usage_calls': row['unknown_usage_calls'],
                 }
-                for row in result.all()
+                for key, row in rows.items()
             }
 
     async def get_user_usage_summary(
@@ -712,27 +623,18 @@ class ChatMessageTable:
             messages_stmt = select(ChatMessage.role, func.count(ChatMessage.id).label('count')).filter(
                 ChatMessage.user_id == user_id,
             )
+            from open_webui.utils.oi.statistics import records
+
+            usage_rows = records(user_id, start_date, end_date)
             token_stmt = select(
-                func.coalesce(func.sum(input_tokens), 0).label('input_tokens'),
-                func.coalesce(func.sum(output_tokens), 0).label('output_tokens'),
-            ).filter(
-                ChatMessage.user_id == user_id,
-                ChatMessage.role == 'assistant',
-                ChatMessage.usage.isnot(None),
+                func.coalesce(func.sum(usage_rows.c.input_tokens), 0).label('input_tokens'),
+                func.coalesce(func.sum(usage_rows.c.output_tokens), 0).label('output_tokens'),
             )
-            models_stmt = select(func.count(distinct(ChatMessage.model_id)).label('models_used')).filter(
-                ChatMessage.user_id == user_id,
-                ChatMessage.role == 'assistant',
-                ChatMessage.model_id.isnot(None),
-            )
+            models_stmt = select(func.count(distinct(usage_rows.c.model_id)).label('models_used'))
             if start_date:
                 messages_stmt = messages_stmt.filter(ChatMessage.created_at >= start_date)
-                token_stmt = token_stmt.filter(ChatMessage.created_at >= start_date)
-                models_stmt = models_stmt.filter(ChatMessage.created_at >= start_date)
             if end_date:
                 messages_stmt = messages_stmt.filter(ChatMessage.created_at <= end_date)
-                token_stmt = token_stmt.filter(ChatMessage.created_at <= end_date)
-                models_stmt = models_stmt.filter(ChatMessage.created_at <= end_date)
 
             messages_result = await db.execute(messages_stmt.group_by(ChatMessage.role))
             message_counts = {row.role: row.count for row in messages_result.all()}
@@ -824,10 +726,17 @@ class ChatMessageTable:
                 )
                 entry['messages'] += 1
                 entry['chat_ids'].add(row.chat_id)
-                if row.role == 'assistant' and row.model_id:
-                    entry['models'][row.model_id] += 1
-                if row.usage:
-                    entry['tokens'] += int(row.input_tokens or 0) + int(row.output_tokens or 0)
+            from open_webui.utils.oi.statistics import records
+
+            canonical = records(user_id, start_date, end_date)
+            for row in (await db.execute(select(canonical))).mappings():
+                date = _date_key(row['created_at'], tz)
+                entry = daily.setdefault(
+                    date, {'date': date, 'messages': 0, 'chat_ids': set(), 'tokens': 0, 'models': Counter()}
+                )
+                entry['chat_ids'].add(row['chat_id'])
+                entry['models'][row['model_id']] += 1
+                entry['tokens'] += int(row['input_tokens'] or 0) + int(row['output_tokens'] or 0)
 
             current = datetime.fromtimestamp(_normalize_timestamp(start_date), tz=tz).replace(
                 hour=0, minute=0, second=0, microsecond=0
@@ -862,39 +771,19 @@ class ChatMessageTable:
         limit: int = 5,
         db: Optional[AsyncSession] = None,
     ) -> list[dict]:
-        async with get_async_db_context(db) as db:
-            bind = await db.connection()
-            dialect = bind.dialect.name
-            input_tokens, output_tokens = _token_columns(dialect)
+        from open_webui.utils.oi.statistics import by
 
-            stmt = (
-                select(
-                    ChatMessage.model_id,
-                    func.count(ChatMessage.id).label('messages'),
-                    func.coalesce(func.sum(input_tokens), 0).label('input_tokens'),
-                    func.coalesce(func.sum(output_tokens), 0).label('output_tokens'),
-                )
-                .filter(
-                    ChatMessage.user_id == user_id,
-                    ChatMessage.role == 'assistant',
-                    ChatMessage.model_id.isnot(None),
-                    ChatMessage.created_at >= start_date,
-                    ChatMessage.created_at <= end_date,
-                )
-                .group_by(ChatMessage.model_id)
-                .order_by(func.count(ChatMessage.id).desc())
-                .limit(limit)
-            )
-            result = await db.execute(stmt)
+        async with get_async_db_context(db) as session:
+            rows = await by(session, user_id=user_id, start=start_date, end=end_date)
             return [
                 {
-                    'model_id': row.model_id,
-                    'messages': row.messages,
-                    'input_tokens': int(row.input_tokens or 0),
-                    'output_tokens': int(row.output_tokens or 0),
-                    'total_tokens': int(row.input_tokens or 0) + int(row.output_tokens or 0),
+                    'model_id': key,
+                    'messages': row['count'],
+                    'input_tokens': row['input_tokens'],
+                    'output_tokens': row['output_tokens'],
+                    'total_tokens': row['input_tokens'] + row['output_tokens'],
                 }
-                for row in result.all()
+                for key, row in sorted(rows.items(), key=lambda item: (-item[1]['count'], item[0]))[:limit]
             ]
 
     async def get_user_top_tools(
@@ -985,20 +874,10 @@ class ChatMessageTable:
         async with get_async_db_context(db) as db:
             from datetime import datetime, timedelta
 
-            from open_webui.models.groups import group_user_memberships
+            from open_webui.utils.oi.statistics import records
 
-            stmt = select(ChatMessage.created_at, ChatMessage.model_id).filter(
-                ChatMessage.role == 'assistant',
-                ChatMessage.model_id.isnot(None),
-            )
-
-            if start_date:
-                stmt = stmt.filter(ChatMessage.created_at >= start_date)
-            if end_date:
-                stmt = stmt.filter(ChatMessage.created_at <= end_date)
-            if group_id:
-                group_users = select(group_user_memberships([group_id], True).c.user_id).scalar_subquery()
-                stmt = stmt.filter(ChatMessage.user_id.in_(group_users))
+            source = records(start=start_date, end=end_date, group_id=group_id)
+            stmt = select(source.c.created_at, source.c.model_id)
 
             result = await db.execute(stmt)
             results = result.all()
@@ -1034,20 +913,10 @@ class ChatMessageTable:
         async with get_async_db_context(db) as db:
             from datetime import datetime, timedelta
 
-            from open_webui.models.groups import group_user_memberships
+            from open_webui.utils.oi.statistics import records
 
-            stmt = select(ChatMessage.created_at, ChatMessage.model_id).filter(
-                ChatMessage.role == 'assistant',
-                ChatMessage.model_id.isnot(None),
-            )
-
-            if start_date:
-                stmt = stmt.filter(ChatMessage.created_at >= start_date)
-            if end_date:
-                stmt = stmt.filter(ChatMessage.created_at <= end_date)
-            if group_id:
-                group_users = select(group_user_memberships([group_id], True).c.user_id).scalar_subquery()
-                stmt = stmt.filter(ChatMessage.user_id.in_(group_users))
+            source = records(start=start_date, end=end_date, group_id=group_id)
+            stmt = select(source.c.created_at, source.c.model_id)
 
             result = await db.execute(stmt)
             results = result.all()

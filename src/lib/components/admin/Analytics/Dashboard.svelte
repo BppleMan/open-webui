@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { modelLabel } from '$lib/utils/modelDirectory';
+	import { modelLabel, modelIdentity } from '$lib/utils/modelDirectory';
 	import { onMount, getContext } from 'svelte';
 	import { models } from '$lib/stores';
 	import {
@@ -145,7 +145,7 @@
 			const modelsMap = new Map($models.map((m) => [m.id, m.name || m.id]));
 			modelStats = (modelsRes?.models ?? []).map((entry) => ({
 				...entry,
-				name: modelsMap.get(entry.model_id) || entry.model_id
+				name: modelsMap.get(entry.model_id) || modelIdentity(entry.model_id)?.name || entry.model_id
 			}));
 
 			userStats = usersRes?.users ?? [];
@@ -259,6 +259,9 @@
 	}}
 />
 
+<p class="mb-2 text-xs text-gray-500">
+	Token 为已确认用量小计；缺失用量的调用不代表免费。模型统计按原始调用去重，旧记录按消息统计。
+</p>
 <div class="flex items-center justify-between mb-2 gap-2">
 	<h2 class="text-sm font-medium text-gray-900 dark:text-white shrink-0">
 		{$i18n.t('Analytics')}
@@ -316,7 +319,7 @@
 			><span class="font-normal text-gray-900 dark:text-gray-300"
 				>{summary.total_messages.toLocaleString()}</span
 			>
-			{$i18n.t('messages')}</span
+			次调用（旧记录按消息）</span
 		>
 		<Tooltip
 			as="button"
@@ -372,7 +375,7 @@
 		{@const periodMap = { '24h': 'hour', '7d': 'week', '30d': 'month', '90d': 'year', all: 'all' }}
 		<div class="mb-4">
 			<div class="text-xs font-normal text-gray-600 dark:text-gray-400 mb-2 px-0.5">
-				{selectedPeriod === '24h' ? $i18n.t('Hourly Messages') : $i18n.t('Daily Messages')}
+				{selectedPeriod === '24h' ? '每小时调用' : '每日调用'}
 			</div>
 			<ChartLine
 				data={dailyStats}

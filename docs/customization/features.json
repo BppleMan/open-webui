@@ -465,13 +465,15 @@
         "checkpoint": "stage3_complete_full_plan_incomplete"
       },
       "stage4": {
-        "requirement": "R41",
+        "requirement": "R42",
         "prototype": "P28",
-        "implementation": "4A_local_checkpoint_4B_4C_4D_pending",
-        "verification": "4A_local_regressions_passed_full_entry_matrix_pending",
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
         "deployment": "not_deployed",
         "plan": "stage4-plan.md",
-        "full_plan_complete": false
+        "full_plan_complete": false,
+        "completion_boundary": "complete_entire_stage4_with_CI_no_production_deployment",
+        "evidence": "validation.md#stage-4--global-models-and-capability-paths"
       }
     },
     {
@@ -777,13 +779,15 @@
         "checkpoint": "stage3_complete_full_plan_incomplete"
       },
       "stage4": {
-        "requirement": "R41",
+        "requirement": "R42",
         "prototype": "P28",
-        "implementation": "4A_local_checkpoint_4B_4C_4D_pending",
-        "verification": "4A_local_regressions_passed_full_entry_matrix_pending",
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
         "deployment": "not_deployed",
         "plan": "stage4-plan.md",
-        "full_plan_complete": false
+        "full_plan_complete": false,
+        "completion_boundary": "complete_entire_stage4_with_CI_no_production_deployment",
+        "evidence": "validation.md#stage-4--global-models-and-capability-paths"
       }
     }
   ],
@@ -820,6 +824,18 @@
       "UI_HTTP_per_entry": "pending_4B",
       "CI_publication": "pending_full_stage4",
       "deployment": "unchanged"
+    },
+    "stage4": {
+      "backend_tests": 151,
+      "frontend_tests": 37,
+      "real_pgvector": "upload_index_query_rerank_and_denial_passed",
+      "realtime": "six_authenticated_WS_cases_passed",
+      "model_surfaces": "M01-M22 evidence recorded",
+      "postgresql": "15-table restore and canonical statistics passed",
+      "type_delta": "no_new_diagnostics_5781_upstream_remain",
+      "build": "production_frontend_build_passed",
+      "CI": "pending_push",
+      "deployment": "not_deployed"
     }
   },
   "review_remediation": {

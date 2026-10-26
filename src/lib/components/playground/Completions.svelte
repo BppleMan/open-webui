@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { v4 as uuidv4 } from 'uuid';
 	import ModelOptions from '$lib/components/models/ModelOptions.svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -6,7 +7,15 @@
 	import { onMount, tick, getContext } from 'svelte';
 
 	import { WEBUI_BASE_URL } from '$lib/constants';
-	import { WEBUI_NAME, config, user, chatModels as models, settings, showSidebar } from '$lib/stores';
+	import {
+		WEBUI_NAME,
+		config,
+		user,
+		socket,
+		chatModels as models,
+		settings,
+		showSidebar
+	} from '$lib/stores';
 	import { chatCompletion } from '$lib/apis/openai';
 
 	import { splitStream, resolveDefaultModelIds } from '$lib/utils';
@@ -14,6 +23,7 @@
 
 	const i18n = getContext('i18n');
 
+	const oiTemporaryId = uuidv4();
 	let loaded = false;
 	let text = '';
 
@@ -39,11 +49,17 @@
 
 	const textCompletionHandler = async () => {
 		const model = $models.find((model) => model.id === selectedModelId);
+		if (!model) {
+			toast.error('所选模型不可用，请重新选择连接模型');
+			return;
+		}
 
 		const [res, controller] = await chatCompletion(
 			localStorage.token,
 			{
 				model: model.id,
+				session_id: $socket?.id,
+				oi_temporary_id: oiTemporaryId,
 				stream: true,
 				messages: [
 					{

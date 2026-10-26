@@ -406,7 +406,11 @@
 					{/if}
 				</div>
 			{:else if message?.meta?.internal === true && message?.meta?.type === 'subagent'}
-				<SubagentResultRow content={message.content} result={message.meta} />
+				<SubagentResultRow
+					modelId={message.model || ''}
+					content={message.content}
+					result={message.meta}
+				/>
 			{:else if message.content !== ''}
 				<div class="w-full">
 					<div

@@ -407,6 +407,8 @@ ${content}
 			localStorage.token,
 			{
 				model: selectedModelId,
+				session_id: $socket?.id,
+				oi_temporary_id: `note:${id}`,
 				stream: false,
 				messages: [
 					{

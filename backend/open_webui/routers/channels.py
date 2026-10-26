@@ -1467,6 +1467,19 @@ async def post_new_message(
     db: AsyncSession = Depends(get_async_session),
 ):
     await check_channels_access(request, user)
+    mentioned_models = [item['id'] for item in extract_mentions(form_data.content) if item['id_type'] == 'M']
+    if mentioned_models:
+        visible = {
+            item['id']: item for item in await get_filtered_models(await get_all_models(request, user=user), user)
+        }
+        for reference in mentioned_models:
+            target = visible.get(reference)
+            if target is None:
+                raise HTTPException(404, 'Mentioned model is unavailable')
+            if target.get('direct'):
+                raise HTTPException(
+                    422, 'Channel replies require a server connection; browser models cannot run independently'
+                )
     # Message metadata is set by the server only.
     form_data.meta = None
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelLabel } from '$lib/utils/modelDirectory';
 	import ContextPanel from './ContextPanel.svelte';
 	import DraftSyncStatus from './DraftSyncStatus.svelte';
 	import type { TerminalContext } from '$lib/types';
@@ -2031,10 +2032,12 @@
 											<img
 												alt={$i18n.t('model profile')}
 												class="size-3.5 max-w-[1.75rem] object-cover rounded-full"
-												src={`${WEBUI_API_BASE_URL}/models/model/profile/image?id=${$models.find((model) => model.id === atSelectedModel.id).id}&lang=${$i18n.language}`}
+												src={`${WEBUI_API_BASE_URL}/models/model/profile/image?id=${atSelectedModel.id}&lang=${$i18n.language}`}
 											/>
 											<div class="translate-y-[0.5px]">
-												<span class="">{atSelectedModelName}</span>
+												<span class=""
+													>{modelLabel({ ...atSelectedModel, name: atSelectedModelName })}</span
+												>
 											</div>
 										</div>
 										<div>

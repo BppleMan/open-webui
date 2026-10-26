@@ -58,6 +58,20 @@ class SSEDecoder:
         return events
 
 
+def call_purpose(metadata):
+    if metadata.get('task'):
+        return metadata['task']
+    if metadata.get('internal'):
+        return 'subagent'
+    if metadata.get('automation_id'):
+        return 'automation'
+    if str(metadata.get('chat_id') or '').startswith('channel:'):
+        return 'channel'
+    if str(metadata.get('oi_temporary_id') or '').startswith('note:'):
+        return 'note'
+    return 'assistant'
+
+
 async def start_generation(user, metadata, model_id):
     chat_id = (
         ('temporary:' + metadata['oi_temporary_id'])
@@ -75,7 +89,7 @@ async def start_generation(user, metadata, model_id):
             chat_id,
             message_id,
             request_id,
-            'continue' if metadata.get('assistant_message_id') else metadata.get('task', 'assistant'),
+            'continue' if metadata.get('assistant_message_id') else call_purpose(metadata),
         )
         await db.commit()
         if not created:
@@ -134,7 +148,7 @@ async def reserve_generations(user, metadata, entries):
                     chat_id,
                     message_id,
                     request_id,
-                    'continue' if metadata.get('assistant_message_id') else metadata.get('task', 'assistant'),
+                    'continue' if metadata.get('assistant_message_id') else call_purpose(metadata),
                 )
             except ValueError:
                 generation = (
@@ -185,8 +199,20 @@ async def track_call(request, form, user, dispatch, binding=None, connection=Non
     from open_webui.utils.oi.context import observe_context
 
     context = observe_context(form, capabilities(binding) if binding else {})
+    context['purpose'] = call_purpose(metadata)
     if connection is not None:
         context['transport'] = getattr(connection, 'transport', None) or 'server'
+        context['model_identity'] = {
+            'id': binding.id,
+            'name': getattr(binding, 'name', binding.upstream_id),
+            'upstream_id': binding.upstream_id,
+            'connection': {
+                'id': connection.id,
+                'name': getattr(connection, 'name', connection.id),
+                'protocol': binding.protocol,
+                'transport': context['transport'],
+            },
+        }
     started, first_token = time.monotonic(), None
     usage, actual, source, status, ending = {}, None, None, 'interrupted', None
 

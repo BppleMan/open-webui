@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { modelConnection, modelLabel, sortByConnection } from '$lib/utils/modelDirectory';
 	import Fuse from 'fuse.js';
 	import { getContext, onDestroy, onMount, tick } from 'svelte';
 
 	import {
 		chatId as activeChatId,
 		folders,
-		models,
+		chatModels as models,
 		selectedTerminalId,
 		settings,
 		terminalServers
@@ -55,11 +56,11 @@
 		}));
 
 	$: fuse = new Fuse(modelItems, {
-		keys: ['value', 'tags', 'modelName'],
+		keys: ['value', 'tags', 'modelName', 'connection.name'],
 		threshold: 0.5
 	});
 
-	$: filteredModels = query ? fuse.search(query).map((e) => e.item) : modelItems;
+	$: filteredModels = sortByConnection(query ? fuse.search(query).map((e) => e.item) : modelItems);
 	$: knowledgeResults = [
 		...filesystemItems,
 		...(query.startsWith('http')
@@ -264,6 +265,7 @@
 			on:mousemove={() => {
 				selectedIdx = itemIdx;
 			}}
+			aria-label={item.name}
 			data-selected={itemIdx === selectedIdx}
 		>
 			<div
@@ -320,7 +322,12 @@
 
 	{#each filteredModels as model, modelIdx}
 		{@const itemIdx = knowledgeResults.length + modelIdx}
-		<Tooltip content={model.id} placement="top-start">
+		{#if modelIdx === 0 || modelConnection(model).id !== modelConnection(filteredModels[modelIdx - 1]).id}
+			<div class="px-2 pt-3 pb-1 text-[0.6875rem] font-medium text-gray-500">
+				连接 · {modelConnection(model).name}
+			</div>
+		{/if}
+		<Tooltip content={modelLabel(model)} placement="top-start">
 			<button
 				class="flex h-[1.6875rem] w-full items-center rounded-xl px-2 text-left text-[0.8125rem] hover:bg-gray-50/40 dark:hover:bg-gray-800/40 {itemIdx ===
 				selectedIdx
@@ -334,6 +341,7 @@
 					selectedIdx = itemIdx;
 				}}
 				on:focus={() => {}}
+				aria-label={modelLabel(model)}
 				data-selected={itemIdx === selectedIdx}
 			>
 				<div class="flex min-w-0 items-center text-black dark:text-gray-100">

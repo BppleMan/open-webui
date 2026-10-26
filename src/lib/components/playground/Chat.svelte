@@ -15,7 +15,7 @@
 		WEBUI_API_BASE_URL,
 		WEBUI_BASE_URL
 	} from '$lib/constants';
-	import { WEBUI_NAME, config, user, chatModels as models, settings } from '$lib/stores';
+	import { WEBUI_NAME, config, user, socket, chatModels as models, settings } from '$lib/stores';
 
 	import { chatCompletion } from '$lib/apis/openai';
 
@@ -41,6 +41,7 @@
 
 	const i18n: any = getContext('i18n');
 
+	const oiTemporaryId = uuidv4();
 	let loaded = false;
 
 	let selectedModelId = '';
@@ -96,7 +97,7 @@
 
 		const model = $models.find((model) => model.id === selectedModelId);
 		if (!model) {
-			selectedModelId = '';
+			toast.error('所选模型不可用，请重新选择连接模型');
 			return;
 		}
 
@@ -109,6 +110,8 @@
 			localStorage.token,
 			{
 				model: model.id,
+				session_id: $socket?.id,
+				oi_temporary_id: oiTemporaryId,
 				stream: true,
 				messages: [
 					system

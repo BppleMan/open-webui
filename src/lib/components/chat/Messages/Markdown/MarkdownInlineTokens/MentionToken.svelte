@@ -15,6 +15,7 @@
 </script>
 
 <script lang="ts">
+	import { modelIdentity, modelLabel } from '$lib/utils/modelDirectory';
 	import type { Tokens } from 'marked';
 	import { LinkPreview } from 'bits-ui';
 
@@ -95,11 +96,11 @@
 							: label;
 			} else if (idType === 'M') {
 				// Model
-				const model = $models.find((m) => m.id === id);
+				const model = $models.find((m) => m.id === id) || modelIdentity(id);
 				if (model) {
-					label = model.name;
+					label = modelLabel(model);
 				} else {
-					label = $i18n.t('Unknown');
+					label = token?.label || id;
 				}
 			}
 		}

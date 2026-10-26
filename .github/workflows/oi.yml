@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17-alpine
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: oi_test
           POSTGRES_PASSWORD: oi-synthetic-only
@@ -68,6 +68,13 @@ jobs:
           docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test oi_restore
           docker exec -i "$OI_POSTGRES_CONTAINER" pg_restore -U oi_test -d oi_restore --exit-on-error < "$RUNNER_TEMP/oi-pg.dump"
           DATABASE_URL=postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_restore python scripts/oi/postgres-acceptance.py verify
+      - name: HTTP, authenticated Realtime and pgvector acceptance
+        env:
+          PGVECTOR_DB_URL: postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_vector
+          OI_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test oi_vector
+          python scripts/oi/stage4-acceptance.py
   image:
     if: github.event_name != 'pull_request'
     needs: [frontend, backend]

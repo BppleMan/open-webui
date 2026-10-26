@@ -1,6 +1,8 @@
 """Portable conversation records. Imported billing events retain one canonical identity."""
 
 import copy
+from types import SimpleNamespace
+from open_webui.utils.oi.history import identities, safe_descriptor
 import hashlib
 import json
 from uuid import NAMESPACE_URL, uuid5
@@ -124,7 +126,8 @@ async def export_records(db, user_id, chat_id, directory=None):
     annotations = await db.get(ChatAnnotation, (user_id, chat_id))
     refs = set(body.get('models') or []) | {m.get('model') for m in messages.values() if m.get('model')}
     descriptors = []
-    allowed = {item['id']: item for item in (directory or [])}
+    allowed = {item['id']: item for item in await identities(db, SimpleNamespace(id=user_id, role='user'))}
+    allowed.update({item['id']: item for item in (directory or [])})
     for reference in sorted(refs):
         public = allowed.get(reference, {'id': reference})
         descriptor = {key: copy.deepcopy(public[key]) for key in ('id', 'name', 'upstream_id') if key in public}
@@ -275,7 +278,12 @@ async def restore_billing(db, user_id, manifest):
             if key in {'calls', 'snapshots'}:
                 item['generation_id'] = ids['generations'].get(value.get('generation_id'))
             if key == 'calls':
-                item['usage'] = {**(item.get('usage') or {}), 'archive_origin': {'call_id': source_id}}
+                item['usage'] = {
+                    **(item.get('usage') or {}),
+                    'archive_origin': {
+                        'call_id': (item.get('usage') or {}).get('archive_origin', {}).get('call_id') or source_id
+                    },
+                }
             if key == 'snapshots':
                 item['inherited_snapshot_id'] = ids['snapshots'].get(value.get('inherited_snapshot_id'))
                 item['baseline_ids'] = [ids['baselines'][ref] for ref in value.get('baseline_ids', [])]
@@ -363,7 +371,13 @@ async def restore_records(db, user_id, manifest, chat_id, model_mapping=None):
         chat=body,
         created_at=(manifest.get('chat_metadata') or {}).get('created_at') or stamp,
         updated_at=stamp,
-        meta={'oi_archive_digest': digest, 'oi_archive_source': manifest['root_chat_id']},
+        meta={
+            'oi_archive_digest': digest,
+            'oi_archive_source': manifest['root_chat_id'],
+            'oi_model_descriptors': [
+                safe_descriptor(item) for item in manifest.get('model_references', []) if isinstance(item, dict)
+            ],
+        },
         archived=bool((manifest.get('chat_metadata') or {}).get('archived', False)),
         pinned=bool((manifest.get('chat_metadata') or {}).get('pinned', False)),
         variables=copy.deepcopy((manifest.get('chat_metadata') or {}).get('variables') or {}),

@@ -34,7 +34,7 @@
 				return _item;
 			}),
 		{
-			keys: ['value', 'tags', 'modelName'],
+			keys: ['value', 'tags', 'modelName', 'connection.name'],
 			threshold: 0.5
 		}
 	);

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { modelLabel } from '$lib/utils/modelDirectory';
 	import { getContext } from 'svelte';
 	const i18n = getContext<any>('i18n');
 	import dayjs from 'dayjs';
@@ -123,7 +124,7 @@
 					.sort(([, a], [, b]) => b - a)
 					.slice(0, 5) as [n, c]}
 					<div class="flex items-center justify-between gap-2 py-0.5">
-						<span class="min-w-0 truncate text-gray-600 dark:text-gray-300">{n}</span>
+						<span class="min-w-0 truncate text-gray-600 dark:text-gray-300">{modelLabel(n)}</span>
 						<span class="shrink-0 text-gray-900 tabular-nums dark:text-white"
 							>{c.toLocaleString()}
 							<span class="text-gray-400">({total > 0 ? ((c / total) * 100).toFixed(0) : 0}%)</span

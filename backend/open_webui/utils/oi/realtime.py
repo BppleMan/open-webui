@@ -82,12 +82,14 @@ class CallLedger:
             response['metadata'] = {**response.get('metadata', {}), 'oi_call_id': call_id}
         return command
 
-    async def settle(self, call_id, raw=None, status='completed', ending=None):
+    async def settle(self, call_id, raw=None, status='completed', ending=None, *, final=True):
         async with self.lock:
             entry = self.entries.get(call_id)
             if entry is None or entry['done']:
                 return
-            usage = accounting.normalize_usage(raw or {}, 'realtime' if entry['purpose'] == 'realtime' else 'openai')
+            raw = {**entry.get('raw_usage', {}), **(raw or {})}
+            entry['raw_usage'] = raw
+            usage = accounting.normalize_usage(raw, 'realtime' if entry['purpose'] == 'realtime' else 'openai')
             usage['context'] = {'purpose': entry['purpose']}
             if ending:
                 usage['finish'] = ending
@@ -108,9 +110,10 @@ class CallLedger:
                     source='provider:usage.cost:USD' if actual is not None else None,
                     status=status,
                 )
-                await accounting.finish_generation(db, entry['generation'], status)
+                if final:
+                    await accounting.finish_generation(db, entry['generation'], status)
                 await db.commit()
-            entry['done'] = True
+            entry['done'] = final
 
     async def observe(self, event):
         kind = event.get('type', '')
@@ -123,7 +126,7 @@ class CallLedger:
         }:
             call_id = await self.begin('stt:' + event['item_id'], 'stt', self.transcription)
             await self.settle(call_id, event.get('usage'), 'failed' if kind.endswith('.failed') else 'completed')
-        elif kind in {'response.created', 'response.done'}:
+        elif kind.startswith('response.') and isinstance(event.get('response'), dict):
             response = event.get('response') or {}
             response_id = response.get('id')
             if not response_id:
@@ -142,6 +145,8 @@ class CallLedger:
                     else await self.begin('provider:' + response_id, 'realtime', self.voice)
                 )
             self.responses[response_id] = call_id
+            if kind != 'response.done' and response.get('usage'):
+                await self.settle(call_id, response['usage'], 'running', final=False)
             if kind == 'response.done':
                 state = response.get('status')
                 status = state if state in {'completed', 'failed', 'cancelled', 'incomplete'} else 'interrupted'
