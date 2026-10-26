@@ -14,7 +14,7 @@ from open_webui.models.chats import Chats
 from open_webui.models.config import Config
 from open_webui.models.models import Models, ModelVoice
 from open_webui.utils.access_control import has_permission
-from open_webui.utils.auth import get_verified_user_by_token
+from open_webui.utils.auth import get_verified_user_by_token, decode_token
 from open_webui.utils.headers import get_microsoft_entra_id_access_token
 from open_webui.utils.json_codec import JSONCodec
 from open_webui.utils.models import check_model_access, get_all_models
@@ -356,6 +356,17 @@ async def _get_realtime_connection(config: dict) -> tuple[str, dict[str, str]]:
     return ws_url, headers
 
 
+def renewed_human_session(previous_claims, token):
+    current = decode_token(token) if isinstance(token, str) else None
+    if not previous_claims or not current or current.get('typ', 'session') != 'session':
+        return False
+    if previous_claims.get('typ', 'session') != 'session':
+        return False
+    return all(current.get(key) == previous_claims.get(key) for key in (
+        'id', 'session_stamp', 'auth_time', 'auth_method', 'mfa_verified'
+    ))
+
+
 async def validate_bridge_access(app, token, redis, model_id, ledger=None):
     """Check current session, call permission and every selected model before forwarding."""
     current = await get_verified_user_by_token(token, redis)
@@ -411,6 +422,7 @@ async def realtime_call(ws: WebSocket):
         if not isinstance(auth, dict) or auth.get('type') != 'auth' or not isinstance(auth.get('token'), str):
             raise ValueError('Authentication required')
         token = auth['token']
+        original_claims = decode_token(token)
         redis = getattr(ws.app.state, 'redis', None)
         user = await get_verified_user_by_token(token, redis)
         if not user:
@@ -442,7 +454,7 @@ async def realtime_call(ws: WebSocket):
         model_id = auth.get('model_id')
         if not isinstance(model_id, str):
             raise ValueError('Select a chat model')
-        if not ws.app.state.MODELS:
+        if not ws.app.state.MODELS or (model_id.startswith('oi:') and model_id not in ws.app.state.MODELS):
             await get_all_models(ws, user=user)
         model = ws.app.state.MODELS.get(model_id)
         if not model or model.get('direct'):
@@ -541,11 +553,20 @@ async def realtime_call(ws: WebSocket):
                 await upstream.send_json(command)
 
         async def client_events():
+            nonlocal token
             while True:
                 raw = await ws.receive_text()
                 if len(raw.encode()) > MAX_EVENT_BYTES:
                     raise ValueError('Call event is too large')
                 event = JSONCodec.loads(raw)
+                if isinstance(event, dict) and event.get('type') == 'bridge.auth.refresh':
+                    candidate = event.get('token')
+                    if set(event) != {'type', 'token'} or not renewed_human_session(original_claims, candidate):
+                        raise ValueError('Call authentication changed. Start a new call.')
+                    await validate_bridge_access(ws.app, candidate, redis, model_id, ledger)
+                    token = candidate
+                    await ws.send_json({'type': 'bridge.auth.refreshed'})
+                    continue
                 if event == {'type': 'bridge.ping'}:
                     await validate_bridge_access(ws.app, token, redis, model_id, ledger)
                     await ws.send_json({'type': 'bridge.pong'})

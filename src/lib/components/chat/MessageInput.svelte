@@ -2125,6 +2125,11 @@
 												</div>
 											</div>
 										{:else}
+											{#if file.status === 'error'}
+												<p role="status" class="w-full text-xs text-amber-600 dark:text-amber-400">
+													{file.name}：{file.error || '上传未完成，请重新选择文件。'}
+												</p>
+											{/if}
 											<FileItem
 												item={file}
 												name={file.name}
@@ -2134,7 +2139,8 @@
 												dismissible={true}
 												edit={true}
 												small={true}
-												modal={['file', 'collection'].includes(file?.type)}
+												modal={file.status !== 'error' &&
+													['file', 'collection'].includes(file?.type)}
 												on:dismiss={async () => {
 													// Remove from UI state
 													files.splice(fileIdx, 1);

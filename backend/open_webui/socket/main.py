@@ -589,6 +589,13 @@ async def user_join(sid, data):
     if not user:
         return
 
+    previous = SESSION_POOL.get(sid)
+    if previous and previous.get('id') != user.id:
+        # A socket's existing user/channel rooms must never survive an account switch.
+        # Reconnect with the new credential rather than retaining old subscriptions.
+        await sio.disconnect(sid)
+        return
+
     socket_user = {
         **user.model_dump(
             exclude=[

@@ -146,6 +146,16 @@ export class DraftManager {
 	private pendingClear?: { revision: number; mutationId: string; inputVersion?: string };
 	private pendingQueueAcks: QueueAcknowledgement[] = [];
 	private state: DraftState = { status: 'loading', revision: 0 };
+	private resume = () => {
+		void this.refresh();
+	};
+	private visibility = () => {
+		if (document.visibilityState === 'visible') this.resume();
+	};
+	private pagehide = () => {
+		void this.persist().catch(() => {});
+		void this.flush();
+	};
 
 	constructor(
 		private options: {
@@ -266,6 +276,10 @@ export class DraftManager {
 			this.payload = legacy;
 			this.dirty = true;
 		}
+		// Restore the durable local copy before a possibly slow network read. User
+		// edits during that read must participate in CAS instead of being overwritten.
+		this.ready = true;
+		if (!this.destroyed) this.options.onRestore(this.payload);
 		try {
 			if (!this.options.temporary && !this.isNew) {
 				if (this.pendingClear) await this.retryClear();
@@ -307,6 +321,12 @@ export class DraftManager {
 		}
 		if (this.dirty && !this.conflict) this.schedule();
 		if (!this.options.temporary) this.poll = setInterval(() => this.refresh(), 10000);
+		if (typeof window !== 'undefined') {
+			window.addEventListener('online', this.resume);
+			window.addEventListener('storage', this.resume);
+			window.addEventListener('pagehide', this.pagehide);
+			document.addEventListener('visibilitychange', this.visibility);
+		}
 		return this.payload;
 	}
 
@@ -411,30 +431,37 @@ export class DraftManager {
 		}
 	}
 	async refresh() {
-		if (this.pendingClear) await this.retryClear();
-		if (this.pendingQueueAcks.length) await this.retryQueueAcknowledgements();
 		if (
 			this.destroyed ||
-			this.isNew ||
-			this.dirty ||
-			this.saving ||
-			this.conflict ||
+			!this.ready ||
 			this.options.temporary ||
+			this.conflict ||
+			this.saving ||
 			document.visibilityState === 'hidden'
 		)
 			return;
+		// Retry the outbox first, including a new chat whose identity allocation
+		// failed offline. The revision check still exposes intervening remote edits.
+		if (this.dirty || this.pendingClear || this.pendingQueueAcks.length) {
+			await this.flush();
+			return;
+		}
+		if (this.isNew) return;
 		try {
 			const server = await this.api(`/chats/${this.chatId}/draft`);
-			if (server.revision === this.revision || this.dirty) return;
-			this.revision = server.revision;
-			this.payload = server.payload;
-			await this.persist();
-			if (!this.destroyed) this.options.onRestore(this.payload);
+			if (this.dirty || this.destroyed) return;
+			if (server.revision !== this.revision) {
+				this.revision = server.revision;
+				this.payload = server.payload;
+				await this.persist();
+				if (!this.destroyed) this.options.onRestore(this.payload);
+			}
 			this.emit('saved');
 		} catch {
 			this.emit('offline');
 		}
 	}
+
 	async resolve(choice: 'local' | 'server', candidate?: LocalDraft) {
 		if (!this.conflict) return;
 		if (candidate) this.recoveryCandidates = [structuredClone(candidate)];
@@ -641,6 +668,12 @@ export class DraftManager {
 
 	dispose() {
 		this.destroyed = true;
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('online', this.resume);
+			window.removeEventListener('storage', this.resume);
+			window.removeEventListener('pagehide', this.pagehide);
+			document.removeEventListener('visibilitychange', this.visibility);
+		}
 		clearTimeout(this.timer);
 		clearTimeout(this.maximumWait);
 		clearInterval(this.poll);
@@ -649,4 +682,29 @@ export class DraftManager {
 			this.flush();
 		}
 	}
+}
+
+/** A restored upload has no live uploader in this page; preserve its reference,
+ * expose recovery, and never silently submit an incomplete attachment. */
+export function restoreDraftUploads(
+	payload: DraftPayload,
+	activeIds = new Set<string>()
+): DraftPayload {
+	const files = (items: any[] = []) =>
+		items.map((file) =>
+			file?.status === 'uploading' && !activeIds.has(file.itemId)
+				? {
+						...file,
+						status: 'error',
+						error: '上传尚未完成。请回到原窗口完成上传，或移除此项并重新选择文件。'
+					}
+				: file
+		);
+	return {
+		...payload,
+		files: files(payload.files),
+		...(payload.queue
+			? { queue: payload.queue.map((item: QueuedDraft) => ({ ...item, files: files(item.files) })) }
+			: {})
+	};
 }

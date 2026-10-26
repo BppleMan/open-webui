@@ -93,6 +93,9 @@ export class RealtimeCall {
 	private session = 0;
 	private callId = '';
 	private token = '';
+	private sessionUpdated = () => {
+		if (this.connected) this.send({ type: 'bridge.ping' });
+	};
 	private configuration = '';
 	private chatContext = '';
 	private cancelRequested = false;
@@ -127,6 +130,8 @@ export class RealtimeCall {
 		try {
 			const context = this.options.context();
 			this.token = token;
+			window.addEventListener('oi:session-updated', this.sessionUpdated);
+			window.addEventListener('storage', this.sessionUpdated);
 			this.configuration = JSON.stringify([context.modelId, context.voiceModel, context.voice]);
 			if (!context.modelId) throw new Error('Select one server-configured chat model.');
 			this.context = new AudioContext({ sampleRate: 24000 });
@@ -188,7 +193,13 @@ export class RealtimeCall {
 	}
 
 	private send(event: any) {
-		if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(event));
+		if (this.ws?.readyState !== WebSocket.OPEN) return;
+		const token = localStorage.getItem('token');
+		if (event.type !== 'auth' && token && token !== this.token) {
+			this.ws.send(JSON.stringify({ type: 'bridge.auth.refresh', token }));
+			this.token = token;
+		}
+		this.ws.send(JSON.stringify(event));
 	}
 
 	private audioEvent(data: any) {
@@ -737,6 +748,8 @@ export class RealtimeCall {
 	}
 
 	end() {
+		window.removeEventListener('oi:session-updated', this.sessionUpdated);
+		window.removeEventListener('storage', this.sessionUpdated);
 		if (this.connected) {
 			this.stopSpeaking();
 			for (const response of this.responses.values()) {

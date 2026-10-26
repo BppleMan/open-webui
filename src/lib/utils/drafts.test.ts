@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { DraftManager, createQueuedDraft, type LocalDraft } from './drafts';
+import { DraftManager, restoreDraftUploads, createQueuedDraft, type LocalDraft } from './drafts';
 
 beforeEach(() => {
 	vi.useFakeTimers();
@@ -377,5 +377,69 @@ it('never allocates an ordinary chat for editor initialization or model-only cha
 	expect(h.request.mock.calls.filter(([url]) => url.endsWith('/chats/drafts'))).toHaveLength(1);
 	expect(h.manager.isNew).toBe(false);
 	expect(h.server().payload.prompt).toBe('真正输入的内容');
+	h.manager.dispose();
+});
+
+it('automatically synchronizes dirty input after connectivity returns', async () => {
+	const h = harness();
+	await h.manager.load();
+	h.offline(true);
+	await h.manager.edit({ prompt: 'offline work' });
+	await h.manager.flush();
+	h.offline(false);
+	await h.manager.refresh();
+	expect(h.server().payload.prompt).toBe('offline work');
+	h.manager.dispose();
+});
+
+it('does not overwrite typing while the initial server draft is loading', async () => {
+	const h = harness();
+	h.remoteEdit();
+	let release!: () => void;
+	const original = h.request.getMockImplementation()!;
+	h.request.mockImplementationOnce(async (url: string, init: RequestInit = {}) => {
+		await new Promise<void>((r) => (release = r));
+		return original(url, init);
+	});
+	const loading = h.manager.load();
+	await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+	expect(await h.manager.edit({ prompt: 'typed while loading' })).toBe(true);
+	release();
+	await loading;
+	expect(h.manager.payload.prompt).toBe('typed while loading');
+	await expect(h.manager.prepareSend()).rejects.toThrow('冲突');
+	h.manager.dispose();
+});
+
+it('exposes interrupted restored uploads without changing completed files or live uploads', () => {
+	const payload = {
+		prompt: 'keep text',
+		files: [
+			{ itemId: 'lost', name: 'lost.txt', status: 'uploading' },
+			{ itemId: 'live', status: 'uploading' },
+			{ id: 'stored', status: 'uploaded' }
+		],
+		queue: [{ id: 'q', files: [{ name: 'queued.txt', status: 'uploading' }] }]
+	};
+	const restored = restoreDraftUploads(payload, new Set(['live']));
+	expect(restored.prompt).toBe('keep text');
+	expect(restored.files[0].status).toBe('error');
+	expect(restored.files[0].name).toBe('lost.txt');
+	expect(restored.files[1].status).toBe('uploading');
+	expect(restored.files[2]).toEqual(payload.files[2]);
+	expect(restored.queue[0].files[0].status).toBe('error');
+	expect(payload.files[0].status).toBe('uploading');
+});
+it('reconnect still exposes remote conflicts rather than overwriting them', async () => {
+	const h = harness();
+	await h.manager.load();
+	h.offline(true);
+	await h.manager.edit({ prompt: 'offline' });
+	await h.manager.flush();
+	h.remoteEdit();
+	h.offline(false);
+	await h.manager.refresh();
+	expect(h.server().payload.prompt).toBe('remote');
+	await expect(h.manager.prepareSend()).rejects.toThrow('冲突');
 	h.manager.dispose();
 });

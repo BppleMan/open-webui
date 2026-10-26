@@ -56,7 +56,12 @@
 
 	import { executeToolServer, getBackendConfig, getModels, getVersion } from '$lib/apis';
 	import { getSessionUser, updateUserTimezone } from '$lib/apis/auths';
-	import { renewSession, sessionRecoveryRequired, tokenExpiry } from '$lib/utils/session';
+	import {
+		renewSession,
+		readCurrentSession,
+		sessionRecoveryRequired,
+		tokenExpiry
+	} from '$lib/utils/session';
 	import SessionRecovery from '$lib/components/auth/SessionRecovery.svelte';
 	import { getAllTags } from '$lib/apis/chats';
 	import { chatCompletion } from '$lib/apis/openai';
@@ -1078,6 +1083,7 @@
 			}
 			await user.set(session);
 			sessionRecoveryRequired.set(false);
+			window.dispatchEvent(new Event('oi:session-updated'));
 			if (!loaded) window.location.reload();
 		};
 		/** @param {StorageEvent} event */
@@ -1233,12 +1239,20 @@
 		window.addEventListener('resize', onResize);
 
 		let queueUserId = $user?.id;
+		let socketCredential = '';
 		const unsubscribeQueueUser = user.subscribe(async (value) => {
 			if (queueUserId !== value?.id) {
 				channelRequestQueues.set({});
 				queueUserId = value?.id;
 			}
 			if (value) {
+				// HTTP renewal must also replace the credential saved on the live socket.
+				// Otherwise its periodic server auth check still expires the old JWT.
+				const currentToken = localStorage.getItem('token');
+				if ($socket?.connected && currentToken && currentToken !== socketCredential) {
+					socketCredential = currentToken;
+					$socket.emit('user-join', { auth: { token: currentToken } });
+				}
 				$socket?.off('events', chatEventHandler);
 				$socket?.off('events:channel', channelEventHandler);
 
@@ -1307,7 +1321,7 @@
 
 				if (localStorage.token) {
 					// Get Session User Info
-					const sessionUser = await getSessionUser(localStorage.token).catch((error) => {
+					const sessionUser = await readCurrentSession(getSessionUser).catch((error) => {
 						if (error?.status !== 401) sessionBootstrapError = true;
 						return null;
 					});

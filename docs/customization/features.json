@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "OI Open WebUI customization",
-  "updated_on": "2026-10-26",
+  "updated_on": "2026-10-27",
   "phase": "implementation",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
@@ -292,7 +292,19 @@
         "网络异常不等同认证撤销",
         "需要重新登录时保留页面与草稿",
         "真实撤销仍正确生效"
-      ]
+      ],
+      "stage5": {
+        "implementation": "partial_checkpoint_user_requested_pause",
+        "verification": "154_backend_43_frontend_passed_HTTP_WS_PG_MFA_and_two_browser_paths_passed_remaining_UI_matrix_pending",
+        "deployment": "not_deployed",
+        "physical_PWA": "not_required_by_user_U30_not_tested",
+        "checkpoint": "stage5-checkpoint.md",
+        "remaining": [
+          "browser_auth_recovery_and_old_tab_races",
+          "browser_close_reopen_IME_conflicts_send_upload_temporary_account_switch",
+          "stage5_CI_runner_and_actual_CI_image_verification"
+        ]
+      }
     },
     {
       "id": "F11",
@@ -329,6 +341,18 @@
           "physical_PWA",
           "cross_browser",
           "full_auth_matrix"
+        ]
+      },
+      "stage5": {
+        "implementation": "partial_checkpoint_user_requested_pause",
+        "verification": "154_backend_43_frontend_passed_HTTP_WS_PG_MFA_and_two_browser_paths_passed_remaining_UI_matrix_pending",
+        "deployment": "not_deployed",
+        "physical_PWA": "not_required_by_user_U30_not_tested",
+        "checkpoint": "stage5-checkpoint.md",
+        "remaining": [
+          "browser_auth_recovery_and_old_tab_races",
+          "browser_close_reopen_IME_conflicts_send_upload_temporary_account_switch",
+          "stage5_CI_runner_and_actual_CI_image_verification"
         ]
       }
     },
@@ -792,6 +816,18 @@
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40338819017",
         "pushed": true,
         "checkpoint": "stage4_complete_full_plan_incomplete"
+      },
+      "stage5": {
+        "implementation": "partial_checkpoint_user_requested_pause",
+        "verification": "154_backend_43_frontend_passed_HTTP_WS_PG_MFA_and_two_browser_paths_passed_remaining_UI_matrix_pending",
+        "deployment": "not_deployed",
+        "physical_PWA": "not_required_by_user_U30_not_tested",
+        "checkpoint": "stage5-checkpoint.md",
+        "remaining": [
+          "browser_auth_recovery_and_old_tab_races",
+          "browser_close_reopen_IME_conflicts_send_upload_temporary_account_switch",
+          "stage5_CI_runner_and_actual_CI_image_verification"
+        ]
       }
     }
   ],

@@ -38,6 +38,7 @@ export async function renewSession() {
 		const session = await response.json();
 		if (isStaleCredential(attempted, localStorage.getItem('token'))) return null;
 		localStorage.setItem('token', session.token);
+		if (typeof window !== 'undefined') window.dispatchEvent(new Event('oi:session-updated'));
 		sessionRecoveryRequired.set(false);
 		return session;
 	})()
@@ -46,4 +47,19 @@ export async function renewSession() {
 			renewal = null;
 		});
 	return renewal;
+}
+
+/** Ignore a stale bootstrap response if another tab signed in while it was pending. */
+export async function readCurrentSession(lookup: (token: string) => Promise<any>) {
+	for (let attempt = 0; attempt < 3; attempt++) {
+		const token = localStorage.getItem('token');
+		if (!token) return null;
+		try {
+			const session = await lookup(token);
+			if (!isStaleCredential(token, localStorage.getItem('token'))) return session;
+		} catch (error) {
+			if (!isStaleCredential(token, localStorage.getItem('token'))) throw error;
+		}
+	}
+	throw new Error('Session changed while loading; retry with the current sign-in');
 }

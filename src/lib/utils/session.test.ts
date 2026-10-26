@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, it, expect, vi } from 'vitest';
 import { get } from 'svelte/store';
-import { renewSession, sessionRecoveryRequired } from './session';
+import { renewSession, readCurrentSession, sessionRecoveryRequired } from './session';
 let token: string | null;
 beforeEach(() => {
 	token = 'original';
@@ -51,4 +51,24 @@ it('opens recovery on a genuine unauthorized refresh without clearing the token'
 	await renewSession();
 	expect(token).toBe('original');
 	expect(get(sessionRecoveryRequired)).toBe(true);
+});
+
+it('uses the new login after an old bootstrap request returns unauthorized', async () => {
+	let reject!: (reason: any) => void;
+	const lookup = vi
+		.fn()
+		.mockImplementationOnce(() => new Promise((_r, bad) => (reject = bad)))
+		.mockResolvedValueOnce({ id: 'u', token: 'new-login' });
+	const loading = readCurrentSession(lookup);
+	token = 'new-login';
+	reject({ status: 401 });
+	expect(await loading).toEqual({ id: 'u', token: 'new-login' });
+	expect(lookup.mock.calls.map(([value]) => value)).toEqual(['original', 'new-login']);
+	expect(get(sessionRecoveryRequired)).toBe(false);
+});
+it('coalesces simultaneous renewals in one tab', async () => {
+	vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ token: 'renewed' })));
+	const [a, b] = await Promise.all([renewSession(), renewSession()]);
+	expect(a).toEqual(b);
+	expect(fetch).toHaveBeenCalledTimes(1);
 });

@@ -4,6 +4,7 @@
 		DraftManager,
 		createQueuedDraft,
 		hasDraftInput,
+		restoreDraftUploads,
 		type QueuedDraft,
 		type DraftState,
 		type DraftTicket
@@ -845,6 +846,10 @@
 	const submittedDrafts = new Map<string, { manager: DraftManager; ticket: DraftTicket }>();
 
 	const applyDraftInput = async (input: any) => {
+		input = restoreDraftUploads(
+			input,
+			new Set(files.filter((file) => file.status === 'uploading').map((file) => file.itemId))
+		);
 		restoringDraft = true;
 		try {
 			chatRequestQueues.update((q) => ({ ...q, [$chatId]: input.queue ?? [] }));
@@ -4975,7 +4980,7 @@
 		)
 			return;
 		if (!draftManager) await restoreChatInput(null);
-		await draftLoad;
+		if (!draftManager?.ready) await draftLoad;
 		await draftManager?.edit({
 			...draft,
 			queue: $chatRequestQueues[$chatId] ?? [],
