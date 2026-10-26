@@ -5,6 +5,7 @@ import {
 	capableModels,
 	modelConnection,
 	modelLabel,
+	modelMatches,
 	resolveModelReference,
 	preserveModelReferences,
 	setModelDirectory
@@ -23,6 +24,12 @@ const b = {
 };
 beforeEach(() => setModelDirectory([a, b]));
 describe('connection directory identities', () => {
+	it('searches same-name models by connection and retains unavailable saved identities', () => {
+		expect(
+			[a, b].filter((model) => modelMatches(model, 'connection b')).map((model) => model.id)
+		).toEqual(['oi:b']);
+		expect(modelLabel('oi:removed')).toContain('oi:removed');
+	});
 	it('keeps specialized models out of chat while retaining unknown legacy and explicit mixed capability models', () => {
 		const entries = [
 			{ id: 'embedding', capabilities: { embedding: true } },

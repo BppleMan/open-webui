@@ -463,6 +463,15 @@
         "source_submission": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40313069562",
         "checkpoint": "stage3_complete_full_plan_incomplete"
+      },
+      "stage4": {
+        "requirement": "R41",
+        "prototype": "P28",
+        "implementation": "4A_local_checkpoint_4B_4C_4D_pending",
+        "verification": "4A_local_regressions_passed_full_entry_matrix_pending",
+        "deployment": "not_deployed",
+        "plan": "stage4-plan.md",
+        "full_plan_complete": false
       }
     },
     {
@@ -766,6 +775,15 @@
         "source_submission": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40313069562",
         "checkpoint": "stage3_complete_full_plan_incomplete"
+      },
+      "stage4": {
+        "requirement": "R41",
+        "prototype": "P28",
+        "implementation": "4A_local_checkpoint_4B_4C_4D_pending",
+        "verification": "4A_local_regressions_passed_full_entry_matrix_pending",
+        "deployment": "not_deployed",
+        "plan": "stage4-plan.md",
+        "full_plan_complete": false
       }
     }
   ],
@@ -792,6 +810,16 @@
       "image": "ghcr.io/bppleman/open-webui-oi",
       "tag": "sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
       "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
+    },
+    "stage4A_local": {
+      "backend_tests": 135,
+      "frontend_tests": 36,
+      "type_gate": "no_new_diagnostics_5798_upstream_remain",
+      "production_frontend_build": "passed",
+      "scope": "local_4A_regressions_only",
+      "UI_HTTP_per_entry": "pending_4B",
+      "CI_publication": "pending_full_stage4",
+      "deployment": "unchanged"
     }
   },
   "review_remediation": {

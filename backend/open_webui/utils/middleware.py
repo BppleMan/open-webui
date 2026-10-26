@@ -2054,10 +2054,12 @@ async def process_chat_payload(request, form_data, user, metadata, model):
     if model.get('owned_by') == 'arena':
         arena_model_ids = model.get('info', {}).get('meta', {}).get('model_ids')
         arena_filter_mode = model.get('info', {}).get('meta', {}).get('filter_mode')
-        from open_webui.utils.oi.model_capabilities import arena_candidates
+        from open_webui.utils.oi.model_capabilities import accessible_arena_candidates
 
         selected_model_id = random.choice(
-            arena_candidates(request.app.state.MODELS, arena_model_ids, arena_filter_mode)
+            await accessible_arena_candidates(
+                request.app.state.MODELS, user, arena_model_ids, arena_filter_mode, metadata
+            )
         )
 
         selected_model = request.app.state.MODELS.get(selected_model_id)

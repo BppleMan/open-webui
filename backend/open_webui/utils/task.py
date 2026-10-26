@@ -15,17 +15,20 @@ log = logging.getLogger(__name__)
 # Let the right tool be given for the work at hand,
 # not the one that flatters, but the one that serves.
 def get_task_model_id(default_model_id: str, task_model: str, task_model_external: str, models) -> str:
-    # Set the task model
-    task_model_id = default_model_id
-    # Check if the user has a custom task model and use that model
-    if models.get(task_model_id, {}).get('connection_type') == 'local':
-        if task_model and task_model in models:
-            task_model_id = task_model
-    else:
-        if task_model_external and task_model_external in models:
-            task_model_id = task_model_external
+    from fastapi import HTTPException
+    from open_webui.utils.oi.model_capabilities import chat_model
 
-    return task_model_id
+    configured = (
+        task_model if models.get(default_model_id, {}).get('connection_type') == 'local' else task_model_external
+    )
+    if not configured:
+        return default_model_id  # Preserve the established default only when no override was selected.
+    target = models.get(configured)
+    if target is None:
+        raise HTTPException(422, 'The configured task model is unavailable; select a valid server chat model')
+    if target.get('direct') or not chat_model(target):
+        raise HTTPException(422, 'The configured task model must be a server chat model')
+    return configured
 
 
 def prompt_variables_template(template: str, variables: dict[str, str]) -> str:

@@ -1,0 +1,279 @@
+{
+  "phase": "stage4",
+  "status": "in_progress",
+  "source_baseline": "efc4ed760",
+  "surfaces": [
+    {
+      "id": "M01",
+      "surface": "聊天主模型与多选",
+      "anchors": "`chat/ModelSelector.svelte`、`chat/ModelSelector/Selector.svelte`、`ModelItem.svelte`、`ModelItemMenu.svelte`",
+      "contract": "全部按连接分组；单选、多选、搜索、菜单引用同一绑定",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M02",
+      "surface": "@ 模型与输入建议",
+      "anchors": "`chat/MessageInput.svelte`、`chat/MessageInput/Commands/Models.svelte`、`AtCommands.svelte`",
+      "contract": "候选和插入的模型引用保留连接身份",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M03",
+      "surface": "并行回复、regen、继续和合并",
+      "anchors": "`chat/Chat.svelte`、`chat/Messages/MultiResponseMessages.svelte`、`ResponseMessage.svelte`、`RateComment.svelte`",
+      "contract": "继承与切换都解析具体绑定；新生成和费用归属一致",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M04",
+      "surface": "新聊天概览、收藏与侧栏",
+      "anchors": "`chat/Overview/View.svelte`、`layout/Sidebar/PinnedModelList.svelte`、`PinnedModelItem.svelte`",
+      "contract": "收藏、最近项和快捷打开仍可区分具体连接",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M05",
+      "surface": "文件夹默认模型和预览",
+      "anchors": "`layout/Sidebar/Folders/FolderModal.svelte`、`layout/Sidebar/FolderHoverPreview.svelte`",
+      "contract": "文件夹多模型设置及新聊天继承不丢来源",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M06",
+      "surface": "工作区模型、预设和基础模型",
+      "anchors": "`workspace/Models.svelte`、`workspace/Models/ModelEditor.svelte`；`src/routes/(app)/workspace/models/`",
+      "contract": "预设列表与基础模型选择同属目录，预设不变成无来源别名",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M07",
+      "surface": "管理员模型目录和批量管理",
+      "anchors": "`admin/Settings/Models.svelte`、`admin/Settings/Models/ManageModelsModal.svelte`、`admin/Settings/Models/Manage/`",
+      "contract": "管理、启停、刷新、批量操作明确作用于哪个连接",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M08",
+      "surface": "管理员连接及个人直连",
+      "anchors": "`admin/Settings/Connections.svelte`、`admin/Settings/Connections/`、`chat/Settings/Connections.svelte`、`chat/Settings/Connections/Connection.svelte`",
+      "contract": "模板创建连接，所有模型绑定连接；个人连接权限和现有直连迁移单独覆盖",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": [
+        "stage3: connection migration and browser transport accepted; remaining admin model controls are separate rows"
+      ]
+    },
+    {
+      "id": "M09",
+      "surface": "用户组默认模型与权限",
+      "anchors": "`admin/Users/Groups/General.svelte`、`workspace/Models/ModelEditor.svelte` 的访问控制配置",
+      "contract": "连接和模型授权有唯一身份，服务端执行与 UI 一致",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M10",
+      "surface": "后台任务和手动压缩用模型",
+      "anchors": "`admin/Settings/Interface.svelte:210`、`:229`、`:305`",
+      "contract": "TASK_MODEL、TASK_MODEL_EXTERNAL、CONTEXT_COMPACTION_MODEL 均用统一选择；选模型不自动开启压缩",
+      "identity": "explicit_task_binding_failure_regression_passed_UI_pending",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": [
+        "test/oi/test_stage4_model_selection.py: configured task unavailable/browser/specialized rejects instead of fallback"
+      ]
+    },
+    {
+      "id": "M11",
+      "surface": "自动化创建/编辑与显示",
+      "anchors": "`AutomationModal.svelte:187`、`automations/ModelDropdown.svelte`、`automations/AutomationEditor.svelte:273`",
+      "contract": "保存和后台执行均保留绑定；显示来源；失效不静默换模型",
+      "identity": "connection_search_and_unknown_label_implemented_UI_pending",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": [
+        "ModelDropdown uses modelMatches and saved ID fallback; helper regression only, no UI acceptance claim"
+      ]
+    },
+    {
+      "id": "M12",
+      "surface": "Arena 及评测列表",
+      "anchors": "`admin/Settings/Evaluations/ArenaModelModal.svelte:388`、`admin/Settings/Evaluations/Model.svelte`、`admin/Evaluations/Leaderboard.svelte`",
+      "contract": "组合成员按连接选择，组合入口显式标识，统计归属实际成员",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "candidate_and_dispatch_policy_regressions_passed_HTTP_UI_pending",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": [
+        "test/oi/test_stage4_model_selection.py: shared/private current DB state, revocation, caller session, middleware parameter boundary, fallback dispatch and admin bypass config"
+      ]
+    },
+    {
+      "id": "M13",
+      "surface": "频道模型提及与渲染",
+      "anchors": "`channel/MessageInput.svelte`、`channel/MessageInput/MentionList.svelte`、`chat/Messages/Markdown/MarkdownInlineTokens/MentionToken.svelte`",
+      "contract": "模型候选按连接组织；历史提及仍能展示来源",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M14",
+      "surface": "笔记内模型调用",
+      "anchors": "`notes/NoteEditor.svelte:409`、`:950`",
+      "contract": "当前代码继承默认模型，并未发现此处的独立选择器；继承及将来新增选择统一使用目录",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M15",
+      "surface": "Playground 聊天/补全/图像",
+      "anchors": "`playground/Chat.svelte`、`playground/Completions.svelte:142`、`playground/Images.svelte`",
+      "contract": "前两者已有模型选择；图像页当前调用全局图像配置，须验证配置绑定在调用链中保留",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M16",
+      "surface": "模型级推理与参数控件",
+      "anchors": "`chat/MessageInput/ModelControls.svelte`、`admin/Settings/Models/ModelControls.svelte`、`workspace/Models/ModelEditor.svelte`",
+      "contract": "控件从当前连接模型能力产生，切换不串用同名模型配置",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M17",
+      "surface": "实时通话、语音转写和合成",
+      "anchors": "`admin/Settings/Audio.svelte:376`、`:385`、`:470`、`:771`；`chat/MessageInput/CallOverlay.svelte`、`chat/MessageInput/CallOverlay/BridgeCallOverlay.svelte`",
+      "contract": "Realtime/STT/TTS 分别按能力筛选；现有手填 ID 也纳入连接归属",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M18",
+      "surface": "图像生成与编辑配置",
+      "anchors": "`admin/Settings/Images.svelte:363`、`:780`",
+      "contract": "生成和编辑选择相应能力的连接模型；后续调用跟随配置身份",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M19",
+      "surface": "Embedding 与重排配置",
+      "anchors": "`admin/Settings/Documents.svelte:1130`、`:1308`",
+      "contract": "外部 API 和本地引擎使用真实归属，Embedding/Rerank 互不误选",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M20",
+      "surface": "模型用量、分析与只读列表",
+      "anchors": "`chat/Settings/Usage.svelte`、`admin/Analytics/Dashboard.svelte`、`AnalyticsModelModal.svelte`、`ChartLine.svelte`",
+      "contract": "列表/筛选按连接组织；图表标签与费用保留来源，历史名称可追溯",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M21",
+      "surface": "子代理继承和执行",
+      "anchors": "`admin/Settings/Subagents.svelte`、`chat/Messages/SubagentResultRow.svelte`；`backend/open_webui/utils/subagents.py`",
+      "contract": "当前管理员 Subagents 页没有独立模型选择；执行继承与历史展示须适配稳定身份，后续选择入口不得另造目录",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    },
+    {
+      "id": "M22",
+      "surface": "分享、导入导出、已保存选择与历史",
+      "anchors": "`chat/ShareChatModal.svelte`、`chat/Chat.svelte`、工作区模型导入导出流程；后续 P07/P11 的导入和草稿实现",
+      "contract": "存储可迁移的连接模型引用与展示快照；跨实例导入需明确映射，历史不可用模型保留可辨识信息",
+      "identity": "pending_stage4",
+      "persistence": "pending_stage4",
+      "permission": "pending_stage4",
+      "dispatch": "pending_stage4",
+      "accounting": "pending_stage4",
+      "evidence": []
+    }
+  ]
+}

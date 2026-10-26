@@ -24,3 +24,20 @@ def arena_candidates(models, members=None, filter_mode=None):
     if not candidates:
         raise HTTPException(422, 'No configured chat models are available for this Arena')
     return candidates
+
+
+async def accessible_arena_candidates(models, user, members=None, filter_mode=None, metadata=None):
+    """Resolve eligibility before any selected model's parameters or knowledge are read."""
+    from fastapi import HTTPException
+    from open_webui.utils.models import get_filtered_models
+    from open_webui.utils.oi.browser_transport import require_live_session
+
+    visible = await get_filtered_models(list(models.values()), user)
+    allow_browser = False
+    try:
+        require_live_session(metadata or {}, user)
+        allow_browser = True
+    except HTTPException:
+        pass
+    eligible = {model['id']: model for model in visible if allow_browser or not model.get('direct')}
+    return arena_candidates(eligible, members, filter_mode)

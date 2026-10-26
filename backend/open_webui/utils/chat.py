@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi import HTTPException, Request
 from open_webui.env import BYPASS_MODEL_ACCESS_CONTROL, GLOBAL_LOG_LEVEL
+from open_webui.config import BYPASS_ADMIN_ACCESS_CONTROL
 from open_webui.functions import generate_function_chat_completion
 from open_webui.internal.db import get_async_db
 from open_webui.models.models import Models
@@ -157,7 +158,7 @@ async def generate_chat_completion(
     bypass_system_prompt: bool = False,
 ):
     log.debug('generate_chat_completion: %s', form_data)
-    if BYPASS_MODEL_ACCESS_CONTROL:
+    if BYPASS_MODEL_ACCESS_CONTROL or (user.role == 'admin' and BYPASS_ADMIN_ACCESS_CONTROL):
         bypass_filter = True
 
     # Propagate bypass_filter and bypass_system_prompt via request.state so that
@@ -231,7 +232,7 @@ async def generate_chat_completion(
         )
     else:
         # Check if user has access to the model
-        if not bypass_filter and user.role == 'user':
+        if not bypass_filter:
             try:
                 await check_model_access(user, model)
             except Exception as e:
@@ -252,14 +253,16 @@ async def generate_chat_completion(
         if not selected_model_id and model.get('owned_by') == 'arena':
             model_ids = model.get('info', {}).get('meta', {}).get('model_ids')
             filter_mode = model.get('info', {}).get('meta', {}).get('filter_mode')
-            from open_webui.utils.oi.model_capabilities import arena_candidates
+            from open_webui.utils.oi.model_capabilities import accessible_arena_candidates
 
-            selected_model_id = random.choice(arena_candidates(request.app.state.MODELS, model_ids, filter_mode))
+            selected_model_id = random.choice(
+                await accessible_arena_candidates(models, user, model_ids, filter_mode, metadata)
+            )
 
             form_data['model'] = selected_model_id
 
-            # bypass_filter recursion below skips the line-200 check; gate the resolved model here.
-            if not bypass_filter and user.role == 'user':
+            # Gate the selected member now and preserve the caller access policy in recursion.
+            if not bypass_filter:
                 selected_model = request.app.state.MODELS.get(selected_model_id)
                 if selected_model:
                     await check_model_access(user, selected_model)
@@ -276,7 +279,7 @@ async def generate_chat_completion(
                     request,
                     form_data,
                     user,
-                    bypass_filter=True,
+                    bypass_filter=bypass_filter,
                     bypass_system_prompt=bypass_system_prompt,
                 )
                 # Upstream errors come back as a response object.
@@ -292,7 +295,7 @@ async def generate_chat_completion(
                     request,
                     form_data,
                     user,
-                    bypass_filter=True,
+                    bypass_filter=bypass_filter,
                     bypass_system_prompt=bypass_system_prompt,
                 )
                 if not isinstance(response, dict):

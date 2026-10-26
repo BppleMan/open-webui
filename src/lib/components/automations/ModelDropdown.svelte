@@ -27,18 +27,13 @@
 	let modelSearch = '';
 
 	$: modelLabel = model_id
-		? fullModelLabel($models.find((m) => m.id === model_id)) || model_id
+		? fullModelLabel($models.find((m) => m.id === model_id) || model_id)
 		: $i18n.t('Select model');
 
 	$: filteredModels = sortByConnection(
-		(modelSearch
-			? $models.filter(
-					(m) =>
-						m.name.toLowerCase().includes(modelSearch.toLowerCase()) ||
-						m.id.toLowerCase().includes(modelSearch.toLowerCase())
-				)
-			: $models
-		).filter((m) => !m.direct && !(m?.info?.meta?.hidden ?? false))
+		(modelSearch ? $models.filter((m) => modelMatches(m, modelSearch)) : $models).filter(
+			(m) => !m.direct && !(m?.info?.meta?.hidden ?? false)
+		)
 	);
 </script>
 
