@@ -1,7 +1,7 @@
 {
   "stage": 6,
   "implementation": "implemented",
-  "verification": "local_passed_ci_pending",
+  "verification": "verified_with_documented_provider_boundaries",
   "deployment": "not_deployed",
   "checks": {
     "backend_tests": 175,
@@ -25,7 +25,8 @@
       "keyboard_escape_focus": "passed",
       "unknown_capacity": "unknown_without_percentage",
       "long_chinese_draft": "warning_only_no_call_no_trim",
-      "counts": "current_text_plus_last_tool_estimate_not_old_actual_input"
+      "counts": "current_text_plus_last_tool_estimate_not_old_actual_input",
+      "manual_compaction": "passed_UI_then_API_history_native_and_single_call_verified"
     }
   },
   "live": {
@@ -52,5 +53,7 @@
   "remaining_stages": [
     7,
     8
-  ]
+  ],
+  "release": "stage6-release.json",
+  "source_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670"
 }

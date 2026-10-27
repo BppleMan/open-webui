@@ -14,7 +14,7 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "c48cbac0abc9bd0e56545eee927dc363be97b760",
+    "latest_code_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
     "latest_push": "origin/oi/main"
   },
   "status_definitions": {
@@ -69,12 +69,14 @@
       "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
       "stage6": {
         "implementation": "implemented",
-        "verification": "local_passed_ci_pending",
+        "verification": "verified_with_documented_provider_boundaries",
         "deployment": "not_deployed",
+        "source_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
         "plan": "stage6-plan.md",
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
-        "remaining": "exact_commit_CI_and_image_verification"
+        "release": "stage6-release.json",
+        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
       }
     },
     {
@@ -107,12 +109,14 @@
       ],
       "stage6": {
         "implementation": "implemented",
-        "verification": "local_passed_ci_pending",
+        "verification": "verified_with_documented_provider_boundaries",
         "deployment": "not_deployed",
+        "source_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
         "plan": "stage6-plan.md",
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
-        "remaining": "exact_commit_CI_and_image_verification"
+        "release": "stage6-release.json",
+        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
       }
     },
     {
@@ -181,12 +185,14 @@
       ],
       "stage6": {
         "implementation": "implemented",
-        "verification": "local_passed_ci_pending",
+        "verification": "verified_with_documented_provider_boundaries",
         "deployment": "not_deployed",
+        "source_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
         "plan": "stage6-plan.md",
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
-        "remaining": "exact_commit_CI_and_image_verification"
+        "release": "stage6-release.json",
+        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
       }
     },
     {
@@ -270,12 +276,14 @@
       "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
       "stage6": {
         "implementation": "implemented",
-        "verification": "local_passed_ci_pending",
+        "verification": "verified_with_documented_provider_boundaries",
         "deployment": "not_deployed",
+        "source_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
         "plan": "stage6-plan.md",
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
-        "remaining": "exact_commit_CI_and_image_verification"
+        "release": "stage6-release.json",
+        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
       }
     },
     {
@@ -410,7 +418,18 @@
         "未实施功能不标为已完成",
         "后续讨论有仓库级记录约定",
         "外层工作区入口可定位全部记录，压缩上下文后可继续接手"
-      ]
+      ],
+      "stage6": {
+        "implementation": "implemented",
+        "verification": "verified_with_documented_provider_boundaries",
+        "deployment": "not_deployed",
+        "source_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
+        "plan": "stage6-plan.md",
+        "acceptance": "stage6-acceptance.json",
+        "contract": "stage6-acceptance.md",
+        "release": "stage6-release.json",
+        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
+      }
     },
     {
       "id": "F13",
@@ -864,12 +883,14 @@
       },
       "stage6": {
         "implementation": "implemented",
-        "verification": "local_passed_ci_pending",
+        "verification": "verified_with_documented_provider_boundaries",
         "deployment": "not_deployed",
+        "source_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
         "plan": "stage6-plan.md",
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
-        "remaining": "exact_commit_CI_and_image_verification"
+        "release": "stage6-release.json",
+        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
       }
     }
   ],

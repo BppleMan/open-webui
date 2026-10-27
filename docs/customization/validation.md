@@ -190,3 +190,7 @@ Final local production build passed; type delta has no new diagnostics with 5781
 
 ## Stage 5 — authentication and durable drafts
 154 backend and 45 frontend tests; no new type/a11y diagnostics (5781 upstream remain); exact-source CI production build and fresh PostgreSQL/Redis HTTP/Socket/MFA acceptance passed. Browser matrix, event-simulation limitations and image provenance: stage5-acceptance.json and stage5-release.json. Revoked sockets stop immediate reconnects, transient probe failures retry with delay, and changing temporary mode replaces the draft manager before new input. Physical PWA explicitly waived; no production deployment.
+
+
+## Stage 6 — native protocols, reasoning and context
+175 backend and 50 frontend tests pass. Type delta has no new diagnostics (5769 upstream diagnostics remain, not a clean typecheck). Local production build and exact-revision remote frontend/backend/image jobs pass. Seven-protocol HTTP, two tool follow-ups, native history/media shapes and explicit compaction are distinct from six-protocol live short-text gateway probes. Browser numeric/discrete controls have captured wire evidence; responsive popup, long draft warning, scrolling and manual compaction pass. No production deployment. See stage6-acceptance.md/json and stage6-release.json for evidence boundaries, companion CPA revision and immutable registry digests. Next: stage 7 fees/archive, then stage 8 staging/GitOps.

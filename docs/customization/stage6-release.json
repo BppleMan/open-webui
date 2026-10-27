@@ -1,0 +1,42 @@
+{
+  "stage": 6,
+  "status": "verified_with_documented_provider_boundaries",
+  "source_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
+  "ci_run": 40498639250,
+  "ci_url": "https://github.com/BppleMan/open-webui/actions/runs/40498639250",
+  "ci_conclusion": "success",
+  "ci_jobs": {
+    "frontend": "success",
+    "backend": "success",
+    "image": "success"
+  },
+  "image_tag": "ghcr.io/bppleman/open-webui-oi:sha-1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
+  "image_digest": "sha256:3680c452414ce3fa5fa7d1921ad4486fc343c5f7c743aaec3c235ee87c62349e",
+  "image_registry_verified": true,
+  "checks": {
+    "backend_tests": 175,
+    "frontend_tests": 50,
+    "type_delta": "no_new_diagnostics_5769_upstream_remain",
+    "production_build": "passed_local_and_exact_source_CI",
+    "stage6_http_protocol_controls_compaction": "passed_local_and_CI",
+    "prior_migration_pgvector_auth_redis_regressions": "passed_in_CI",
+    "browser": "passed_with_methods_in_stage6-acceptance.json"
+  },
+  "provider_boundary": "Six protocols live through existing CPA gateway; direct official credentials and live Ollama not available. Tool/media matrix uses synthetic providers. See acceptance record.",
+  "cpa_companion": {
+    "commit": "fc443203b657a95041366c29220f11c167ec4672",
+    "pr": "https://github.com/BppleMan/CLIProxyAPI/pull/3",
+    "regression_ci": 40497788997,
+    "image_ci": 40497789186,
+    "status": "success",
+    "image": "ghcr.io/bppleman/cliproxyapi-rp:sha-fc443203b657a95041366c29220f11c167ec4672",
+    "digest": "sha256:5611f104f61041ba1c082a50cbe3d0ab1176948f3656819d314aefde0d9533cc",
+    "registry_verified": true,
+    "deployment": "not_deployed"
+  },
+  "deployment": "not_deployed",
+  "remaining_stages": [
+    7,
+    8
+  ]
+}
