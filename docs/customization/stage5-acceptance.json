@@ -1,6 +1,6 @@
 {
   "stage": 5,
-  "status": "local_acceptance_complete_ci_pending",
+  "status": "verified",
   "physical_pwa": "explicitly_waived_not_tested",
   "native_ime": "not_claimed_synthetic_browser_composition_events",
   "production_deployment": "not_deployed",
@@ -92,8 +92,9 @@
     "backend": 154,
     "frontend": 45,
     "types": "no_new_diagnostics_5781_upstream_remain",
-    "build": "local_builds_passed_final_CI_pending",
+    "build": "passed_in_CI_for_exact_source",
     "fresh_postgres_redis_http_runner": "passed"
   },
-  "ci": "pending"
+  "ci": "https://github.com/BppleMan/open-webui/actions/runs/40456026060",
+  "release": "stage5-release.json"
 }

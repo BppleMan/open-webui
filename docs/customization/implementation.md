@@ -27,3 +27,6 @@ Stage3 implements transport-aware connection identity, versioned migration and o
 - Connection removal/restore uses revision checks. Removal preserves model/call records; restore leaves the connection disabled. Historical alias ambiguity includes removed identities, preventing deletion from redirecting old references to a sibling model.
 - Browser RPC forwards the normalized native request and raw UTF8 response stream through the initiating browser; it reuses native protocol parsing, usage snapshots and ledger attribution. No active browser means no dispatch; loss of that session fails the call while preserving confirmed usage. HTTP429 is propagated without retry. Separate background execution must select server transport.
 - Resume from OI5 with the same persistent server secret; additive migration does not reconstruct old accounting. Test fixtures use only synthetic input and loopback providers. Stage4 must prove each model entrypoint end-to-end rather than inferring correctness from shared components.
+
+
+Stage5 is complete under the documented built-in-browser scope. See stage5-release.json and stage5-acceptance.json. Continue stage6 native protocols/context, stage7 costs/archive and stage8 staging/GitOps. Physical PWA was explicitly waived; production remains unchanged.

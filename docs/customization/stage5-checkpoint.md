@@ -22,3 +22,6 @@ User requested a pause after finishing current work. Stage5 remains incomplete. 
 4. Update three-layer records and NEXT-SESSION; proceed to stage6 only after stage5 acceptance is complete.
 
 Public scripts: scripts/oi/stage5-http-acceptance.py and scripts/oi/fixtures/stage5_proxy.py. The HTTP harness is independently verified against the isolated local environment; CI automation remains pending.
+
+
+Superseded by completed stage5 acceptance and stage5-release.json on 2026-10-27. This file preserves the earlier pause checkpoint; its remaining list is historical. Continue stage6.

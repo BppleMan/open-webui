@@ -14,7 +14,7 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "f2140a3d000b13f25ec8ef187a42fa37c84ceaf0",
+    "latest_code_commit": "c48cbac0abc9bd0e56545eee927dc363be97b760",
     "latest_push": "origin/oi/main"
   },
   "status_definitions": {
@@ -281,9 +281,9 @@
         "P10"
       ],
       "priority": "P0",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "persistence_api_and_ui_integration_in_progress",
-      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "verification": "stage5_local_and_remote_CI_verified_physical_PWA_waived",
       "deployment": "not_deployed",
       "investigation": "fixed_expiry_mechanism_verified_other_incidents_not_fully_attributed",
       "acceptance": [
@@ -295,15 +295,14 @@
       ],
       "stage5": {
         "implementation": "implemented",
-        "verification": "local_matrix_passed_CI_pending",
+        "verification": "verified_with_documented_browser_and_synthetic_HTTP_methods",
         "deployment": "not_deployed",
         "physical_PWA": "not_required_by_user_U30_not_tested",
         "checkpoint": "stage5-checkpoint.md",
-        "remaining": [
-          "final_type_build_checks",
-          "remote_CI_and_immutable_image_digest"
-        ],
-        "evidence": "stage5-acceptance.json"
+        "remaining": [],
+        "evidence": "stage5-acceptance.json",
+        "release": "stage5-release.json",
+        "source_commit": "c48cbac0abc9bd0e56545eee927dc363be97b760"
       }
     },
     {
@@ -318,9 +317,9 @@
         "P11"
       ],
       "priority": "P0",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "persistence_api_and_ui_integration_in_progress",
-      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "verification": "stage5_local_and_remote_CI_verified_physical_PWA_waived",
       "deployment": "not_deployed",
       "acceptance": [
         "同一用户每会话只有一份服务器草稿，跨分支和浏览器共用",
@@ -345,15 +344,14 @@
       },
       "stage5": {
         "implementation": "implemented",
-        "verification": "local_matrix_passed_CI_pending",
+        "verification": "verified_with_documented_browser_and_synthetic_HTTP_methods",
         "deployment": "not_deployed",
         "physical_PWA": "not_required_by_user_U30_not_tested",
         "checkpoint": "stage5-checkpoint.md",
-        "remaining": [
-          "final_type_build_checks",
-          "remote_CI_and_immutable_image_digest"
-        ],
-        "evidence": "stage5-acceptance.json"
+        "remaining": [],
+        "evidence": "stage5-acceptance.json",
+        "release": "stage5-release.json",
+        "source_commit": "c48cbac0abc9bd0e56545eee927dc363be97b760"
       }
     },
     {
@@ -779,7 +777,7 @@
         "prototype": "P28",
         "state": "stage4_verified_and_CI_published",
         "plan_complete": false,
-        "next": "stage5_auth_drafts_physical_PWA"
+        "next": "stage6_protocol_context"
       },
       "source_submission": {
         "requirement": "R38",
@@ -819,15 +817,14 @@
       },
       "stage5": {
         "implementation": "implemented",
-        "verification": "local_matrix_passed_CI_pending",
+        "verification": "verified_with_documented_browser_and_synthetic_HTTP_methods",
         "deployment": "not_deployed",
         "physical_PWA": "not_required_by_user_U30_not_tested",
         "checkpoint": "stage5-checkpoint.md",
-        "remaining": [
-          "final_type_build_checks",
-          "remote_CI_and_immutable_image_digest"
-        ],
-        "evidence": "stage5-acceptance.json"
+        "remaining": [],
+        "evidence": "stage5-acceptance.json",
+        "release": "stage5-release.json",
+        "source_commit": "c48cbac0abc9bd0e56545eee927dc363be97b760"
       }
     }
   ],

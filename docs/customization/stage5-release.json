@@ -1,0 +1,27 @@
+{
+  "stage": 5,
+  "status": "verified",
+  "source_commit": "c48cbac0abc9bd0e56545eee927dc363be97b760",
+  "ci_url": "https://github.com/BppleMan/open-webui/actions/runs/40456026060",
+  "ci_run": 40456026060,
+  "ci_conclusion": "success",
+  "image_tag": "ghcr.io/bppleman/open-webui-oi:sha-c48cbac0abc9bd0e56545eee927dc363be97b760",
+  "image_digest": "sha256:f33eb1b503189e58c44c9ffd3fdf0989280c4de83f836f68cb36efe1a045c9eb",
+  "image_registry_verified": true,
+  "checks": {
+    "backend_tests": 154,
+    "frontend_tests": 45,
+    "type_delta": "no_new_diagnostics_5781_upstream_remain",
+    "production_build": "passed_in_CI_for_exact_source",
+    "fresh_postgres_redis_http_socket_mfa": "passed",
+    "browser": "passed_with_methods_in_stage5-acceptance.json"
+  },
+  "physical_pwa": "not_required_by_user_not_tested",
+  "native_ime": "not_claimed_synthetic_browser_composition_events",
+  "deployment": "not_deployed",
+  "remaining_stages": [
+    6,
+    7,
+    8
+  ]
+}
