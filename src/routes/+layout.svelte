@@ -59,6 +59,7 @@
 	import {
 		renewSession,
 		readCurrentSession,
+		mayReconnectSession,
 		sessionRecoveryRequired,
 		tokenExpiry
 	} from '$lib/utils/session';
@@ -140,6 +141,9 @@
 	let syncStatsEventData = null;
 
 	let heartbeatInterval = null;
+	/** @type {ReturnType<typeof setTimeout> | undefined} */
+	let sessionReconnectTimer;
+	let sessionDisposed = false;
 	let disconnectToastTimer = null;
 	let disconnectWarningShown = false;
 	let pageIsVisible = true;
@@ -204,6 +208,7 @@
 		let hasConnectedOnce = false;
 
 		_socket.on('connect', async () => {
+			clearTimeout(sessionReconnectTimer);
 			console.log('connected', _socket.id);
 
 			// Cancel any pending disconnect toast if we reconnected quickly
@@ -274,7 +279,7 @@
 			console.log('reconnect_failed');
 		});
 
-		_socket.on('disconnect', (reason, details) => {
+		_socket.on('disconnect', async (reason, details) => {
 			cancelBrowserCompletion();
 			console.log(`Socket ${_socket.id} disconnected due to ${reason}`);
 			socketConnected.set(false);
@@ -294,7 +299,15 @@
 			}
 
 			if (reason === 'io server disconnect') {
-				_socket.connect();
+				const reconnect = async () => {
+					if (sessionDisposed || _socket !== $socket || _socket.connected) return;
+					const allowed = await mayReconnectSession(getSessionUser);
+					if (sessionDisposed || _socket !== $socket || _socket.connected) return;
+					if (allowed) _socket.connect();
+					else if (!$sessionRecoveryRequired) sessionReconnectTimer = setTimeout(reconnect, 5000);
+				};
+				clearTimeout(sessionReconnectTimer);
+				await reconnect();
 			}
 
 			if (details) {
@@ -1082,6 +1095,7 @@
 				return;
 			}
 			await user.set(session);
+			if ($socket && !$socket.connected) $socket.connect();
 			sessionRecoveryRequired.set(false);
 			window.dispatchEvent(new Event('oi:session-updated'));
 			if (!loaded) window.location.reload();
@@ -1106,10 +1120,12 @@
 		};
 		window.addEventListener('storage', sessionStorageHandler);
 		window.addEventListener('message', sessionMessageHandler);
+		window.addEventListener('online', restoreSession);
 		document.addEventListener('visibilitychange', sessionVisibilityHandler);
 		cleanupSession = () => {
 			window.removeEventListener('storage', sessionStorageHandler);
 			window.removeEventListener('message', sessionMessageHandler);
+			window.removeEventListener('online', restoreSession);
 			document.removeEventListener('visibilitychange', sessionVisibilityHandler);
 			if (window.fetch === sessionFetch) window.fetch = originalFetch;
 			if (tokenTimer) clearInterval(tokenTimer);
@@ -1432,6 +1448,8 @@
 	}
 
 	onDestroy(() => {
+		sessionDisposed = true;
+		clearTimeout(sessionReconnectTimer);
 		cleanupSession();
 		bc.close();
 	});

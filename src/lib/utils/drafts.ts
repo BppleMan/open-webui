@@ -177,6 +177,9 @@ export class DraftManager {
 	private get store() {
 		return this.options.store || browserDraftStore;
 	}
+	matchesContext(userId: string, temporary: boolean) {
+		return this.options.userId === userId && this.options.temporary === temporary;
+	}
 	private emit(status: DraftState['status'], extra: Partial<DraftState> = {}) {
 		this.state = { status, revision: this.revision, ...extra };
 		if (!this.destroyed) this.options.onState(this.state);

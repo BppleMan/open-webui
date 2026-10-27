@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, it, expect, vi } from 'vitest';
 import { get } from 'svelte/store';
-import { renewSession, readCurrentSession, sessionRecoveryRequired } from './session';
+import {
+	renewSession,
+	readCurrentSession,
+	mayReconnectSession,
+	sessionRecoveryRequired
+} from './session';
 let token: string | null;
 beforeEach(() => {
 	token = 'original';
@@ -71,4 +76,16 @@ it('coalesces simultaneous renewals in one tab', async () => {
 	const [a, b] = await Promise.all([renewSession(), renewSession()]);
 	expect(a).toEqual(b);
 	expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it('does not reconnect a revoked socket or clear its draft credential', async () => {
+	expect(await mayReconnectSession(vi.fn().mockRejectedValue({ status: 401 }))).toBe(false);
+	expect(get(sessionRecoveryRequired)).toBe(true);
+	expect(token).toBe('original');
+});
+
+it('does not treat a failed reconnect probe as logout and permits a later valid session', async () => {
+	expect(await mayReconnectSession(vi.fn().mockRejectedValue({ status: 502 }))).toBe(false);
+	expect(get(sessionRecoveryRequired)).toBe(false);
+	expect(await mayReconnectSession(vi.fn().mockResolvedValue({ id: 'u' }))).toBe(true);
 });

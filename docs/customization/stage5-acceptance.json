@@ -1,0 +1,99 @@
+{
+  "stage": 5,
+  "status": "local_acceptance_complete_ci_pending",
+  "physical_pwa": "explicitly_waived_not_tested",
+  "native_ime": "not_claimed_synthetic_browser_composition_events",
+  "production_deployment": "not_deployed",
+  "cases": [
+    {
+      "id": "A01",
+      "evidence": "HTTP real expiry, authenticated Socket.IO and Realtime renewal; browser multiple automatic renewals with advancing expiry",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "A02",
+      "evidence": "Delayed old 401 during new browser login retains draft and URL; stale refresh success and bootstrap failure unit regressions",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "A03",
+      "evidence": "Browser startup 502 retry retains URL/draft/login; offline outbox and PUT502 conflict browser paths; refresh offline/502 unit regression",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "A04",
+      "evidence": "HTTP password change, administrator revocation, Redis logout, MFA policy and factor replacement reject old sessions",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "A05",
+      "evidence": "Browser real admin revocation and inline reauthentication preserve unsaved response editor and composer",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D01",
+      "evidence": "7608 Chinese characters restored identically across two independent origins; real 10000-character PostgreSQL draft",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D02",
+      "evidence": "Close/reopen unsynced browser input, restore and reload after selected conflict resolution",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D03",
+      "evidence": "Visible loopback fixture sends synthetic composition events to actual mounted editor: Enter neither queues nor sends; native IME CDP unavailable",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D04",
+      "evidence": "Two browser origins with PUT502 and remote edit; explicit local/server choices survive reload",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D05",
+      "evidence": "Browser offline reconnect automatically synchronizes pending draft; remote conflict never silently overwritten",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D06",
+      "evidence": "Delayed completion acknowledgement with queue: newer composer input survives; HTTP and unit version/queue ack checks",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D07",
+      "evidence": "Real upload selected through fixture, request delayed, page closed while draft attachment uploading; reopen preserves text/reference and exposes recovery notice",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D08",
+      "evidence": "Browser temporary mode toggle and close/reopen preserve local draft; marker absent from server; temporary-send no-resurrection unit regression",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D09",
+      "evidence": "Browser account switch cannot see previous account local temporary draft or original chat; HTTP other-user draft read/write denied",
+      "result": "passed_with_stated_method"
+    },
+    {
+      "id": "D10",
+      "evidence": "Real PostgreSQL six concurrent writes: one winner and five 409 conflicts; newer version survives old acknowledgement",
+      "result": "passed_with_stated_method"
+    }
+  ],
+  "fixes": [
+    "Retry dirty draft outbox and restore local edits before slow network reads",
+    "Synchronize renewed credentials with Socket.IO and native voice",
+    "Stop revoked-session immediate reconnect loop; retry transient probe failures with delay",
+    "Replace draft manager on user/temporary scope change before saving input",
+    "Expose recovery for restored interrupted attachments"
+  ],
+  "checks": {
+    "backend": 154,
+    "frontend": 45,
+    "types": "no_new_diagnostics_5781_upstream_remain",
+    "build": "local_builds_passed_final_CI_pending",
+    "fresh_postgres_redis_http_runner": "passed"
+  },
+  "ci": "pending"
+}

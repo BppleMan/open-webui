@@ -63,3 +63,14 @@ export async function readCurrentSession(lookup: (token: string) => Promise<any>
 	}
 	throw new Error('Session changed while loading; retry with the current sign-in');
 }
+
+/** Server disconnects may mean revocation, not a transient transport failure. */
+export async function mayReconnectSession(lookup: (token: string) => Promise<any>) {
+	try {
+		return !!(await readCurrentSession(lookup));
+	} catch (error) {
+		if (error && typeof error === 'object' && 'status' in error && error.status === 401)
+			sessionRecoveryRequired.set(true);
+		return false;
+	}
+}

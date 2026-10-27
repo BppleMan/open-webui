@@ -32,6 +32,15 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     services:
+      redis:
+        image: redis:8.2.3-alpine
+        ports:
+          - 56385:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
       postgres:
         image: pgvector/pgvector:pg17
         env:
@@ -75,6 +84,14 @@ jobs:
         run: |
           docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test oi_vector
           python scripts/oi/stage4-acceptance.py
+      - name: Session and durable draft acceptance with PostgreSQL and Redis
+        env:
+          OI_STAGE5_DATABASE_URL: postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_stage5_ci
+          OI_STAGE5_REDIS_URL: redis://127.0.0.1:56385/0
+          OI_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test oi_stage5_ci
+          python scripts/oi/stage5-acceptance.py
   image:
     if: github.event_name != 'pull_request'
     needs: [frontend, backend]

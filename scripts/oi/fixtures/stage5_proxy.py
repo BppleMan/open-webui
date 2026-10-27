@@ -13,7 +13,7 @@ from urllib.parse import urlsplit
 import httpx
 import websockets
 from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse, HTMLResponse
 
 TARGET = os.environ.get('OI_STAGE5_TARGET', 'http://127.0.0.1:8096')
 assert urlsplit(TARGET).hostname in {'127.0.0.1', 'localhost'}
@@ -42,6 +42,37 @@ async def control(request: Request):
 @app.get('/__oi_test__/events')
 async def evidence():
     return events
+
+
+@app.get('/__oi_test__/composer')
+async def composer_events():
+    # Explicit developer fixture, not shipped in the application. The IAB does
+    # not expose native IME CDP commands: dispatch composition events against the
+    # real mounted editor, with visible controls and observable network effects.
+    return HTMLResponse("""<!doctype html><meta charset="utf-8">
+    <title>Synthetic composition event acceptance</title>
+    <button id="start">Start composition</button>
+    <button id="enter">Composition Enter</button>
+    <button id="end">Commit composition</button>
+    <button id="attach">Attach synthetic file</button>
+    <output id="status">Ready</output>
+    <iframe title="OI composer" src="/" style="width:100%;height:90vh"></iframe>
+    <script>
+    const frame=document.querySelector('iframe');
+    const input=()=>frame.contentDocument.querySelector('#chat-input');
+    const event=(name,options)=>new frame.contentWindow.CompositionEvent(name,{bubbles:true,...options});
+    document.querySelector('#start').onclick=()=>{input().focus();input().dispatchEvent(event('compositionstart',{}));document.querySelector('#status').textContent='Composing';};
+    document.querySelector('#enter').onclick=()=>{input().dispatchEvent(new frame.contentWindow.KeyboardEvent('keydown',{key:'Enter',code:'Enter',keyCode:13,bubbles:true,cancelable:true,isComposing:true}));document.querySelector('#status').textContent='Composition Enter dispatched';};
+    document.querySelector('#end').onclick=()=>{input().dispatchEvent(event('compositionend',{data:input().textContent}));document.querySelector('#status').textContent='Committed';};
+    document.querySelector('#attach').onclick=()=>{
+      const win=frame.contentWindow;
+      const files=new win.DataTransfer();
+      files.items.add(new win.File(['Synthetic upload recovery.\\n'.repeat(1000)],'synthetic-recovery.txt',{type:'text/plain'}));
+      const picker=frame.contentDocument.querySelector('input[type=file][multiple]');
+      picker.files=files.files;picker.dispatchEvent(new win.Event('change',{bubbles:true}));
+      document.querySelector('#status').textContent='Synthetic file selected';
+    };
+    </script>""")
 
 
 @app.api_route('/{path:path}', methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'])

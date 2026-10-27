@@ -294,16 +294,16 @@
         "真实撤销仍正确生效"
       ],
       "stage5": {
-        "implementation": "partial_checkpoint_user_requested_pause",
-        "verification": "154_backend_43_frontend_passed_HTTP_WS_PG_MFA_and_two_browser_paths_passed_remaining_UI_matrix_pending",
+        "implementation": "implemented",
+        "verification": "local_matrix_passed_CI_pending",
         "deployment": "not_deployed",
         "physical_PWA": "not_required_by_user_U30_not_tested",
         "checkpoint": "stage5-checkpoint.md",
         "remaining": [
-          "browser_auth_recovery_and_old_tab_races",
-          "browser_close_reopen_IME_conflicts_send_upload_temporary_account_switch",
-          "stage5_CI_runner_and_actual_CI_image_verification"
-        ]
+          "final_type_build_checks",
+          "remote_CI_and_immutable_image_digest"
+        ],
+        "evidence": "stage5-acceptance.json"
       }
     },
     {
@@ -344,16 +344,16 @@
         ]
       },
       "stage5": {
-        "implementation": "partial_checkpoint_user_requested_pause",
-        "verification": "154_backend_43_frontend_passed_HTTP_WS_PG_MFA_and_two_browser_paths_passed_remaining_UI_matrix_pending",
+        "implementation": "implemented",
+        "verification": "local_matrix_passed_CI_pending",
         "deployment": "not_deployed",
         "physical_PWA": "not_required_by_user_U30_not_tested",
         "checkpoint": "stage5-checkpoint.md",
         "remaining": [
-          "browser_auth_recovery_and_old_tab_races",
-          "browser_close_reopen_IME_conflicts_send_upload_temporary_account_switch",
-          "stage5_CI_runner_and_actual_CI_image_verification"
-        ]
+          "final_type_build_checks",
+          "remote_CI_and_immutable_image_digest"
+        ],
+        "evidence": "stage5-acceptance.json"
       }
     },
     {
@@ -818,16 +818,16 @@
         "checkpoint": "stage4_complete_full_plan_incomplete"
       },
       "stage5": {
-        "implementation": "partial_checkpoint_user_requested_pause",
-        "verification": "154_backend_43_frontend_passed_HTTP_WS_PG_MFA_and_two_browser_paths_passed_remaining_UI_matrix_pending",
+        "implementation": "implemented",
+        "verification": "local_matrix_passed_CI_pending",
         "deployment": "not_deployed",
         "physical_PWA": "not_required_by_user_U30_not_tested",
         "checkpoint": "stage5-checkpoint.md",
         "remaining": [
-          "browser_auth_recovery_and_old_tab_races",
-          "browser_close_reopen_IME_conflicts_send_upload_temporary_account_switch",
-          "stage5_CI_runner_and_actual_CI_image_verification"
-        ]
+          "final_type_build_checks",
+          "remote_CI_and_immutable_image_digest"
+        ],
+        "evidence": "stage5-acceptance.json"
       }
     }
   ],

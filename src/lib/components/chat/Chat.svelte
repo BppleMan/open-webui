@@ -914,6 +914,11 @@
 		return hasDraftInput(manager.payload);
 	};
 	onDestroy(() => draftManager?.dispose());
+	// Toggling temporary mode on an unsent chat does not navigate/remount Chat.
+	// Replace the draft owner before any subsequent editor event can persist it.
+	$: if (draftManager && $user && !draftManager.matchesContext($user.id, !!$temporaryChatEnabled)) {
+		void restoreChatInput(null);
+	}
 
 	const withSelectedText = (text: string) =>
 		embedded && selectedText?.trim()
@@ -3199,8 +3204,10 @@
 	let processingQueueChats = new Set<string>();
 
 	const enqueueDraft = async (text: string, attachments = files, clearComposer = true) => {
+		if (!$user) throw new Error('Sign in before queuing a message');
 		const input = getChatInputDraft();
-		if (!draftManager) await restoreChatInput(null);
+		if (!draftManager || !draftManager.matchesContext($user.id, !!$temporaryChatEnabled))
+			await restoreChatInput(null);
 		await draftLoad;
 		if ($temporaryChatEnabled && !$chatId) await chatId.set(createTemporaryChatId($socket?.id));
 		const item = createQueuedDraft({
@@ -4968,7 +4975,7 @@
 	});
 
 	const saveDraft = async (draft: any, _chatId: string | null = null, debounce = true) => {
-		if (restoringDraft || clearingSubmittedInput || isShared) return;
+		if (!$user || restoringDraft || clearingSubmittedInput || isShared) return;
 		if ((!draftManager || draftManager.isNew) && !hasDraftInput(draft)) return;
 		if (
 			!draft.prompt &&
@@ -4979,7 +4986,8 @@
 			)
 		)
 			return;
-		if (!draftManager) await restoreChatInput(null);
+		if (!draftManager || !draftManager.matchesContext($user.id, !!$temporaryChatEnabled))
+			await restoreChatInput(null);
 		if (!draftManager?.ready) await draftLoad;
 		await draftManager?.edit({
 			...draft,
