@@ -1,0 +1,56 @@
+{
+  "stage": 6,
+  "implementation": "implemented",
+  "verification": "local_passed_ci_pending",
+  "deployment": "not_deployed",
+  "checks": {
+    "backend_tests": 175,
+    "frontend_tests": 50,
+    "type_delta": "no_new_diagnostics_5769_upstream_remain",
+    "production_build": "passed",
+    "seven_protocol_http": "passed",
+    "seven_protocol_two_tool_followups": "passed",
+    "multimodal_mapping_native_history": "passed_synthetic",
+    "reasoning_controls": "all_seven_http_plus_browser_discrete_and_numeric_budget_wire",
+    "manual_compaction": "explicit_one_call_history_retained_checkpoint_only_no_auto_and_disable_restores_full_history",
+    "browser": {
+      "viewports": [
+        390,
+        430,
+        1280,
+        2560
+      ],
+      "app_scale": 1.1,
+      "details_scroll": "passed_after_fix",
+      "keyboard_escape_focus": "passed",
+      "unknown_capacity": "unknown_without_percentage",
+      "long_chinese_draft": "warning_only_no_call_no_trim",
+      "counts": "current_text_plus_last_tool_estimate_not_old_actual_input"
+    }
+  },
+  "live": {
+    "route": "existing_CPA_gateway_not_direct_official",
+    "protocols": [
+      "openai-chat",
+      "openai-responses",
+      "anthropic",
+      "gemini",
+      "gemini-interactions",
+      "cpa-agy"
+    ],
+    "stream_and_nonstream": "passed_short_synthetic_text",
+    "openai_null_content": "failed_initial_probe_fixed_and_rechecked",
+    "direct_official": "credentials_unavailable_not_claimed",
+    "ollama": "no_live_model_not_claimed",
+    "real_provider_tools_and_media": "not_claimed_synthetic_protocol_matrix_passed",
+    "cpa_finish_provenance": "existing_gateway_unspecified_companion_deployment_later"
+  },
+  "references": [
+    "stage6-plan.md",
+    "stage6-acceptance.md"
+  ],
+  "remaining_stages": [
+    7,
+    8
+  ]
+}

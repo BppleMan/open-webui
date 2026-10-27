@@ -158,7 +158,7 @@
 	export let oiContext: any = null;
 	export let draftSync: any = null;
 	export let terminalContext: TerminalContext | null = null;
-	export let contextUsage = null;
+	export let contextUsage: Record<string, any> | null = null;
 	export let contextCompactionEnabled = false;
 	export let embedded = false;
 	export let callActive = false;

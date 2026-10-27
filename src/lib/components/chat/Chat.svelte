@@ -240,8 +240,9 @@
 	} else {
 		selectedModelIds = selectedModels;
 	}
-	let serverContextUsage = null;
+	let serverContextUsage: { threshold?: number; [key: string]: any } | null = null;
 	let contextUsage = null;
+	let manualCompactionState = 'idle';
 
 	const normalizeSelectedModels = (modelIds: string[] = []) => {
 		const selected = resolveDefaultModelIds(
@@ -354,7 +355,10 @@
 			tokens: estimatedTokens,
 			estimated_tokens: estimatedTokens,
 			threshold,
-			percent: threshold > 0 ? Math.max(0, Math.round((estimatedTokens / threshold) * 100)) : null,
+			percent:
+				threshold != null && threshold > 0
+					? Math.max(0, Math.round((estimatedTokens / threshold) * 100))
+					: null,
 			source: 'estimated'
 		};
 	};
@@ -496,7 +500,7 @@
 		} else await submitPrompt(instruction, attachments);
 	};
 
-	let params = {};
+	let params: Record<string, any> = {};
 	let chatVariables = {};
 	let showChatVariablesModal = false;
 	let loadedChatIdProp = '';
@@ -3806,10 +3810,12 @@
 
 		const model = atSelectedModel?.id ?? selectedModels.find((modelId) => modelId);
 		const toastId = toast.loading($i18n.t('Compacting context...'));
+		manualCompactionState = 'running';
 
 		try {
 			const result = await compactChatById(localStorage.token, $chatId, model);
 			serverContextUsage = result?.context_usage ?? serverContextUsage;
+			manualCompactionState = result?.compacted ? 'applied' : 'idle';
 
 			if (result?.compacted) {
 				toast.success($i18n.t('Context compacted'), { id: toastId });
@@ -3827,6 +3833,7 @@
 
 			await loadChat();
 		} catch (error) {
+			manualCompactionState = 'failed';
 			const message = error?.detail ?? error?.message ?? $i18n.t('Context compaction failed');
 			toast.error(message, { id: toastId });
 		} finally {
@@ -5466,7 +5473,17 @@
 											history,
 											model: $models.find((m) => m.id === selectedModels[0]),
 											compact: handleManualCompact,
-											compactionEnabled: contextCompactionEnabled
+											compactionEnabled: contextCompactionEnabled,
+											compactionState: manualCompactionState,
+											draft: prompt,
+											system: params?.system || $settings?.system || '',
+											reservedOutput:
+												params?.max_completion_tokens ??
+												params?.max_tokens ??
+												$models.find((m) => m.id === selectedModels[0])?.info?.params?.max_tokens ??
+												null,
+											compactionThreshold:
+												getContextThreshold() ?? serverContextUsage?.threshold ?? null
 										}}
 										draftSync={draftManager && !isShared
 											? {
@@ -5579,7 +5596,17 @@
 											history,
 											model: $models.find((m) => m.id === selectedModels[0]),
 											compact: handleManualCompact,
-											compactionEnabled: contextCompactionEnabled
+											compactionEnabled: contextCompactionEnabled,
+											compactionState: manualCompactionState,
+											draft: prompt,
+											system: params?.system || $settings?.system || '',
+											reservedOutput:
+												params?.max_completion_tokens ??
+												params?.max_tokens ??
+												$models.find((m) => m.id === selectedModels[0])?.info?.params?.max_tokens ??
+												null,
+											compactionThreshold:
+												getContextThreshold() ?? serverContextUsage?.threshold ?? null
 										}}
 										draftSync={draftManager && !isShared
 											? {
@@ -5661,7 +5688,17 @@
 										history,
 										model: $models.find((m) => m.id === selectedModels[0]),
 										compact: handleManualCompact,
-										compactionEnabled: contextCompactionEnabled
+										compactionEnabled: contextCompactionEnabled,
+										compactionState: manualCompactionState,
+										draft: prompt,
+										system: params?.system || $settings?.system || '',
+										reservedOutput:
+											params?.max_completion_tokens ??
+											params?.max_tokens ??
+											$models.find((m) => m.id === selectedModels[0])?.info?.params?.max_tokens ??
+											null,
+										compactionThreshold:
+											getContextThreshold() ?? serverContextUsage?.threshold ?? null
 									}}
 									draftSync={draftManager && !isShared
 										? {

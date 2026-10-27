@@ -109,6 +109,7 @@ def native_for(message, protocol, binding_id):
         copy.deepcopy(native.get('body'))
         if isinstance(native, dict)
         and not message.get('oi_native_invalidated')
+        and native.get('replayable', True)
         and native.get('protocol') == protocol
         and native.get('binding_id') == binding_id
         else None
@@ -206,7 +207,10 @@ def build_request(form, binding, connection):
     source.setdefault('store', False)
     base = connection.base_url.rstrip('/')
     if protocol == 'openai-chat':
-        source['messages'] = [clean_message(m) for m in messages]
+        source['messages'] = [
+            clean_message(((native_for(m, protocol, binding.id) or {}).get('choices') or [{}])[0].get('message') or m)
+            for m in messages
+        ]
         if stream:
             source['stream_options'] = {**(form.get('stream_options') or {}), 'include_usage': True}
         if connection.template == 'azure-openai':
@@ -245,7 +249,16 @@ def build_request(form, binding, connection):
 
         source.pop('store', None)
         source['messages'] = [clean_message(m) for m in messages]
-        return base + '/api/chat', convert_payload_openai_to_ollama(source)
+        payload = convert_payload_openai_to_ollama(source)
+        for key in ('think', 'format', 'keep_alive'):
+            if key in source:
+                payload[key] = copy.deepcopy(source[key])
+        for original, converted in zip(messages, payload['messages']):
+            native = native_for(original, protocol, binding.id)
+            if native and native.get('message'):
+                converted.clear()
+                converted.update(copy.deepcopy(native['message']))
+        return base + '/api/chat', payload
 
     source.pop('store', None)
     system, conversation = split_system(messages)
@@ -311,8 +324,10 @@ def build_request(form, binding, connection):
         return base + '/messages', source
 
     if protocol in {'gemini', 'cpa-agy'}:
-        contents, names = [], {}
+        contents, names, provider_ids = [], {}, set()
         for m in conversation:
+            for tool in m.get('tool_calls') or []:
+                names[tool['id']] = tool['function']['name']
             native = native_for(m, protocol, binding.id)
             if native:
                 content = copy.deepcopy(
@@ -333,7 +348,7 @@ def build_request(form, binding, connection):
                         {
                             'functionResponse': {
                                 'name': m.get('name') or names.get(m['tool_call_id'], m['tool_call_id']),
-                                'id': m['tool_call_id'],
+                                **({'id': m['tool_call_id']} if m['tool_call_id'] in provider_ids else {}),
                                 'response': value if isinstance(value, dict) else {'result': value},
                             }
                         }
@@ -355,6 +370,8 @@ def build_request(form, binding, connection):
                 if p.get('functionCall'):
                     t = p['functionCall']
                     names[t.get('id', t['name'])] = t['name']
+                    if t.get('id'):
+                        provider_ids.add(t['id'])
             contents.append(content)
         source.pop('model')
         source.pop('stream', None)
@@ -401,6 +418,10 @@ def build_request(form, binding, connection):
     if protocol == 'gemini-interactions':
         source['store'] = False
         source['input'] = interaction_input(conversation, binding)
+        if any(part.get('type') not in {'text', 'input_text', 'output_text'} for part in system):
+            raise HTTPException(
+                422, 'Interactions system instructions must be text; native media belongs in conversation content'
+            )
         if system:
             source['system_instruction'] = '\n'.join(p.get('text', '') for p in system)
         config = source.pop('generation_config', {})
@@ -424,6 +445,38 @@ def build_request(form, binding, connection):
     raise HTTPException(422, 'Unsupported native protocol')
 
 
+def interaction_parts(content):
+    converted = []
+    for part in parts(content):
+        kind = part.get('type')
+        if kind in {'text', 'input_text', 'output_text'}:
+            converted.append({**part, 'type': 'text'})
+        elif kind == 'image_url':
+            source = image_source(part['image_url']['url'])
+            converted.append(
+                {
+                    'type': 'image',
+                    **(
+                        {'data': source['data'], 'mime_type': source['media_type']}
+                        if source['type'] == 'base64'
+                        else {'uri': source['url']}
+                    ),
+                }
+            )
+        elif kind == 'input_audio':
+            audio = part['input_audio']
+            converted.append({'type': 'audio', 'data': audio['data'], 'mime_type': 'audio/' + audio['format']})
+        elif kind in {'file', 'input_file'}:
+            value = part.get('file', part)
+            source = image_source(value.get('file_data', ''))
+            if source['type'] != 'base64':
+                raise HTTPException(422, 'Interactions document input requires a data URL or a native document block')
+            converted.append({'type': 'document', 'data': source['data'], 'mime_type': source['media_type']})
+        else:
+            converted.append(copy.deepcopy(part))
+    return converted
+
+
 def interaction_input(messages, binding):
     result = []
     for message in messages:
@@ -435,26 +488,11 @@ def interaction_input(messages, binding):
                 {
                     'type': 'function_result',
                     'call_id': message['tool_call_id'],
-                    'result': parts(message.get('content', '')),
+                    'result': interaction_parts(message.get('content', '')),
                 }
             )
         else:
-            converted = []
-            for part in parts(message.get('content')):
-                if part.get('type') == 'image_url':
-                    source = image_source(part['image_url']['url'])
-                    converted.append(
-                        {
-                            'type': 'image',
-                            **(
-                                {'data': source['data'], 'mime_type': source['media_type']}
-                                if source['type'] == 'base64'
-                                else {'uri': source['url']}
-                            ),
-                        }
-                    )
-                else:
-                    converted.append(part)
+            converted = interaction_parts(message.get('content'))
             if converted:
                 result.append(
                     {'type': 'model_output' if message['role'] == 'assistant' else 'user_input', 'content': converted}
@@ -486,6 +524,7 @@ class NativeStream:
         self.usage = {}
         self.finished = False
         self.tool_index = 0
+        self.generated_tool_ids = {}
 
     def _usage(self):
         return accounting.normalize_usage(self.usage, self.protocol)
@@ -501,7 +540,7 @@ class NativeStream:
             reason = reason or self.body.get('promptFeedback', {}).get('blockReason')
         else:
             reason = self.body.get('status')
-        if reason in {'max_tokens', 'model_context_window_exceeded', 'MAX_TOKENS'}:
+        if reason in {'max_tokens', 'model_context_window_exceeded', 'MAX_TOKENS', 'incomplete'}:
             normalized, status = 'length', 'incomplete'
         elif reason in {
             'refusal',
@@ -522,11 +561,24 @@ class NativeStream:
             normalized, status = ('tool_calls' if tools else 'stop'), 'completed'
         else:
             normalized, status = 'unknown', 'incomplete'
-        return {'protocol': self.protocol, 'reason': reason, 'normalized': normalized, 'status': status}
+        source = 'provider'
+        if self.protocol == 'cpa-agy':
+            source = (self.body.get('candidates') or [{}])[0].get('cpaFinishReasonSource', 'unspecified')
+            if not isinstance(source, str):
+                source = 'unspecified'
+            if source.startswith('synthetic'):
+                normalized, status = 'unknown', 'incomplete'
+        return {
+            'protocol': self.protocol,
+            'reason': reason,
+            'normalized': normalized,
+            'status': status,
+            **({'source': source} if self.protocol == 'cpa-agy' else {}),
+        }
 
     def _tools(self):
         tools = []
-        for block in (
+        for block_index, block in enumerate(
             self.body.get('content', [])
             if self.protocol == 'anthropic'
             else (self.body.get('candidates') or [{}])[0].get('content', {}).get('parts', [])
@@ -543,10 +595,10 @@ class NativeStream:
                 )
             elif block.get('functionCall'):
                 call = block['functionCall']
-                call.setdefault('id', 'call_' + str(uuid4()))
+                tool_id = call.get('id') or self.generated_tool_ids.setdefault(block_index, 'call_' + str(uuid4()))
                 tools.append(
                     {
-                        'id': call['id'],
+                        'id': tool_id,
                         'type': 'function',
                         'function': {'name': call['name'], 'arguments': compact(call.get('args', {}))},
                     }
@@ -584,14 +636,17 @@ class NativeStream:
                 self.body = merge(self.body, data['response'])
             if data.get('type') == 'response.output_item.done':
                 self.blocks[data['output_index']] = data['item']
+                self.body['output'] = [copy.deepcopy(self.blocks[i]) for i in sorted(self.blocks)]
             if data.get('choices'):
                 delta = data['choices'][0].get('delta') or data['choices'][0].get('message') or {}
                 msg = self.body.setdefault('choices', [{'message': {'role': 'assistant', 'content': ''}}])[0]['message']
                 for k, v in delta.items():
-                    if isinstance(v, str):
-                        msg[k] = msg.get(k, '') + v
+                    if k == 'role':
+                        msg[k] = v
+                    elif isinstance(v, str):
+                        msg[k] = (msg.get(k) or '') + v
                     elif k == 'tool_calls':
-                        for t in v:
+                        for t in v or []:
                             old = self.blocks.setdefault(
                                 t.get('index', 0),
                                 {'id': '', 'type': 'function', 'function': {'name': '', 'arguments': ''}},
@@ -599,7 +654,7 @@ class NativeStream:
                             if t.get('id'):
                                 old['id'] = t['id']
                             for key, value in t.get('function', {}).items():
-                                old['function'][key] = old['function'].get(key, '') + value
+                                old['function'][key] = (old['function'].get(key) or '') + (value or '')
                         msg['tool_calls'] = list(self.blocks.values())
                     else:
                         msg[k] = copy.deepcopy(v)
@@ -621,6 +676,8 @@ class NativeStream:
                 b = data['content_block']
                 if b.get('text'):
                     events.append(chunk({'content': b['text']}))
+                if b.get('type') == 'thinking' and b.get('thinking'):
+                    events.append(chunk({'reasoning_content': b['thinking']}))
             elif kind == 'content_block_delta':
                 b = self.blocks.setdefault(data['index'], {})
                 d = data['delta']
@@ -655,7 +712,7 @@ class NativeStream:
         elif self.protocol in {'gemini', 'cpa-agy'}:
             # CPA may wrap the native response, but native extensions remain intact inside it.
             data = data.get('response', data)
-            self.usage = data.get('usageMetadata') or self.usage
+            self.usage = data.get('usageMetadata') or data.get('cpaUsageMetadata') or self.usage
             for key, value in data.items():
                 if key != 'candidates':
                     self.body[key] = copy.deepcopy(value)
@@ -695,6 +752,12 @@ class NativeStream:
                 self.body = copy.deepcopy(data['interaction'])
             elif kind == 'step.start':
                 self.blocks[data['index']] = copy.deepcopy(data['step'])
+                step = data['step']
+                initial = content_text(step.get('content', [])) if step.get('type') == 'model_output' else ''
+                if initial:
+                    events.append(chunk({'content': initial}))
+                if step.get('type') == 'thought' and step.get('summary'):
+                    events.append(chunk({'reasoning_content': content_text(step['summary'])}))
             elif kind == 'step.delta':
                 b = self.blocks.setdefault(data['index'], {})
                 d = data['delta']
@@ -723,11 +786,17 @@ class NativeStream:
                 self.body.update(data.get('interaction') or {})
                 self.body['steps'] = [self.blocks[i] for i in sorted(self.blocks)]
                 self.usage = self.body.get('usage') or {}
+                if kind.endswith('failed') and self.usage:
+                    events.append(self.usage_event())
                 events.append(
                     self.finish()
                     if kind.endswith('completed')
                     else {'error': self.body.get('error', 'Interaction failed')}
                 )
+        if self.protocol == 'anthropic' and self.blocks:
+            self.body['content'] = [copy.deepcopy(self.blocks[i]) for i in sorted(self.blocks)]
+        elif self.protocol == 'gemini-interactions' and self.blocks:
+            self.body['steps'] = [copy.deepcopy(self.blocks[i]) for i in sorted(self.blocks)]
         return events
 
     def nonstream(self, body):
@@ -756,6 +825,18 @@ class NativeStream:
                 b.get('text', '') for b in blocks if not b.get('thought') and b.get('type') != 'thinking'
             ),
         }
+        reasoning = ''.join(
+            b.get('thinking', '')
+            if b.get('type') == 'thinking'
+            else b.get('text', '')
+            if b.get('thought')
+            else content_text(b.get('summary', []))
+            if b.get('type') == 'thought'
+            else ''
+            for b in blocks
+        )
+        if reasoning:
+            message['reasoning_content'] = reasoning
         tools = self._tools()
         ending = self.ending(tools)
         if tools and ending['normalized'] == 'tool_calls':
@@ -770,13 +851,21 @@ class NativeStream:
         }
 
 
-async def save_native(metadata, binding, call_id, body):
+async def save_native(metadata, binding, call_id, body, replayable=True):
     chat_id, message_id = metadata.get('chat_id'), metadata.get('message_id')
-    if not is_saved_chat_id(chat_id) or not message_id or not body:
+    if metadata.get('task') or not is_saved_chat_id(chat_id) or not message_id or not body:
         return
     previous = await Chats.get_message_by_id_and_message_id(chat_id, message_id) or {}
     calls = [item for item in previous.get('oi_native', []) if item.get('call_id') != call_id]
-    calls.append({'call_id': call_id, 'binding_id': binding.id, 'protocol': binding.protocol, 'body': body})
+    calls.append(
+        {
+            'call_id': call_id,
+            'binding_id': binding.id,
+            'protocol': binding.protocol,
+            'body': body,
+            'replayable': replayable,
+        }
+    )
     await Chats.upsert_message_to_chat_by_id_and_message_id(chat_id, message_id, {'oi_native': calls}, touch=False)
 
 
@@ -825,7 +914,13 @@ async def generate(request, form, user, binding, connection, call_id, transport=
         remember_native(
             request,
             metadata,
-            {'call_id': call_id, 'binding_id': binding.id, 'protocol': binding.protocol, 'body': state.body},
+            {
+                'call_id': call_id,
+                'binding_id': binding.id,
+                'protocol': binding.protocol,
+                'body': state.body,
+                'replayable': not form.get('stream') or (state.finished and not state.body.get('error')),
+            },
         )
 
     if not form.get('stream'):
@@ -850,7 +945,17 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                     if not line:
                         continue
                     data = json.loads(line)
-                    delta = copy.deepcopy(data.get('message') or {})
+                    raw_message = data.get('message') or {}
+                    saved = state.body.setdefault('message', {'role': 'assistant', 'content': ''})
+                    for key, value in raw_message.items():
+                        if key in {'content', 'thinking'}:
+                            saved[key] = saved.get(key, '') + value
+                        elif key == 'tool_calls':
+                            saved.setdefault(key, []).extend(copy.deepcopy(value))
+                        else:
+                            saved[key] = copy.deepcopy(value)
+                    state.body.update({key: copy.deepcopy(value) for key, value in data.items() if key != 'message'})
+                    delta = copy.deepcopy(raw_message)
                     if 'thinking' in delta:
                         delta['reasoning_content'] = delta.pop('thinking')
                     if delta.get('tool_calls'):
@@ -903,6 +1008,6 @@ async def generate(request, form, user, binding, connection, call_id, transport=
             remember()
             await response.aclose()
             await client.aclose()
-            await save_native(metadata, binding, call_id, state.body)
+            await save_native(metadata, binding, call_id, state.body, state.finished and not state.body.get('error'))
 
     return StreamingResponse(stream(), media_type='text/event-stream')

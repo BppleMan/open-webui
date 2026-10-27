@@ -22,6 +22,74 @@ from test.oi.test_review_regressions import binding, connection
 def provider_response(protocol, payloads, req):
     payloads.append(json.loads(req.content))
     turn = len(payloads)
+    if protocol == 'openai-chat':
+        message = {'role': 'assistant', 'content': 'done' if turn == 3 else '', 'reasoning_content': f'signed-{turn}'}
+        if turn < 3:
+            message['tool_calls'] = [
+                {
+                    'index': 0,
+                    'id': f'tool-{turn}',
+                    'type': 'function',
+                    'function': {'name': 'lookup', 'arguments': json.dumps({'q': str(turn)})},
+                }
+            ]
+        frames = [
+            {
+                'choices': [{'index': 0, 'delta': message, 'finish_reason': 'tool_calls' if turn < 3 else 'stop'}],
+                'usage': {'prompt_tokens': 10, 'completion_tokens': 3},
+            }
+        ]
+        return httpx.Response(200, content=''.join('data: ' + json.dumps(frame) + '\n\n' for frame in frames))
+    if protocol == 'openai-responses':
+        output = [{'type': 'reasoning', 'id': f'r-{turn}', 'summary': [], 'encrypted_content': f'signed-{turn}'}]
+        output += (
+            [
+                {
+                    'type': 'function_call',
+                    'id': f'fc-{turn}',
+                    'call_id': f'tool-{turn}',
+                    'name': 'lookup',
+                    'arguments': json.dumps({'q': str(turn)}),
+                }
+            ]
+            if turn < 3
+            else [{'type': 'message', 'role': 'assistant', 'content': [{'type': 'output_text', 'text': 'done'}]}]
+        )
+        frames = [
+            {
+                'type': 'response.completed',
+                'response': {
+                    'id': f'r-{turn}',
+                    'status': 'completed',
+                    'output': output,
+                    'usage': {'input_tokens': 10, 'output_tokens': 3},
+                },
+            }
+        ]
+        return httpx.Response(200, content=''.join('data: ' + json.dumps(frame) + '\n\n' for frame in frames))
+    if protocol == 'gemini-interactions':
+        steps = [{'type': 'thought', 'signature': f'signed-{turn}', 'summary': []}]
+        steps += (
+            [{'type': 'function_call', 'id': f'tool-{turn}', 'name': 'lookup', 'arguments': {'q': str(turn)}}]
+            if turn < 3
+            else [{'type': 'model_output', 'content': [{'type': 'text', 'text': 'done'}]}]
+        )
+        frames = [{'event_type': 'interaction.created', 'interaction': {'id': f'i-{turn}', 'status': 'in_progress'}}]
+        for index, step in enumerate(steps):
+            frames += [
+                {'event_type': 'step.start', 'index': index, 'step': step},
+                {'event_type': 'step.stop', 'index': index},
+            ]
+        frames += [
+            {
+                'event_type': 'interaction.completed',
+                'interaction': {
+                    'status': 'requires_action' if turn < 3 else 'completed',
+                    'usage': {'total_input_tokens': 10, 'total_output_tokens': 3},
+                },
+            }
+        ]
+        return httpx.Response(200, content=''.join('data: ' + json.dumps(frame) + '\n\n' for frame in frames))
     if protocol == 'ollama':
         tools = (
             [{'function': {'index': i, 'name': 'lookup', 'arguments': {'q': f'{turn}-{i}'}}} for i in range(2)]
@@ -95,7 +163,9 @@ def assert_followup_history(protocol, payloads):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('protocol', ['anthropic', 'gemini', 'cpa-agy', 'ollama'])
+@pytest.mark.parametrize(
+    'protocol', ['openai-chat', 'openai-responses', 'anthropic', 'gemini', 'gemini-interactions', 'cpa-agy', 'ollama']
+)
 async def test_two_tool_rounds_keep_native_history_and_charge_each_call_once(db, monkeypatch, protocol):
     @asynccontextmanager
     async def session():
@@ -143,6 +213,17 @@ async def test_two_tool_rounds_keep_native_history_and_charge_each_call_once(db,
             for choice in event.get('choices', [])
             for tool in choice.get('delta', {}).get('tool_calls', [])
         ]
+        if protocol == 'openai-responses':
+            tools = [
+                {
+                    'id': item['call_id'],
+                    'type': 'function',
+                    'function': {'name': item['name'], 'arguments': item['arguments']},
+                }
+                for event in current
+                for item in event.get('response', {}).get('output', [])
+                if item.get('type') == 'function_call'
+            ]
         if turn == 3:
             assert not tools
             break

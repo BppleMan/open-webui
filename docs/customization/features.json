@@ -66,7 +66,16 @@
           "real_provider_acceptance"
         ]
       },
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "stage6": {
+        "implementation": "implemented",
+        "verification": "local_passed_ci_pending",
+        "deployment": "not_deployed",
+        "plan": "stage6-plan.md",
+        "acceptance": "stage6-acceptance.json",
+        "contract": "stage6-acceptance.md",
+        "remaining": "exact_commit_CI_and_image_verification"
+      }
     },
     {
       "id": "F02",
@@ -95,7 +104,16 @@
       ],
       "depends_on": [
         "F13"
-      ]
+      ],
+      "stage6": {
+        "implementation": "implemented",
+        "verification": "local_passed_ci_pending",
+        "deployment": "not_deployed",
+        "plan": "stage6-plan.md",
+        "acceptance": "stage6-acceptance.json",
+        "contract": "stage6-acceptance.md",
+        "remaining": "exact_commit_CI_and_image_verification"
+      }
     },
     {
       "id": "F03",
@@ -160,7 +178,16 @@
       ],
       "depends_on": [
         "F13"
-      ]
+      ],
+      "stage6": {
+        "implementation": "implemented",
+        "verification": "local_passed_ci_pending",
+        "deployment": "not_deployed",
+        "plan": "stage6-plan.md",
+        "acceptance": "stage6-acceptance.json",
+        "contract": "stage6-acceptance.md",
+        "remaining": "exact_commit_CI_and_image_verification"
+      }
     },
     {
       "id": "F06",
@@ -240,7 +267,16 @@
       "depends_on": [
         "F13"
       ],
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "stage6": {
+        "implementation": "implemented",
+        "verification": "local_passed_ci_pending",
+        "deployment": "not_deployed",
+        "plan": "stage6-plan.md",
+        "acceptance": "stage6-acceptance.json",
+        "contract": "stage6-acceptance.md",
+        "remaining": "exact_commit_CI_and_image_verification"
+      }
     },
     {
       "id": "F09",
@@ -825,6 +861,15 @@
         "evidence": "stage5-acceptance.json",
         "release": "stage5-release.json",
         "source_commit": "c48cbac0abc9bd0e56545eee927dc363be97b760"
+      },
+      "stage6": {
+        "implementation": "implemented",
+        "verification": "local_passed_ci_pending",
+        "deployment": "not_deployed",
+        "plan": "stage6-plan.md",
+        "acceptance": "stage6-acceptance.json",
+        "contract": "stage6-acceptance.md",
+        "remaining": "exact_commit_CI_and_image_verification"
       }
     }
   ],

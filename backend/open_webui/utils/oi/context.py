@@ -53,7 +53,18 @@ def observe_context(form, capabilities=None):
         'input_limit': capabilities.get('input_limit'),
         'context_window': capabilities.get('context_window'),
         'output_limit': capabilities.get('output_limit'),
-        'reserved_output': form.get('max_completion_tokens', form.get('max_tokens')),
+        'reserved_output': form.get(
+            'max_completion_tokens',
+            form.get(
+                'max_tokens',
+                form.get(
+                    'max_output_tokens',
+                    (form.get('generationConfig') or {}).get(
+                        'maxOutputTokens', (form.get('generation_config') or {}).get('max_output_tokens')
+                    ),
+                ),
+            ),
+        ),
         'skills': {'count': len(metadata.get('skill_ids') or []), 'tokens': None},
         'subagents': {'tokens': None},
         'mcp': {'tokens': None},

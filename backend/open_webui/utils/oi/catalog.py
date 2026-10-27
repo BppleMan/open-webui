@@ -175,12 +175,12 @@ def reasoning_controls(binding):
             target[parts[-1]] = value
             return result
 
-        default_index = levels.index(reasoning['default']) if reasoning.get('default') in levels else 0
+        default_index = levels.index(reasoning['default']) if reasoning.get('default') in levels else None
         return {
             'oi_reasoning': {
                 'label': 'Reasoning',
                 'display': 'slider' if len(levels) > 1 else 'menu',
-                'default': f'level_{default_index}',
+                'default': f'level_{default_index}' if default_index is not None else None,
                 'options': {
                     f'level_{i}': {'label': str(level), 'params': parameters(level)} for i, level in enumerate(levels)
                 },
@@ -345,6 +345,23 @@ def discovered_capabilities(model):
     ):
         if model.get(source):
             result[target] = model[source]
+    thinking = model.get('thinkingSupport')
+    if isinstance(thinking, dict):
+        result['thinking_support'] = thinking
+        if thinking.get('levels'):
+            result['reasoning'] = {
+                'parameter': 'generationConfig.thinkingConfig.thinkingLevel',
+                'levels': thinking['levels'],
+            }
+        elif (
+            isinstance(thinking.get('min'), int)
+            and isinstance(thinking.get('max'), int)
+            and thinking['max'] > thinking['min']
+        ):
+            result['reasoning'] = {
+                'parameter': 'generationConfig.thinkingConfig.thinkingBudget',
+                'budget': {'min': thinking['min'], 'max': thinking['max'], 'step': 1},
+            }
     return result
 
 

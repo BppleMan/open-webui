@@ -1705,5 +1705,8 @@ export interface ModelControl {
 }
 
 export interface ModelParams {
+	max_tokens?: number;
+	max_completion_tokens?: number;
+	system?: string;
 	model_controls?: Record<string, ModelControl>;
 }

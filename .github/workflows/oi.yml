@@ -92,6 +92,10 @@ jobs:
         run: |
           docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test oi_stage5_ci
           python scripts/oi/stage5-acceptance.py
+      - name: Native protocols, reasoning controls and explicit compaction
+        env:
+          PGVECTOR_DB_URL: postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_vector
+        run: python scripts/oi/stage6-acceptance.py
   image:
     if: github.event_name != 'pull_request'
     needs: [frontend, backend]

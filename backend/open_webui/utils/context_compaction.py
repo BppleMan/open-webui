@@ -4,6 +4,7 @@ import logging
 import re
 from typing import Any
 
+from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from open_webui.models.chats import Chats
 from open_webui.models.config import Config
@@ -52,13 +53,16 @@ async def compact_messages_for_request(
     system_prompt: str = '',
 ) -> tuple[list[dict], str | None, bool]:
     config = await _load_config()
-    if not config['enable'] or not metadata.get('oi_auto_compaction', False):
+    if not config['enable']:
         return messages, None, False
 
     system_messages = [messages[0]] if messages and messages[0].get('role') == 'system' else []
     messages = messages[1:] if system_messages else messages
 
     messages, previous_summary = _apply_latest_summary_checkpoint(messages)
+    # A user-created checkpoint applies without authorizing future automatic summaries.
+    if not metadata.get('oi_auto_compaction', False):
+        return [*system_messages, *messages], previous_summary, False
     system_prompt = system_prompt or (get_content_from_message(system_messages[0]) if system_messages else '')
     token_threshold = _resolve_token_threshold(config['token_threshold'], config['token_cap'], metadata)
     if not _exceeds_token_threshold(messages, system_prompt, previous_summary, token_threshold) or len(messages) <= 3:
@@ -186,6 +190,7 @@ async def compact_chat_branch(request, user, chat: Any, model_id: str, models: d
         recent_messages,
         previous_summary,
         config['prompt_template'],
+        metadata={'chat_id': chat.id, 'message_id': current_id},
     )
     await Chats.upsert_message_to_chat_by_id_and_message_id(
         chat.id, current_id, {'contextSummary': summary}, touch=False
@@ -386,6 +391,7 @@ async def _generate_summary(
     recent_messages: list[dict],
     previous_summary: str | None,
     summary_prompt_template: str,
+    metadata: dict | None = None,
 ) -> str:
     from open_webui.utils.chat import generate_chat_completion
 
@@ -433,6 +439,7 @@ async def _generate_summary(
         'stream': False,
         'metadata': {
             **(request.state.metadata if hasattr(request.state, 'metadata') else {}),
+            **(metadata or {}),
             'task': 'context_compaction',
         },
     }
@@ -443,12 +450,7 @@ async def _generate_summary(
     if summary:
         return summary
 
-    parts = [previous_summary] if previous_summary else []
-    for message in compacted_messages:
-        content = get_content_from_message(message)
-        if content:
-            parts.append(f'- {message.get("role", "unknown")}: {content[:500]}')
-    return '\n'.join(parts)[:4000]
+    raise HTTPException(502, 'Compaction returned no summary; original history was preserved')
 
 
 def _response_text(response: Any) -> str:
