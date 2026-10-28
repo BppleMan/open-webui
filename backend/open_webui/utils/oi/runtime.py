@@ -226,7 +226,9 @@ async def track_call(request, form, user, dispatch, binding=None, connection=Non
         raw = data.get('oi_usage') or data.get('usage') or (data.get('response') or {}).get('usage')
         if raw:
             # Every provider adapter supplies cumulative snapshots, never unconditional sums.
-            usage = accounting.normalize_usage(raw, data.get('oi_usage_protocol', 'openai'))
+            usage = accounting.merge_usage(
+                usage, accounting.normalize_usage(raw, data.get('oi_usage_protocol', 'openai'))
+            )
             supplied_cost = (
                 raw.get('cost')
                 if connection

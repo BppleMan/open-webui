@@ -1,16 +1,16 @@
 """Per-call accounting and fork snapshots. No chat text is stored in this ledger."""
 
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, localcontext
 
 from open_webui.models.customization import ChatLedger, CostSnapshot, Generation, ImportCostBaseline, ModelCall
-from open_webui.utils.oi.storage import identifier, insert_once, now
+from open_webui.utils.oi.storage import identifier, insert_once, now, lock_user_state
 from sqlalchemy import select, update
 
 
 def money(value):
     if value is None:
         return None
-    if isinstance(value, bool):
+    if isinstance(value, bool) or len(str(value)) > 128:
         raise ValueError('Invalid monetary value')
     try:
         result = Decimal(str(value))
@@ -18,6 +18,8 @@ def money(value):
         raise ValueError('Invalid monetary value') from None
     if not result.is_finite() or result < 0:
         raise ValueError('Money must be finite and non-negative')
+    if result.adjusted() >= 24 or result.as_tuple().exponent < -36:
+        raise ValueError('Monetary value exceeds supported precision or magnitude')
     return format(result, 'f')
 
 
@@ -121,8 +123,19 @@ def normalize_usage(raw, protocol='openai'):
 
 
 def estimate(usage, pricing):
+    with localcontext() as context:
+        context.prec = 128
+        try:
+            return _estimate(usage, pricing)
+        except ValueError:
+            return None
+
+
+def _estimate(usage, pricing):
     """Rates are USD per million tokens, captured when the call starts."""
     if 'input_tokens' not in usage or 'output_tokens' not in usage or usage.get('unknown_modality_breakdown'):
+        return None
+    if pricing.get('currency', 'USD') != 'USD':
         return None
     rates = dict(pricing.get('rates') or {})
     for tier in sorted(pricing.get('tiers') or [], key=lambda t: t['min_input_tokens']):
@@ -166,6 +179,7 @@ def estimate(usage, pricing):
 
 
 async def ensure_ledger(db, user_id, chat_id):
+    await lock_user_state(db, user_id)
     await insert_once(
         db,
         ChatLedger,
@@ -210,6 +224,7 @@ async def begin_generation(db, user_id, chat_id, message_id, request_id, kind='a
 
 
 async def begin_call(db, generation, model_id, *, binding_id=None, connection_id=None, pricing=None, call_id=None):
+    await lock_user_state(db, generation.user_id)
     call_id = call_id or identifier()
     existing = await db.get(ModelCall, call_id)
     if existing:
@@ -249,32 +264,41 @@ async def begin_call(db, generation, model_id, *, binding_id=None, connection_id
 
 
 async def settle_call(db, call_id, usage, *, actual_usd=None, source=None, status='completed', revision=1):
-    call = await db.get(ModelCall, call_id, populate_existing=True)
+    call = await db.get(ModelCall, call_id)
     if not call:
         raise ValueError('Unknown call')
+    owner = await db.get(ChatLedger, call.chat_id)
+    await lock_user_state(db, owner.user_id)
+    call = (
+        await db.execute(
+            select(ModelCall).where(ModelCall.id == call_id).with_for_update().execution_options(populate_existing=True)
+        )
+    ).scalar_one()
     if revision < (call.usage or {}).get('_revision', 0):
         return call
-    call.usage = {**usage, '_revision': revision}
+    call.usage = merge_usage(call.usage or {}, usage)
+    call.usage['_revision'] = revision
     # Confirmed actual cost supersedes the estimate for this call; the two columns are disjoint.
     if actual_usd is not None:
         call.actual_usd = money(actual_usd)
-    call.estimated_usd = None if call.actual_usd is not None else estimate(usage, call.pricing)
+    call.estimated_usd = None if call.actual_usd is not None else estimate(call.usage, call.pricing)
     call.source = source or call.source
     call.status = status
     call.completed_at = now()
     await db.flush()
-    # A late settlement changes only snapshots whose fixed call boundary covers this event.
-    snapshots = (await db.execute(select(CostSnapshot))).scalars().all()
-    affected = {s.id for s in snapshots if s.chat_id == call.chat_id and s.max_sequence >= call.sequence}
-    changed = True
-    while changed:
-        before = len(affected)
-        affected.update(s.id for s in snapshots if s.inherited_snapshot_id in affected)
-        changed = len(affected) != before
-    for snapshot in snapshots:
-        if snapshot.id in affected:
-            snapshot.totals = totals(*(await snapshot_records(db, snapshot.id)))
-    await db.flush()
+    # The fixed boundary selects direct snapshots; descendants inherit those exact events.
+    direct = (
+        (
+            await db.execute(
+                select(CostSnapshot).where(
+                    CostSnapshot.chat_id == call.chat_id, CostSnapshot.max_sequence >= call.sequence
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    await refresh_snapshots(db, direct)
     return call
 
 
@@ -282,6 +306,7 @@ async def finish_generation(db, generation_id, status='completed'):
     generation = await db.get(Generation, generation_id)
     if not generation:
         raise ValueError('Unknown generation')
+    await lock_user_state(db, generation.user_id)
     generation.status = status
     generation.completed_at = now()
     ledger = await db.get(ChatLedger, generation.chat_id, populate_existing=True)
@@ -347,6 +372,12 @@ async def snapshot_records(db, snapshot_id):
 
 
 def totals(calls, baselines):
+    with localcontext() as context:
+        context.prec = 128
+        return _totals(calls, baselines)
+
+
+def _totals(calls, baselines):
     actual, estimated, unknown = Decimal(0), Decimal(0), 0
     for item in [*calls.values(), *baselines.values()]:
         if item.actual_usd is not None:
@@ -356,8 +387,8 @@ def totals(calls, baselines):
         else:
             unknown += 1
     return {
-        'actual_usd': money(actual),
-        'estimated_usd': money(estimated),
+        'actual_usd': format(actual, 'f'),
+        'estimated_usd': format(estimated, 'f'),
         'unknown_calls': sum(c.actual_usd is None and c.estimated_usd is None for c in calls.values()),
         'unknown_baselines': sum(b.actual_usd is None and b.estimated_usd is None for b in baselines.values()),
         'incomplete': unknown > 0,
@@ -474,7 +505,7 @@ async def inherit_history_baseline(db, user_id, new_chat_id, parent_chat_id, mes
     return snapshot.id
 
 
-async def set_baseline(db, user_id, chat_id, batch_id, actual_usd=None, estimated_usd=None, note=''):
+async def set_baseline(db, user_id, chat_id, batch_id, actual_usd=None, estimated_usd=None, note='', revision=None):
     if actual_usd is not None and estimated_usd is not None:
         raise ValueError('Choose actual or estimated cost for one import batch')
     await ensure_ledger(db, user_id, chat_id)
@@ -498,15 +529,52 @@ async def set_baseline(db, user_id, chat_id, batch_id, actual_usd=None, estimate
     )
     baseline = (
         await db.execute(
-            select(ImportCostBaseline).where(
+            select(ImportCostBaseline)
+            .where(
                 ImportCostBaseline.chat_id == chat_id,
                 ImportCostBaseline.batch_id == batch_id,
             )
+            .with_for_update()
+            .execution_options(populate_existing=True)
         )
     ).scalar_one()
+    if revision is not None and revision != (0 if created else baseline.revision):
+        raise BaselineConflict('Cost baseline changed; reload before saving')
     baseline.actual_usd, baseline.estimated_usd, baseline.note = actual_usd, estimated_usd, note
     if not created:
         baseline.revision += 1
     baseline.updated_at = stamp
     await db.flush()
+    direct = (await db.execute(select(CostSnapshot).where(CostSnapshot.chat_id == chat_id))).scalars().all()
+    await refresh_snapshots(db, [snapshot for snapshot in direct if baseline.id in snapshot.baseline_ids])
     return baseline
+
+
+class BaselineConflict(ValueError):
+    pass
+
+
+def merge_usage(previous, incoming):
+    """Partial cumulative snapshots replace known fields, never add or erase absent counters."""
+    result = {**previous, **{key: value for key, value in incoming.items() if value is not None}}
+    if isinstance(previous.get('raw'), dict) and isinstance(incoming.get('raw'), dict):
+        result['raw'] = {**previous['raw'], **incoming['raw']}
+    if 'input_tokens' in result and 'output_tokens' in result:
+        result['total_tokens'] = result['input_tokens'] + result['output_tokens']
+    return result
+
+
+async def refresh_snapshots(db, direct):
+    affected = {snapshot.id: snapshot for snapshot in direct}
+    frontier = set(affected)
+    while frontier:
+        descendants = (
+            (await db.execute(select(CostSnapshot).where(CostSnapshot.inherited_snapshot_id.in_(frontier))))
+            .scalars()
+            .all()
+        )
+        frontier = {snapshot.id for snapshot in descendants if snapshot.id not in affected}
+        affected.update({snapshot.id: snapshot for snapshot in descendants})
+    for snapshot in affected.values():
+        snapshot.totals = totals(*(await snapshot_records(db, snapshot.id)))
+    await db.flush()

@@ -29,9 +29,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 async def archive_models(request, user, db):
     from open_webui.utils.models import get_all_models, get_filtered_models
 
-    models = list((getattr(request.app.state, 'MODELS', {}) or {}).values())
-    if not models:
-        models = await get_all_models(request, user=user)
+    # Rebuild the effective directory so connections/presets added since the last
+    # chat request can be selected; access is still checked against current rows.
+    models = await get_all_models(request, user=user)
     return await get_filtered_models(models, user, db=db)
 
 
@@ -140,6 +140,9 @@ async def import_archive(
         if any(value not in allowed for value in mapping.values()):
             raise ValueError('A selected destination model is unavailable')
         manifest, bundle = await asyncio.to_thread(archive_files.read_bundle, file.file)
+        from open_webui.utils.oi.storage import lock_user_state
+
+        await lock_user_state(db, user.id)
         manifest, created = await archive_files.restore_files(db, user.id, manifest, bundle)
         chat = await archive.restore_records(
             db, user.id, manifest, archive.canonical_id(user.id, 'import', str(import_id)), mapping
@@ -166,9 +169,11 @@ async def import_archive(
             raise
         raise HTTPException(
             400,
-            str(error)
-            if isinstance(error, (ValueError, PermissionError))
-            else 'Unable to restore this conversation archive',
+            (
+                str(error)
+                if isinstance(error, (ValueError, PermissionError))
+                else 'Unable to restore this conversation archive'
+            ),
         ) from None
     finally:
         if bundle is not None:
@@ -790,6 +795,7 @@ def call_json(call):
 
 @router.get('/chats/{chat_id}/usage')
 async def chat_usage(chat_id: str, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)):
+    model_aliases = {}
     if chat_id.startswith('temporary:'):
         ledger = await db.get(ChatLedger, chat_id)
         if ledger is None or ledger.user_id != user.id:
@@ -798,6 +804,7 @@ async def chat_usage(chat_id: str, user=Depends(get_verified_user), db: AsyncSes
         chat = await chat_access(db, user, chat_id)
         if chat.user_id != user.id:
             raise HTTPException(403, 'Only the owner can view conversation billing')
+        model_aliases = (chat.meta or {}).get('oi_archive_model_mapping') or {}
     calls, _ = await accounting.conversation_records(db, chat_id)
     calls = sorted(calls.values(), key=lambda call: (call.created_at, call.sequence, call.id))
     snapshots = await accounting.conversation_snapshots(db, chat_id)
@@ -814,7 +821,9 @@ async def chat_usage(chat_id: str, user=Depends(get_verified_user), db: AsyncSes
     )
     return {
         'totals': await accounting.get_totals(db, chat_id),
-        'calls': [call_json(call) for call in calls],
+        'calls': [
+            {**call_json(call), 'view_model_id': model_aliases.get(call.model_id, call.model_id)} for call in calls
+        ],
         'generations': [
             {k: getattr(g, k) for k in ('id', 'message_id', 'kind', 'status', 'created_at')} for g in generations
         ],
@@ -834,7 +843,8 @@ class BaselineForm(BaseModel):
     batch_id: str = Field(min_length=1, max_length=200)
     actual_usd: str | None = None
     estimated_usd: str | None = None
-    note: str = ''
+    note: str = Field(default='', max_length=2000)
+    revision: int = Field(default=0, ge=0)
 
 
 @router.get('/chats/{chat_id}/cost-baselines')
@@ -858,6 +868,8 @@ async def write_baseline(
         raise HTTPException(403, 'Only the owner can edit cost baselines')
     try:
         await accounting.set_baseline(db, user.id, chat_id, **form.model_dump())
+    except accounting.BaselineConflict as error:
+        raise HTTPException(409, str(error)) from None
     except ValueError as error:
         raise HTTPException(422, str(error)) from None
     await db.commit()

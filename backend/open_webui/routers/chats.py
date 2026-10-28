@@ -866,14 +866,9 @@ async def import_chats(
     await require_chat_import_permission(request, user, db)
 
     try:
-        chats = await Chats.import_chats(user.id, form_data.chats, db=db)
-        from open_webui.utils.oi.accounting import set_baseline
+        from open_webui.utils.oi.imports import import_json
 
-        for imported in chats:
-            if (imported.chat.get('history') or {}).get('messages') or imported.chat.get('messages'):
-                await set_baseline(
-                    db, user.id, imported.id, 'imported-history', note='Imported history; cost has not been supplied'
-                )
+        chats = await import_json(db, user.id, form_data.chats, form_data.import_id)
         await db.commit()
         await Tags.ensure_tags_exist(
             list({tag_id for chat in chats for tag_id in (chat.meta or {}).get('tags', [])}), user.id, db=db
@@ -887,8 +882,13 @@ async def import_chats(
         )
         return chats
     except HTTPException:
+        await db.rollback()
         raise
+    except ValueError as e:
+        await db.rollback()
+        raise HTTPException(422, str(e)) from None
     except Exception as e:
+        await db.rollback()
         log.exception(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.DEFAULT())
 

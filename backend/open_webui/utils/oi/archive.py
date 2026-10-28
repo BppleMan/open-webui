@@ -10,6 +10,7 @@ from uuid import NAMESPACE_URL, uuid5
 from open_webui.models.chat_messages import ChatMessages
 from open_webui.models.chats import Chat
 from open_webui.models.customization import (
+    ArchiveOrigin,
     ChatAnnotation,
     ChatLedger,
     CostSnapshot,
@@ -19,7 +20,7 @@ from open_webui.models.customization import (
     ModelCall,
 )
 from open_webui.utils.oi import accounting
-from open_webui.utils.oi.storage import identifier, now
+from open_webui.utils.oi.storage import identifier, now, lock_user_state
 from sqlalchemy import select
 
 SCHEMA = 'oi-conversation-archive-v1'
@@ -41,6 +42,7 @@ def canonical_id(user_id, kind, source):
 
 
 async def export_records(db, user_id, chat_id, directory=None):
+    await lock_user_state(db, user_id)
     chat = await db.get(Chat, chat_id)
     if chat is None or chat.user_id != user_id:
         raise PermissionError('Only the owner can archive a conversation')
@@ -151,14 +153,32 @@ async def export_records(db, user_id, chat_id, directory=None):
         'revisions': [record(row) for row in revisions],
         'annotations': copy.deepcopy(annotations.data) if annotations else {},
         'model_references': descriptors,
+        'model_aliases': copy.deepcopy((chat.meta or {}).get('oi_archive_model_mapping') or {}),
     }
+    origins = {}
+    for key, rows in billing.items():
+        origins[key] = {}
+        for rid in rows:
+            origin = await db.get(ArchiveOrigin, (user_id, key, rid))
+            origins[key][rid] = origin.source_id if origin else rid
+    manifest['origin_ids'] = origins
     validate(manifest)
     return manifest
 
 
 def validate(manifest):
-    if manifest.get('schema') != SCHEMA or not isinstance(manifest.get('chat'), dict):
+    if not isinstance(manifest, dict) or manifest.get('schema') != SCHEMA or not isinstance(manifest.get('chat'), dict):
         raise ValueError('Unsupported conversation archive')
+    aliases = manifest.get('model_aliases', {})
+    if (
+        not isinstance(aliases, dict)
+        or len(aliases) > 10000
+        or any(
+            not isinstance(key, str) or not isinstance(value, str) or not key or not value
+            for key, value in aliases.items()
+        )
+    ):
+        raise ValueError('Invalid archive model aliases')
     root = manifest.get('root_chat_id')
     if not isinstance(root, str) or not root or len(root) > 200:
         raise ValueError('Invalid source conversation')
@@ -216,6 +236,7 @@ def validate(manifest):
     for row in maps['baselines'].values():
         accounting.money(row.get('actual_usd'))
         accounting.money(row.get('estimated_usd'))
+    visited_snapshots = set()
     for row in maps['snapshots'].values():
         if row.get('generation_id') and row['generation_id'] not in maps['generations']:
             raise ValueError('Missing snapshot generation')
@@ -224,34 +245,60 @@ def validate(manifest):
         if any(ref not in maps['baselines'] for ref in row.get('baseline_ids', [])):
             raise ValueError('Missing snapshot baseline')
         seen, current = set(), row
-        while current.get('inherited_snapshot_id'):
+        while current.get('inherited_snapshot_id') and current['id'] not in visited_snapshots:
             ref = current['inherited_snapshot_id']
             if ref in seen or ref not in maps['snapshots']:
                 raise ValueError('Cyclic or missing snapshot inheritance')
             seen.add(ref)
             current = maps['snapshots'][ref]
+        visited_snapshots.update(seen)
+        visited_snapshots.add(row['id'])
     for row in maps['ledgers'].values():
         if row.get('inherited_snapshot_id') and row['inherited_snapshot_id'] not in maps['snapshots']:
             raise ValueError('Missing ledger inheritance')
+    validate_relations(manifest, maps)
     return maps
 
 
 async def restore_billing(db, user_id, manifest):
     """Restore one canonical event per original call, including repeated imports."""
     rows = validate(manifest)
+    await lock_user_state(db, user_id)
     ids = {key: {} for key in TABLES}
     for key, model in TABLES.items():
         for source_id, value in rows[key].items():
-            existing = await db.get(model, source_id)
+            origin_id = (manifest.get('origin_ids', {}).get(key, {})).get(source_id, source_id)
+            provenance = (
+                await db.execute(
+                    select(ArchiveOrigin).where(
+                        ArchiveOrigin.user_id == user_id,
+                        ArchiveOrigin.kind == key,
+                        ArchiveOrigin.source_id == origin_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            existing = await db.get(model, provenance.local_id if provenance else origin_id)
             owner = await db.get(ChatLedger, existing.chat_id) if existing else None
             owned = owner is not None and owner.user_id == user_id
             # A foreign user's identically named source can never be linked or overwritten.
-            ids[key][source_id] = source_id if owned else canonical_id(user_id, key, source_id)
+            target = (
+                existing.chat_id
+                if key == 'ledgers' and owned
+                else existing.id if owned else canonical_id(user_id, key, origin_id)
+            )
+            ids[key][source_id] = target
+            if not provenance:
+                db.add(ArchiveOrigin(user_id=user_id, kind=key, local_id=target, source_id=origin_id))
     for source_id, value in rows['ledgers'].items():
         target = ids['ledgers'][source_id]
         existing = await db.get(ChatLedger, target)
         if existing and existing.user_id != user_id:
             raise PermissionError('Imported ledger identity unavailable')
+        if existing:
+            inherited = ids['snapshots'].get(value.get('inherited_snapshot_id'))
+            if existing.inherited_snapshot_id != inherited:
+                raise ValueError('Archive ledger inheritance conflicts with an existing record')
+            existing.sequence = max(existing.sequence, value['sequence'])
         if not existing:
             db.add(
                 ChatLedger(
@@ -281,10 +328,12 @@ async def restore_billing(db, user_id, manifest):
                 item['usage'] = {
                     **(item.get('usage') or {}),
                     'archive_origin': {
-                        'call_id': (item.get('usage') or {}).get('archive_origin', {}).get('call_id') or source_id
+                        'call_id': (item.get('usage') or {}).get('archive_origin', {}).get('call_id')
+                        or (manifest.get('origin_ids', {}).get('calls', {})).get(source_id, source_id)
                     },
                 }
             if key == 'snapshots':
+                item.pop('totals', None)
                 item['inherited_snapshot_id'] = ids['snapshots'].get(value.get('inherited_snapshot_id'))
                 item['baseline_ids'] = [ids['baselines'][ref] for ref in value.get('baseline_ids', [])]
             existing = await db.get(model, target)
@@ -292,17 +341,35 @@ async def restore_billing(db, user_id, manifest):
                 if existing.chat_id != item['chat_id']:
                     raise ValueError('Archive identity collides with a different ledger')
                 for invariant in {
-                    'calls': ['sequence', 'generation_id', 'model_id'],
-                    'snapshots': ['max_sequence', 'generation_id', 'inherited_snapshot_id'],
+                    'calls': ['sequence', 'generation_id', 'model_id', 'binding_id', 'connection_id', 'pricing'],
+                    'snapshots': ['max_sequence', 'generation_id', 'inherited_snapshot_id', 'baseline_ids'],
                     'baselines': ['batch_id'],
                     'generations': ['message_id'],
                 }[key]:
                     if getattr(existing, invariant) != item.get(invariant):
                         raise ValueError('Archive identity conflicts with an existing record')
-                # Existing settlement may be newer than this archive. Never overwrite it.
+                # Only newer portable settlement revisions may update imported events.
+                # A native local bill and user-edited baselines are never overwritten by a file.
+                if (
+                    key == 'calls'
+                    and (existing.usage or {}).get('archive_origin')
+                    and (item.get('usage') or {}).get('_revision', 0) > (existing.usage or {}).get('_revision', 0)
+                ):
+                    await accounting.settle_call(
+                        db,
+                        target,
+                        item['usage'],
+                        actual_usd=item.get('actual_usd'),
+                        source=item.get('source'),
+                        status=item.get('status', 'completed'),
+                        revision=item['usage']['_revision'],
+                    )
             else:
                 db.add(model(**item))
         await db.flush()
+    for target in ids['snapshots'].values():
+        snapshot = await db.get(CostSnapshot, target)
+        snapshot.totals = accounting.totals(*(await accounting.snapshot_records(db, target)))
     root = manifest['root_chat_id']
     if root not in rows['ledgers']:
         return None, ids
@@ -332,6 +399,7 @@ async def restore_billing(db, user_id, manifest):
 
 async def restore_records(db, user_id, manifest, chat_id, model_mapping=None):
     validate(manifest)
+    await lock_user_state(db, user_id)
     digest = hashlib.sha256(
         json.dumps({'manifest': manifest, 'mapping': model_mapping or {}}, sort_keys=True).encode()
     ).hexdigest()
@@ -346,6 +414,8 @@ async def restore_records(db, user_id, manifest, chat_id, model_mapping=None):
     body.pop('share_id', None)
     body.pop('share_mode', None)
     mapping = model_mapping or {}
+    aliases = {key: mapping.get(value, value) for key, value in manifest.get('model_aliases', {}).items()}
+    aliases.update(mapping)
     body['models'] = [mapping.get(mid, mid) for mid in body.get('models', [])]
     messages = body.setdefault('history', {}).setdefault('messages', {})
     for message in messages.values():
@@ -374,6 +444,7 @@ async def restore_records(db, user_id, manifest, chat_id, model_mapping=None):
         meta={
             'oi_archive_digest': digest,
             'oi_archive_source': manifest['root_chat_id'],
+            'oi_archive_model_mapping': aliases,
             'oi_model_descriptors': [
                 safe_descriptor(item) for item in manifest.get('model_references', []) if isinstance(item, dict)
             ],
@@ -414,3 +485,87 @@ async def restore_records(db, user_id, manifest, chat_id, model_mapping=None):
         )
     await db.flush()
     return chat
+
+
+def validate_relations(manifest, maps):
+    """Reject inconsistent references before any database or file mutation."""
+    origins = manifest.get('origin_ids', {})
+    if not isinstance(origins, dict) or any(key not in TABLES for key in origins):
+        raise ValueError('Invalid archive origins')
+    for key, refs in origins.items():
+        if (
+            not isinstance(refs, dict)
+            or any(
+                rid not in maps[key] or not isinstance(origin, str) or not origin or len(origin) > 300
+                for rid, origin in refs.items()
+            )
+            or len(set(refs.values())) != len(refs)
+        ):
+            raise ValueError('Invalid or duplicated archive origin')
+    messages = manifest['chat'].get('history', {}).get('messages', {})
+    current = manifest['chat'].get('history', {}).get('currentId')
+    if current is not None and current not in messages:
+        raise ValueError('Missing current message')
+    for mid, message in messages.items():
+        if not isinstance(mid, str) or not mid or len(mid) > 300 or message.get('id', mid) != mid:
+            raise ValueError('Invalid message identity')
+        if message.get('parentId') is not None and message['parentId'] not in messages:
+            raise ValueError('Missing message parent')
+        children = message.get('childrenIds', [])
+        if not isinstance(children, list) or any(
+            child not in messages or messages[child].get('parentId') != mid for child in children
+        ):
+            raise ValueError('Invalid message children')
+    sequences = set()
+    for key in ['calls', 'baselines']:
+        for row in maps[key].values():
+            if row.get('actual_usd') is not None and row.get('estimated_usd') is not None:
+                raise ValueError('Actual and estimated cost cannot both be active')
+            if key == 'calls':
+                pair = (row['chat_id'], row['sequence'])
+                if isinstance(row['sequence'], bool) or pair in sequences:
+                    raise ValueError('Duplicated or invalid call sequence')
+                sequences.add(pair)
+                if not isinstance(row.get('usage', {}), dict) or not isinstance(row.get('pricing', {}), dict):
+                    raise ValueError('Invalid usage or price snapshot')
+                usage = row.get('usage', {})
+                for field, value in usage.items():
+                    if (field.endswith('_tokens') or field == '_revision') and (
+                        not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= 2**63 - 1
+                    ):
+                        raise ValueError('Invalid usage counter')
+                for field in ['context', 'raw', 'archive_origin']:
+                    if field in usage and not isinstance(usage[field], dict):
+                        raise ValueError('Invalid usage metadata')
+                if 'archive_origin' in usage and not isinstance(usage['archive_origin'].get('call_id'), str):
+                    raise ValueError('Invalid original call identity')
+                rates = row.get('pricing', {}).get('rates', {})
+                if not isinstance(rates, dict):
+                    raise ValueError('Invalid price rates')
+                for rate in rates.values():
+                    accounting.money(rate)
+
+    for row in maps['snapshots'].values():
+        if isinstance(row['max_sequence'], bool) or row['max_sequence'] > maps['ledgers'][row['chat_id']]['sequence']:
+            raise ValueError('Snapshot exceeds its ledger boundary')
+        if row.get('generation_id') and maps['generations'][row['generation_id']]['chat_id'] != row['chat_id']:
+            raise ValueError('Snapshot generation belongs to a different ledger')
+        refs = row.get('baseline_ids', [])
+        if (
+            not isinstance(refs, list)
+            or len(refs) != len(set(refs))
+            or any(maps['baselines'][ref]['chat_id'] != row['chat_id'] for ref in refs)
+        ):
+            raise ValueError('Snapshot baseline belongs to a different ledger')
+    revisions = manifest.get('revisions', [])
+    if not isinstance(revisions, list) or len(revisions) > 100000:
+        raise ValueError('Invalid revisions')
+    for row in revisions:
+        if (
+            not isinstance(row, dict)
+            or not isinstance(row.get('message_id'), str)
+            or not isinstance(row.get('created_at'), int)
+        ):
+            raise ValueError('Invalid revision')
+    if not isinstance(manifest.get('annotations', {}), dict):
+        raise ValueError('Invalid annotations')

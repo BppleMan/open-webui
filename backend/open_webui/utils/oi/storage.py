@@ -26,3 +26,12 @@ async def insert_once(db, table, values, keys):
     # psycopg async can report -1 even after a successful INSERT. The returned
     # row is authoritative for both PostgreSQL and SQLite, including conflicts.
     return result.scalar_one_or_none() is not None
+
+
+async def lock_user_state(db, user_id):
+    """Transaction-scoped serialization for one user's ledger and imports, on both SQL dialects."""
+    from sqlalchemy import update
+    from open_webui.models.customization import UserStateLock
+
+    await insert_once(db, UserStateLock, {'user_id': user_id, 'revision': 0}, ['user_id'])
+    await db.execute(update(UserStateLock).where(UserStateLock.user_id == user_id).values(revision=0))

@@ -30,3 +30,6 @@ Stage3 implements transport-aware connection identity, versioned migration and o
 
 
 Stage5 is complete under the documented built-in-browser scope. See stage5-release.json and stage5-acceptance.json. Continue stage6 native protocols/context, stage7 costs/archive and stage8 staging/GitOps. Physical PWA was explicitly waived; production remains unchanged.
+
+
+Stage7 implements atomic historical-cost JSON import, versioned cost replacement, partial/late usage preservation, fixed snapshot correction, canonical archive provenance and concurrent safe restore. See stage7-acceptance.md for the OI6 schema and portable archive contract; stage7-release.json records CI/image publication. Next is stage8 staging and GitOps; no production switch is included.

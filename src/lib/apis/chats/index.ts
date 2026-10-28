@@ -168,7 +168,7 @@ export const unshareAllChats = async (token: string) => {
 	return res;
 };
 
-export const importChats = async (token: string, chats: object[]) => {
+export const importChats = async (token: string, chats: object[], importId?: string) => {
 	let error = null;
 
 	const res = await fetch(`${WEBUI_API_BASE_URL}/chats/import`, {
@@ -179,7 +179,8 @@ export const importChats = async (token: string, chats: object[]) => {
 			authorization: `Bearer ${token}`
 		},
 		body: JSON.stringify({
-			chats
+			chats,
+			import_id: importId
 		})
 	})
 		.then(async (res) => {

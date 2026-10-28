@@ -194,3 +194,8 @@ Final local production build passed; type delta has no new diagnostics with 5781
 
 ## Stage 6 — native protocols, reasoning and context
 175 backend and 50 frontend tests pass. Type delta has no new diagnostics (5769 upstream diagnostics remain, not a clean typecheck). Local production build and exact-revision remote frontend/backend/image jobs pass. Seven-protocol HTTP, two tool follow-ups, native history/media shapes and explicit compaction are distinct from six-protocol live short-text gateway probes. Browser numeric/discrete controls have captured wire evidence; responsive popup, long draft warning, scrolling and manual compaction pass. No production deployment. See stage6-acceptance.md/json and stage6-release.json for evidence boundaries, companion CPA revision and immutable registry digests. Next: stage 7 fees/archive, then stage 8 staging/GitOps.
+
+
+## Stage 7 — costs and portable archive integrity
+
+196 backend and 50 frontend tests passed; type delta has no new diagnostics (5765 upstream remain), production build passed. Real PostgreSQL/HTTP fixtures cover fees, partial and late usage, fixed fork boundaries, baseline conflicts, atomic JSON import, original-call deduplication, concurrent ZIP restore, explicit model mapping, permissions and malformed inputs. Legacy migration/restore compares 18 table hashes; complete stage7 fixture restore compares 20. Built-in browser confirms native import/edit flows and cross-environment ZIP restore, including 2 current-branch calls / 4 session calls and original $0.35 cost after remapping. Methods and limits: stage7-acceptance.md/json. Exact remote CI/image: stage7-release.json. Production unchanged.

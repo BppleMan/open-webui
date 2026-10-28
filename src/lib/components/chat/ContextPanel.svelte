@@ -47,7 +47,8 @@
 		$store.generations.filter((g) => ids.has(g.message_id)).map((g) => g.id)
 	);
 	$: calls = [...new Map($store.calls.map((c) => [c.id, c])).values()].filter(
-		(c) => generationIds.has(c.generation_id) && (!model || c.model_id === model.id)
+		(c) =>
+			generationIds.has(c.generation_id) && (!model || (c.view_model_id ?? c.model_id) === model.id)
 	);
 	$: contextCalls = calls.filter((c) =>
 		['assistant', 'tool_followup'].includes(c.usage?.context?.purpose)

@@ -96,6 +96,18 @@ jobs:
         env:
           PGVECTOR_DB_URL: postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_vector
         run: python scripts/oi/stage6-acceptance.py
+      - name: Cost, archive, concurrent restore and PostgreSQL recovery acceptance
+        env:
+          OI_STAGE7_DATABASE_URL: postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_stage7_ci
+          OI_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test oi_stage7_ci
+          python scripts/oi/stage7-acceptance.py
+          python scripts/oi/stage7-db-manifest.py prepare
+          docker exec "$OI_POSTGRES_CONTAINER" pg_dump -U oi_test -d oi_stage7_ci --format=custom > "$RUNNER_TEMP/oi-stage7.dump"
+          docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test oi_stage7_restore
+          docker exec -i "$OI_POSTGRES_CONTAINER" pg_restore -U oi_test -d oi_stage7_restore --exit-on-error < "$RUNNER_TEMP/oi-stage7.dump"
+          OI_STAGE7_DATABASE_URL=postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_stage7_restore python scripts/oi/stage7-db-manifest.py verify
   image:
     if: github.event_name != 'pull_request'
     needs: [frontend, backend]

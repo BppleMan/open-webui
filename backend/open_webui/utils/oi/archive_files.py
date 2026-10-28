@@ -28,7 +28,9 @@ def attachment_references(value):
     ids, external = set(), set()
 
     def visit(item, attachment=False):
-        if isinstance(item, list):
+        if isinstance(item, str):
+            ids.update(re.findall(r'/api/v1/files/([A-Za-z0-9:_-]+)/', item))
+        elif isinstance(item, list):
             for child in item:
                 visit(child, attachment)
         elif isinstance(item, dict):
@@ -123,8 +125,18 @@ async def create_bundle(db, user, manifest):
         def write():
             with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_DEFLATED) as bundle:
                 bundle.writestr('manifest.json', encoded)
+                written = 0
                 for name, source in sources.items():
-                    bundle.write(source, name)
+                    checksum = hashlib.sha256()
+                    with open(source, 'rb') as reader, bundle.open(name, 'w') as writer:
+                        while chunk := reader.read(1024 * 1024):
+                            written += len(chunk)
+                            if written > MAX_ARCHIVE:
+                                raise ValueError('Attachments changed beyond the archive size limit')
+                            checksum.update(chunk)
+                            writer.write(chunk)
+                    if checksum.hexdigest() != name.split('/')[-1]:
+                        raise ValueError('An attachment changed during export; retry the archive')
 
         await asyncio.to_thread(write)
         return path, manifest
@@ -136,6 +148,14 @@ async def create_bundle(db, user, manifest):
 def read_bundle(stream):
     stream.seek(0)
     bundle = zipfile.ZipFile(stream)
+    try:
+        return _read_bundle(bundle)
+    except BaseException:
+        bundle.close()
+        raise
+
+
+def _read_bundle(bundle):
     entries = bundle.infolist()
     if len(entries) > 10001 or sum(entry.file_size for entry in entries) > MAX_ARCHIVE + MAX_MANIFEST:
         raise ValueError('Archive exceeds the supported size')
@@ -148,7 +168,22 @@ def read_bundle(stream):
         raise ValueError('Archive manifest is too large')
     manifest = json.loads(bundle.read('manifest.json'))
     archive.validate(manifest)
-    for asset in manifest.get('attachments', []):
+    assets = manifest.get('attachments', [])
+    if not isinstance(assets, list) or len(assets) > 10000:
+        raise ValueError('Invalid archive attachments')
+    seen = set()
+    allowed = {'manifest.json'}
+    for asset in assets:
+        if (
+            not isinstance(asset, dict)
+            or not isinstance(asset.get('id'), str)
+            or not asset['id']
+            or asset['id'] in seen
+        ):
+            raise ValueError('Invalid or duplicated attachment identity')
+        seen.add(asset['id'])
+        if asset.get('status') not in {'included', 'unavailable'}:
+            raise ValueError('Invalid attachment status')
         if asset.get('status') != 'included':
             continue
         name = asset.get('blob', '')
@@ -156,9 +191,16 @@ def read_bundle(stream):
             raise ValueError('Invalid attachment location')
         if bundle.getinfo(name).file_size != asset.get('size'):
             raise ValueError('Attachment size differs from manifest')
+        allowed.add(name)
+        if not isinstance(asset.get('data', {}), dict) or not isinstance(asset.get('meta', {}), dict):
+            raise ValueError('Invalid attachment metadata')
         data = bundle.read(name)
         if hashlib.sha256(data).hexdigest() != asset.get('sha256'):
             raise ValueError('Attachment checksum differs from manifest')
+    if set(names) != allowed or any(
+        entry.is_dir() or stat.S_IFMT(entry.external_attr >> 16) not in {0, stat.S_IFREG} for entry in entries
+    ):
+        raise ValueError('Unlisted or unsafe archive entry')
     return manifest, bundle
 
 
@@ -169,6 +211,9 @@ def rewrite_references(value, mapping, attachment=False):
         return value
     result = {}
     for key, item in value.items():
+        if key == 'oi_native':
+            result[key] = copy.deepcopy(item)
+            continue
         if isinstance(item, str):
             if key in {'file_id'} or (attachment and key in {'id', 'url'}):
                 item = mapping.get(item, item)
@@ -246,6 +291,10 @@ async def restore_files(db, user_id, manifest, bundle):
         restored = copy.deepcopy(manifest)
         restored['chat'] = rewrite_references(restored['chat'], mapping)
         restored['revisions'] = rewrite_references(restored.get('revisions', []), mapping)
+        for mid, message in restored['chat'].get('history', {}).get('messages', {}).items():
+            original = manifest['chat']['history']['messages'][mid]
+            if message != original and message.get('oi_native'):
+                message['oi_native_invalidated'] = True
         return restored, created
     except BaseException:
         await cleanup(created)

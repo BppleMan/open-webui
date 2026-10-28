@@ -19,7 +19,7 @@ from open_webui.models.chat_messages import ChatMessage, ChatMessages
 from open_webui.models.folders import Folders
 from open_webui.models.tags import Tag, TagModel, Tags
 from open_webui.utils.misc import get_output_text, sanitize_data_for_db, sanitize_text_for_db
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import (
     JSON,
     BigInteger,
@@ -258,6 +258,7 @@ class ChatForm(BaseModel):
 
 
 class ChatImportForm(ChatForm):
+    oi_cost_baseline: dict | None = None
     meta: dict | None = {}
     pinned: bool | None = False
     archived: bool | None = False
@@ -267,6 +268,7 @@ class ChatImportForm(ChatForm):
 
 
 class ChatsImportForm(BaseModel):
+    import_id: str | None = Field(default=None, min_length=1, max_length=200)
     chats: list[ChatImportForm]
 
 

@@ -1,0 +1,73 @@
+{
+  "stage": 7,
+  "date": "2026-10-28",
+  "status": "local_acceptance_passed_CI_pending",
+  "requirement": "R47",
+  "prototype": "P32",
+  "checks": {
+    "backend_tests": 196,
+    "frontend_tests": 50,
+    "type_delta": "no_new_diagnostics_5765_upstream_remain",
+    "production_build": "passed",
+    "stage7_HTTP": "passed_real_PostgreSQL_and_loopback_provider",
+    "legacy_postgres": "v0.12.3_to_OI6_and_restore_18_table_hashes_match",
+    "stage7_postgres": "20_table_content_hashes_match_after_pg_dump_restore",
+    "production_deployment": "unchanged"
+  },
+  "matrix": {
+    "cost": [
+      "regen_0.03_plus_0.04_plus_0.05_equals_0.12",
+      "fork_plus_0.02_equals_0.14_parent_later_0.20_excluded",
+      "late_correction_first_call_0.03_to_0.06_fork_0.17",
+      "continue_0.01_separate_call_fork_0.18",
+      "partial_usage_preserved_unknown_fee_after_disconnect",
+      "duplicate_usage_and_cost_only_frame_do_not_add_or_erase_tokens",
+      "actual_supersedes_estimate",
+      "concurrent_settlements_update_materialized_total",
+      "tool_roundtrip_two_real_HTTP_calls_and_existing_title_task_classified",
+      "edit_delete_and_branch_selection_preserve_original_charges"
+    ],
+    "JSON": [
+      "actual_estimated_unknown_explicit_zero",
+      "same_file_receipt_same_chat_preserves_later_baseline_edit",
+      "six_baseline_writers_one_winner_five_409",
+      "invalid_second_chat_rolls_back_whole_batch",
+      "version_conflict_preserves_browser_input"
+    ],
+    "archive": [
+      "full_tree_revisions_including_deleted_branch_annotations",
+      "original_attachment_bytes_and_extracted_text",
+      "source_model_identity_preserved_and_display_aliases_compose",
+      "multi_hop_origins_deduplicate_global_statistics",
+      "six_concurrent_restores_same_import_id_same_chat",
+      "owner_only_archive_and_usage_nonowner_denial",
+      "import_export_permission_denial",
+      "inaccessible_file_is_unavailable_without_bytes_or_filename",
+      "checksum_duplicate_asset_invalid_sequence_traversal_HTTP_rejection_without_partial_rows",
+      "symlink_duplicate_manifest_size_limit_unit_rejection",
+      "forged_snapshot_totals_recomputed_invalid_usage_counters_rejected",
+      "no_new_inference_for_import_export_or_UI_metadata"
+    ]
+  },
+  "browser": {
+    "environment": "built_in_browser_production_frontend_synthetic_PostgreSQL",
+    "JSON": "7.25_actual_import; stale_409_keeps_2.50_input; reselect_server_revision_then_replace_estimated_2.50; exact_file_retry_same_chat_same_cost",
+    "archive": "explicit_mapping; attachment_name_bytes_and_text; bookmark_opening_and_branch_chosen; two_revisions; actual_total_0.35",
+    "responsive": [
+      "390x844_JSON_modal",
+      "1280x900_JSON_and_archive"
+    ],
+    "file_input_method": "synthetic_File_into_real_input_change_handler_with_real_API; OS_picker_not_tested",
+    "remapped_context_usage": "2_current_branch_calls_of_4_session_calls_actual_0.35_after_cross_environment_mapping"
+  },
+  "limits": [
+    "Settlement amounts are synthetic fixtures, not live invoices or provider price validation.",
+    "Attachment extraction text is a synthetic fixture; archive bytes are real upload/readback. Vector indexes are intentionally not portable.",
+    "Stage6 provider boundaries and physical-PWA waiver remain unchanged.",
+    "No production database, storage or GitOps change."
+  ],
+  "ci": "pending_exact_source_commit",
+  "deployment": "not_deployed",
+  "full_plan_complete": false,
+  "next_stage": 8
+}

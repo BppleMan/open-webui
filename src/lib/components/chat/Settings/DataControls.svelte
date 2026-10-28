@@ -5,6 +5,7 @@
 
 	import { user, showSettings } from '$lib/stores';
 	import ArchiveImportModal from '../ArchiveImportModal.svelte';
+	import JsonImportModal from '../JsonImportModal.svelte';
 	import { refreshSidebar } from '$lib/stores/chatList';
 
 	import { archiveAllChats, deleteAllChats, getAllChats, importChats } from '$lib/apis/chats';
@@ -37,29 +38,22 @@
 	const actionButtonClass =
 		'text-xs text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-500 dark:hover:text-white';
 
-	$: if (importFiles) {
-		let reader = new FileReader();
-		reader.onload = (event) => {
-			let chats = JSON.parse(event.target.result);
-			if (getImportOrigin(chats) == 'openai') {
-				try {
-					chats = convertOpenAIChats(chats);
-				} catch (error) {
-					console.log('Unable to import chats:', error);
-				}
-			}
-			importChatsHandler(chats);
-		};
-
-		if (importFiles.length > 0) {
-			reader.readAsText(importFiles[0]);
-		}
+	let pendingImports: any[] = [],
+		showJsonImport = false,
+		jsonImportId = '';
+	$: if (importFiles?.length) {
+		const selected = importFiles[0];
+		importFiles = null;
+		void inspectJson(selected);
 	}
-
-	const importChatsHandler = async (_chats) => {
-		const res = await importChats(
-			localStorage.token,
-			_chats.map((chat) => {
+	async function inspectJson(file: File) {
+		try {
+			if (file.size > 64 * 1024 * 1024) throw new Error('JSON 文件超过 64 MiB');
+			const text = await file.text();
+			let _chats = JSON.parse(text);
+			if (!Array.isArray(_chats)) throw new Error('请选择会话 JSON 数组');
+			if (getImportOrigin(_chats) === 'openai') _chats = convertOpenAIChats(_chats);
+			pendingImports = _chats.map((chat) => {
 				if (chat.chat) {
 					return {
 						chat: chat.chat,
@@ -82,14 +76,21 @@
 						updated_at: chat?.updated_at ?? null
 					};
 				}
-			})
-		);
-		if (res) {
-			toast.success(`Successfully imported ${res.length} chats.`);
+			});
+			jsonImportId =
+				'json:' +
+				Array.from(
+					new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))
+				)
+					.map((x) => x.toString(16).padStart(2, '0'))
+					.join('');
+			showJsonImport = true;
+		} catch (error) {
+			toast.error(String(error));
+		} finally {
+			if (chatImportInputElement) chatImportInputElement.value = '';
 		}
-
-		await refreshSidebar(localStorage.token);
-	};
+	}
 
 	const exportChats = async () => {
 		let blob = new Blob([JSON.stringify(await getAllChats(localStorage.token))], {
@@ -119,6 +120,19 @@
 	};
 </script>
 
+<JsonImportModal
+	bind:show={showJsonImport}
+	forms={pendingImports}
+	importId={jsonImportId}
+	onImported={async (result) => {
+		await refreshSidebar(localStorage.token);
+		toast.success(`已导入 ${result.length} 个会话`);
+		if (result.length === 1) {
+			showSettings.set(false);
+			await goto(`/c/${result[0].id}`);
+		}
+	}}
+/>
 <SharedChatsModal bind:show={showSharedChatsModal} />
 <FilesModal bind:show={showFilesModal} />
 <ArchiveImportModal

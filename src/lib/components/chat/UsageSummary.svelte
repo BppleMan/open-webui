@@ -11,6 +11,8 @@
 		active = '';
 	let open = false,
 		baselines: any[] = [],
+		baselineRevision = 0,
+		saving = false,
 		batch = '',
 		amount = '',
 		kind = 'actual',
@@ -18,6 +20,12 @@
 	$: if (chatId !== active) {
 		disconnect?.();
 		active = chatId;
+		open = false;
+		baselines = [];
+		batch = '';
+		amount = '';
+		note = '';
+		baselineRevision = 0;
 		store = usageFor(chatId);
 		if (chatId) disconnect = store.connect();
 	}
@@ -32,16 +40,29 @@
 			}
 	};
 	const save = async () => {
+		if (saving) return;
+		saving = true;
 		try {
 			baselines = await oiApi(`/chats/${chatId}/cost-baselines`, 'PUT', {
 				batch_id: batch || 'imported-history',
 				actual_usd: kind === 'actual' && amount !== '' ? amount : null,
 				estimated_usd: kind === 'estimated' && amount !== '' ? amount : null,
-				note
+				note,
+				revision: baselineRevision
 			});
+			baselineRevision =
+				baselines.find((item) => item.batch_id === (batch || 'imported-history'))?.revision ?? 0;
 			await store.refresh();
-		} catch (e) {
-			toast.error(String(e));
+			toast.success('历史费用已保存');
+		} catch (e: any) {
+			toast.error(
+				e.status === 409
+					? '费用已在其他位置修改，请重新选择该批次后再编辑。当前输入保留。'
+					: String(e)
+			);
+			if (e.status === 409) baselines = await oiApi(`/chats/${chatId}/cost-baselines`);
+		} finally {
+			saving = false;
 		}
 	};
 </script>
@@ -74,9 +95,13 @@
 					<table class="w-full text-left">
 						<thead><tr><th>调用</th><th>实际</th><th>估算</th><th>状态</th></tr></thead><tbody
 							>{#each $store.calls as call (call.id)}<tr
-									><td class="max-w-48 truncate" title={modelLabel(call.binding_id || call.model_id)}>{modelLabel(call.binding_id || call.model_id)}</td><td
-										>{dollars(call.actual_usd)}</td
-									><td>{dollars(call.estimated_usd)}</td><td>{call.status}</td></tr
+									><td
+										class="max-w-48 truncate"
+										title={modelLabel(call.binding_id || call.model_id)}
+										>{modelLabel(call.binding_id || call.model_id)}</td
+									><td>{dollars(call.actual_usd)}</td><td>{dollars(call.estimated_usd)}</td><td
+										>{call.status}</td
+									></tr
 								>{/each}</tbody
 						>
 					</table>
@@ -89,6 +114,7 @@
 								class="my-2 block underline"
 								on:click={() => {
 									batch = item.batch_id;
+									baselineRevision = item.revision;
 									kind = item.actual_usd != null ? 'actual' : 'estimated';
 									amount = item.actual_usd ?? item.estimated_usd ?? '';
 									note = item.note;
@@ -99,6 +125,7 @@
 								aria-label="导入批次"
 								placeholder="导入批次"
 								bind:value={batch}
+								on:input={() => (baselineRevision = 0)}
 								class="min-w-0 max-w-full rounded-lg border border-gray-200 bg-transparent p-2 dark:border-white/10"
 							/><select
 								aria-label="费用类型"
@@ -117,8 +144,23 @@
 								placeholder="说明"
 								bind:value={note}
 								class="min-w-0 max-w-full rounded-lg border border-gray-200 bg-transparent p-2 dark:border-white/10"
-							/><button type="button" on:click={save}>保存基数</button>
+							/><button
+								type="button"
+								disabled={saving}
+								class="rounded-lg bg-gray-900 px-3 py-2 text-white disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900"
+								on:click={save}>{saving ? '正在保存…' : '保存基数'}</button
+							>
 						</div>
+						<button
+							type="button"
+							class="mt-3 text-gray-500 underline"
+							on:click={() => {
+								batch = '';
+								amount = '';
+								note = '';
+								baselineRevision = 0;
+							}}>新增批次</button
+						>
 						<p class="mt-2">同批次再次保存是替换；留空表示未知，明确输入 0 才表示零费用。</p>
 					</details>
 				{/if}

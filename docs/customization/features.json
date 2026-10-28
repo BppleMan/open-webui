@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "OI Open WebUI customization",
-  "updated_on": "2026-10-27",
+  "updated_on": "2026-10-28",
   "phase": "implementation",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
@@ -123,22 +123,33 @@
       "id": "F03",
       "title": "OI 内置单条 usage",
       "requirements": [
-        "R03"
+        "R03",
+        "R47"
       ],
       "prototypes": [
-        "P03"
+        "P03",
+        "P32"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "persistence_api_and_ui_integration_in_progress",
-      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "status": "implemented",
+      "implementation": "implemented_see_stage7_contract",
+      "verification": "local_acceptance_passed_CI_pending_see_stage7_acceptance",
       "deployment": "not_deployed",
       "acceptance": [
         "无需 usage Filter 或 Pipe 即可显示明细",
         "流式快照和增量不重复累计",
         "中断后保留已确认用量并标明缺失"
       ],
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "stage7": {
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
+        "deployment": "not_deployed",
+        "plan": "stage7-plan.md",
+        "acceptance": "stage7-acceptance.json",
+        "contract": "stage7-acceptance.md",
+        "release": "stage7-release.json"
+      }
     },
     {
       "id": "F04",
@@ -200,15 +211,17 @@
       "title": "新会话生成费用账本与 regen 累计",
       "requirements": [
         "R06",
-        "R07"
+        "R07",
+        "R47"
       ],
       "prototypes": [
-        "P06"
+        "P06",
+        "P32"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "persistence_api_and_ui_integration_in_progress",
-      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "status": "implemented",
+      "implementation": "implemented_see_stage7_contract",
+      "verification": "local_acceptance_passed_CI_pending_see_stage7_acceptance",
       "deployment": "not_deployed",
       "acceptance": [
         "第一笔请求前建立生成记录",
@@ -225,21 +238,32 @@
         "implementation": "source_message_reference_and_nullable_non_generation_snapshot",
         "verification": "92_backend_tests_and_real_local_HTTP_copy_fork_baseline_fork_passed",
         "deployment": "not_deployed"
+      },
+      "stage7": {
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
+        "deployment": "not_deployed",
+        "plan": "stage7-plan.md",
+        "acceptance": "stage7-acceptance.json",
+        "contract": "stage7-acceptance.md",
+        "release": "stage7-release.json"
       }
     },
     {
       "id": "F07",
       "title": "导入历史费用基数",
       "requirements": [
-        "R08"
+        "R08",
+        "R47"
       ],
       "prototypes": [
-        "P07"
+        "P07",
+        "P32"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "persistence_api_and_ui_integration_in_progress",
-      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
+      "status": "implemented",
+      "implementation": "implemented_see_stage7_contract",
+      "verification": "local_acceptance_passed_CI_pending_see_stage7_acceptance",
       "deployment": "not_deployed",
       "acceptance": [
         "导入时可填写并随后修改历史费用基数",
@@ -247,7 +271,16 @@
         "多次导入分批累计",
         "导入后生成与 regen 正常入账"
       ],
-      "legacy_import_baseline": "implemented_unknown_baseline_for_plain_JSON_import; runtime_test_pending"
+      "legacy_import_baseline": "atomic_receipted_JSON_with_unknown_default_and_versioned_replacement",
+      "stage7": {
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
+        "deployment": "not_deployed",
+        "plan": "stage7-plan.md",
+        "acceptance": "stage7-acceptance.json",
+        "contract": "stage7-acceptance.md",
+        "release": "stage7-release.json"
+      }
     },
     {
       "id": "F08",
@@ -429,6 +462,15 @@
         "contract": "stage6-acceptance.md",
         "release": "stage6-release.json",
         "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
+      },
+      "stage7": {
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
+        "deployment": "not_deployed",
+        "plan": "stage7-plan.md",
+        "acceptance": "stage7-acceptance.json",
+        "contract": "stage7-acceptance.md",
+        "release": "stage7-release.json"
       }
     },
     {
@@ -759,17 +801,19 @@
       "title": "不增加上下文的 RP 界面与归档增强计划",
       "requirements": [
         "R21",
-        "R25"
+        "R25",
+        "R47"
       ],
       "prototypes": [
         "P17",
-        "P15"
+        "P15",
+        "P32"
       ],
       "priority": "after_confirmed_core",
-      "status": "in_progress",
+      "status": "implemented",
       "scope_confirmed": true,
-      "implementation": "reading_bookmarks_branch_names_comparison_and_ZIP_archive_restore_implemented",
-      "verification": "local_HTTP_browser_ZIP_roundtrip_and_synthetic_PostgreSQL_archive_restore_passed; full_acceptance_pending",
+      "implementation": "implemented_see_stage7_contract",
+      "verification": "local_acceptance_passed_CI_pending_see_stage7_acceptance",
       "deployment": "not_deployed",
       "candidate_ids": [
         "RP02",
@@ -798,6 +842,15 @@
         "verification": "107_backend_tests; local_HTTP_UI_and_synthetic_PostgreSQL_roundtrip_passed",
         "attachments": "original_bytes_and_extracted_text; external_or_unavailable_explicit; vector_indexes_not_included",
         "production": "not_deployed"
+      },
+      "stage7": {
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
+        "deployment": "not_deployed",
+        "plan": "stage7-plan.md",
+        "acceptance": "stage7-acceptance.json",
+        "contract": "stage7-acceptance.md",
+        "release": "stage7-release.json"
       }
     },
     {
@@ -819,20 +872,20 @@
       "deployment": "not_deployed",
       "postgres_rehearsal": {
         "environment": "local_synthetic_postgres17",
-        "migration": "v0.12.3_to_oi0000000005_passed",
-        "backup_restore": "15_table_content_hashes_match_and_canonical_statistics_pass",
+        "migration": "v0.12.3_to_oi0000000006_passed",
+        "backup_restore": "18_legacy_table_hashes_and_20_stage7_table_hashes_match",
         "concurrency": "six_draft_writers_and_six_generation_reservations_each_have_one_winner",
-        "production_copy_rehearsal": "not_run",
+        "production_copy_rehearsal": "not_run_stage8",
         "remote_CI": "stage4_success",
         "archive": "archive_restore_included; stage4_15_table_hashes_match_after_pg_dump_restore"
       },
       "session_checkpoint": {
-        "date": "2026-10-26",
-        "requirement": "R42",
-        "prototype": "P28",
-        "state": "stage4_verified_and_CI_published",
+        "date": "2026-10-28",
+        "requirement": "R47",
+        "prototype": "P32",
+        "state": "stage7_final_acceptance_CI_pending",
         "plan_complete": false,
-        "next": "stage6_protocol_context"
+        "next": "stage8_staging_and_GitOps"
       },
       "source_submission": {
         "requirement": "R38",
@@ -891,12 +944,21 @@
         "contract": "stage6-acceptance.md",
         "release": "stage6-release.json",
         "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
+      },
+      "stage7": {
+        "implementation": "implemented",
+        "verification": "local_acceptance_passed_CI_pending",
+        "deployment": "not_deployed",
+        "plan": "stage7-plan.md",
+        "acceptance": "stage7-acceptance.json",
+        "contract": "stage7-acceptance.md",
+        "release": "stage7-release.json"
       }
     }
   ],
   "latest_checks": {
-    "backend_tests": 151,
-    "frontend_tests": 37,
+    "backend_tests": 196,
+    "frontend_tests": 50,
     "type_gate": "no_new_diagnostics_5781_upstream_remain",
     "frontend_build": "stage4_production_build_passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
@@ -904,20 +966,6 @@
     "production_deployment": "unchanged",
     "stage2_HTTP": "specialized_chat422_no_provider_call_saved_B_and_unavailable_draft_preservation_passed",
     "stage3_HTTP": "owner_only_no_store_same_model_A_B_server_reorder_remove_draft_429_partial_usage_passed",
-    "actual_CI": {
-      "commit": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
-      "run_id": 40313069562,
-      "url": "https://github.com/BppleMan/open-webui/actions/runs/40313069562",
-      "conclusion": "success",
-      "jobs": {
-        "backend": "success",
-        "frontend": "success",
-        "image": "success"
-      },
-      "image": "ghcr.io/bppleman/open-webui-oi",
-      "tag": "sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
-      "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
-    },
     "stage4A_local": {
       "backend_tests": 135,
       "frontend_tests": 36,
@@ -941,6 +989,39 @@
       "deployment": "not_deployed",
       "CI_result": "success",
       "image_digest": "sha256:628572adc5a45f41264ba41013924b9360b227fc656d39c174504ddd98870ed2"
+    },
+    "type_delta": "no_new_diagnostics_5765_upstream_remain",
+    "production_build": "passed",
+    "stage7_HTTP": "passed_real_PostgreSQL_and_loopback_provider",
+    "legacy_postgres": "v0.12.3_to_OI6_and_restore_18_table_hashes_match",
+    "stage7_postgres": "20_table_content_hashes_match_after_pg_dump_restore",
+    "stage7": {
+      "backend_tests": 196,
+      "frontend_tests": 50,
+      "type_delta": "no_new_diagnostics_5765_upstream_remain",
+      "production_build": "passed",
+      "stage7_HTTP": "passed_real_PostgreSQL_and_loopback_provider",
+      "legacy_postgres": "v0.12.3_to_OI6_and_restore_18_table_hashes_match",
+      "stage7_postgres": "20_table_content_hashes_match_after_pg_dump_restore",
+      "production_deployment": "unchanged"
+    },
+    "actual_CI_previous": {
+      "commit": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
+      "run_id": 40313069562,
+      "url": "https://github.com/BppleMan/open-webui/actions/runs/40313069562",
+      "conclusion": "success",
+      "jobs": {
+        "backend": "success",
+        "frontend": "success",
+        "image": "success"
+      },
+      "image": "ghcr.io/bppleman/open-webui-oi",
+      "tag": "sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
+      "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
+    },
+    "actual_CI": {
+      "stage": 7,
+      "status": "pending_exact_source_commit"
     }
   },
   "review_remediation": {

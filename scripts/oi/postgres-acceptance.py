@@ -335,6 +335,9 @@ with engine.connect() as db:
         'oi_model_call',
         'oi_cost_snapshot',
         'oi_import_cost_baseline',
+        'oi_user_state_lock',
+        'oi_import_receipt',
+        'oi_archive_origin',
         'oi_chat_annotation',
         'oi_message_revision',
     ]
@@ -347,7 +350,7 @@ with engine.connect() as db:
         ).encode()
         manifest[name] = {'count': len(rows), 'sha256': hashlib.sha256(encoded).hexdigest()}
     revision = db.execute(sa.text('SELECT version_num FROM alembic_version')).scalar_one()
-    assert revision == 'oi0000000005'
+    assert revision == 'oi0000000006'
 path = repo / '.oi-local/pg-before-restore.json'
 if mode == 'prepare':
     path.write_text(json.dumps(manifest, indent=2))

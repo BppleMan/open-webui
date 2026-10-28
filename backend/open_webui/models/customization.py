@@ -147,3 +147,27 @@ class MessageRevision(Base):
     content = Column(JSON, nullable=True)
     output = Column(JSON, nullable=True)
     created_at = Column(BigInteger, nullable=False)
+
+
+class UserStateLock(Base):
+    __tablename__ = 'oi_user_state_lock'
+    user_id = Column(Text, primary_key=True)
+    revision = Column(Integer, nullable=False, default=0)
+
+
+class ImportReceipt(Base):
+    __tablename__ = 'oi_import_receipt'
+    user_id = Column(Text, primary_key=True)
+    import_id = Column(Text, primary_key=True)
+    digest = Column(Text, nullable=False)
+    chat_ids = Column(JSON, nullable=False)
+    created_at = Column(BigInteger, nullable=False)
+
+
+class ArchiveOrigin(Base):
+    __tablename__ = 'oi_archive_origin'
+    user_id = Column(Text, primary_key=True)
+    kind = Column(Text, primary_key=True)
+    local_id = Column(Text, primary_key=True)
+    source_id = Column(Text, nullable=False)
+    __table_args__ = (UniqueConstraint('user_id', 'kind', 'source_id', name='uq_oi_archive_origin'),)
