@@ -119,3 +119,6 @@ R47阶段七收口：源码9b850fcb85ffb43de4aed2555816c3129665f251、CI40663148
 
 
 R50 implementation finding: preserve the exact official OpenRouter template during legacy import so reported USD is not misclassified as unknown; discover advertised context/output limits without guessing unavailable metadata.
+
+
+R50/F16 closure: the shared settings shell must bound all ordinary form panels, while connection/model lists, analytics and large workspace editors retain their width. This completes the existing settings-layout scope.

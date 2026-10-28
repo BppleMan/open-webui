@@ -482,6 +482,27 @@
 		}`;
 
 	let selectedTab = 'general';
+	// Bound ordinary forms without squeezing connection/model lists, analytics,
+	// database tables, or the larger workspace editors.
+	const boundedSettingsTabs = new Set([
+		'general',
+		'interface',
+		'notifications',
+		'shortcuts',
+		'personalization',
+		'audio',
+		'data_controls',
+		'account',
+		'about',
+		'admin:general',
+		'admin:authentication',
+		'admin:interface',
+		'admin:documents',
+		'admin:web',
+		'admin:code-execution',
+		'admin:audio',
+		'admin:images'
+	]);
 	const scrollToSelectedTab = async () => {
 		if (!browser || !modalShow || !selectedTab) {
 			return;
@@ -798,7 +819,12 @@
 	</nav>
 
 	<div class="flex-1 min-w-0 min-h-0 p-4 md:px-5 flex flex-col">
-		<div class="flex-1 min-h-0 overflow-hidden">
+		<div
+			class="flex-1 min-h-0 w-full overflow-hidden {boundedSettingsTabs.has(selectedTab)
+				? 'max-w-[48rem]'
+				: ''}"
+			data-oi-settings-layout={boundedSettingsTabs.has(selectedTab) ? 'form' : 'workspace'}
+		>
 			{#if selectedTab === 'general'}
 				<General
 					{getModels}

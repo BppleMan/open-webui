@@ -21,3 +21,5 @@ Completed gates are recorded individually; source changes, local tests, remote C
 ## Preserved boundaries
 
 Production remains on the upstream image. Legacy model aliases with multiple candidate connections remain unresolved until the user chooses. Real provider tests use synthetic short text only; the prior stage-specific official-provider, native IME and media/tool evidence limits remain explicit. Physical-device PWA testing was waived by the user.
+
+The final settings audit found unbounded ordinary panels outside the previously corrected interface/audio/document pages. The shared settings shell now applies the 48rem boundary to standard forms and preserves workspace/table widths; final browser verification is in progress.

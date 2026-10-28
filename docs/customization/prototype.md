@@ -230,3 +230,6 @@ P32验收收口：内置浏览器确认JSON初始基数、冲突保留输入、�
 
 
 P35 acceptance refinement: provider-reported actual USD and discovered shared-window capacity appear in the existing composer popup; explicit overrides and unresolved legacy aliases remain intact.
+
+
+P35/F16 refinement: ordinary personal/admin forms share a 48rem content boundary. The trailing controls stay aligned within that column; connection/model management and other workspace panels retain the full content area. A 2560px/1.1x browser check reproduced a 2172px general form before this correction.
