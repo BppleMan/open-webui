@@ -1,0 +1,34 @@
+{
+  "stage": 7,
+  "status": "verified_with_documented_synthetic_settlement_boundary",
+  "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+  "ci_run": 40663148496,
+  "ci_url": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
+  "ci_conclusion": "success",
+  "ci_jobs": {
+    "backend": "success",
+    "frontend": "success",
+    "image": "success"
+  },
+  "image_tag": "ghcr.io/bppleman/open-webui-oi:sha-9b850fcb85ffb43de4aed2555816c3129665f251",
+  "image_digest": "sha256:e818a85a248b17a3c2aeaff1846cd420ab98531ca69896787cb0a7b38b9b5798",
+  "image_registry_verified": true,
+  "checks": {
+    "backend_tests": 196,
+    "frontend_tests": 50,
+    "type_delta": "no_new_diagnostics; local_5765_upstream_diagnostics_remain",
+    "production_build": "passed_local_and_exact_source_CI",
+    "stage7_HTTP": "passed_local_and_CI",
+    "legacy_PostgreSQL_migration_restore": "OI6_18_table_hashes_match_local_and_CI",
+    "stage7_PostgreSQL_restore": "20_table_hashes_match_local_and_CI",
+    "prior_stage4_5_6_regressions": "passed_in_CI",
+    "browser": "passed_with_methods_in_stage7-acceptance.json"
+  },
+  "settlement_boundary": "Synthetic supplier amounts with real HTTP/PostgreSQL and browser. No live invoices or live price validation claimed.",
+  "cpa_companion": "unchanged_from_stage6-release.json",
+  "deployment": "not_deployed",
+  "full_plan_complete": false,
+  "remaining_stages": [
+    8
+  ]
+}

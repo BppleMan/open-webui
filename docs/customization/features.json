@@ -14,7 +14,7 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670",
+    "latest_code_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
     "latest_push": "origin/oi/main"
   },
   "status_definitions": {
@@ -131,9 +131,9 @@
         "P32"
       ],
       "priority": "P1",
-      "status": "implemented",
+      "status": "verified",
       "implementation": "implemented_see_stage7_contract",
-      "verification": "local_acceptance_passed_CI_pending_see_stage7_acceptance",
+      "verification": "verified_local_HTTP_PostgreSQL_browser_and_CI_see_stage7_acceptance",
       "deployment": "not_deployed",
       "acceptance": [
         "无需 usage Filter 或 Pipe 即可显示明细",
@@ -143,12 +143,15 @@
       "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
       "stage7": {
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI_with_documented_methods",
         "deployment": "not_deployed",
         "plan": "stage7-plan.md",
         "acceptance": "stage7-acceptance.json",
         "contract": "stage7-acceptance.md",
-        "release": "stage7-release.json"
+        "release": "stage7-release.json",
+        "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
+        "remaining": []
       }
     },
     {
@@ -219,9 +222,9 @@
         "P32"
       ],
       "priority": "P1",
-      "status": "implemented",
+      "status": "verified",
       "implementation": "implemented_see_stage7_contract",
-      "verification": "local_acceptance_passed_CI_pending_see_stage7_acceptance",
+      "verification": "verified_local_HTTP_PostgreSQL_browser_and_CI_see_stage7_acceptance",
       "deployment": "not_deployed",
       "acceptance": [
         "第一笔请求前建立生成记录",
@@ -241,12 +244,15 @@
       },
       "stage7": {
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI_with_documented_methods",
         "deployment": "not_deployed",
         "plan": "stage7-plan.md",
         "acceptance": "stage7-acceptance.json",
         "contract": "stage7-acceptance.md",
-        "release": "stage7-release.json"
+        "release": "stage7-release.json",
+        "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
+        "remaining": []
       }
     },
     {
@@ -261,9 +267,9 @@
         "P32"
       ],
       "priority": "P1",
-      "status": "implemented",
+      "status": "verified",
       "implementation": "implemented_see_stage7_contract",
-      "verification": "local_acceptance_passed_CI_pending_see_stage7_acceptance",
+      "verification": "verified_local_HTTP_PostgreSQL_browser_and_CI_see_stage7_acceptance",
       "deployment": "not_deployed",
       "acceptance": [
         "导入时可填写并随后修改历史费用基数",
@@ -274,12 +280,15 @@
       "legacy_import_baseline": "atomic_receipted_JSON_with_unknown_default_and_versioned_replacement",
       "stage7": {
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI_with_documented_methods",
         "deployment": "not_deployed",
         "plan": "stage7-plan.md",
         "acceptance": "stage7-acceptance.json",
         "contract": "stage7-acceptance.md",
-        "release": "stage7-release.json"
+        "release": "stage7-release.json",
+        "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
+        "remaining": []
       }
     },
     {
@@ -465,12 +474,15 @@
       },
       "stage7": {
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI_with_documented_methods",
         "deployment": "not_deployed",
         "plan": "stage7-plan.md",
         "acceptance": "stage7-acceptance.json",
         "contract": "stage7-acceptance.md",
-        "release": "stage7-release.json"
+        "release": "stage7-release.json",
+        "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
+        "remaining": []
       }
     },
     {
@@ -810,10 +822,10 @@
         "P32"
       ],
       "priority": "after_confirmed_core",
-      "status": "implemented",
+      "status": "verified",
       "scope_confirmed": true,
       "implementation": "implemented_see_stage7_contract",
-      "verification": "local_acceptance_passed_CI_pending_see_stage7_acceptance",
+      "verification": "verified_local_HTTP_PostgreSQL_browser_and_CI_see_stage7_acceptance",
       "deployment": "not_deployed",
       "candidate_ids": [
         "RP02",
@@ -839,18 +851,21 @@
       ],
       "archive": {
         "schema": "oi-conversation-archive-v1",
-        "verification": "107_backend_tests; local_HTTP_UI_and_synthetic_PostgreSQL_roundtrip_passed",
+        "verification": "stage7_complete_tree_revisions_files_permissions_concurrency_and_restore_verified",
         "attachments": "original_bytes_and_extracted_text; external_or_unavailable_explicit; vector_indexes_not_included",
         "production": "not_deployed"
       },
       "stage7": {
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI_with_documented_methods",
         "deployment": "not_deployed",
         "plan": "stage7-plan.md",
         "acceptance": "stage7-acceptance.json",
         "contract": "stage7-acceptance.md",
-        "release": "stage7-release.json"
+        "release": "stage7-release.json",
+        "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
+        "remaining": []
       }
     },
     {
@@ -867,23 +882,23 @@
         "P18"
       ],
       "status": "in_progress",
-      "implementation": "local_review_fixes_durable_drafts_revisions_reading_archive_and_capability_routes_implemented",
-      "verification": "stage_local_checks_passed; full_plan_acceptance_and_release_pending",
+      "implementation": "stages_1_to_7_implemented; stage8_release_pending",
+      "verification": "stage7_verified; full_plan_staging_and_production_pending",
       "deployment": "not_deployed",
       "postgres_rehearsal": {
         "environment": "local_synthetic_postgres17",
         "migration": "v0.12.3_to_oi0000000006_passed",
         "backup_restore": "18_legacy_table_hashes_and_20_stage7_table_hashes_match",
-        "concurrency": "six_draft_writers_and_six_generation_reservations_each_have_one_winner",
+        "concurrency": "six_restore_requests_one_chat; six_baseline_writers_one_winner; late_settlements_serialize",
         "production_copy_rehearsal": "not_run_stage8",
-        "remote_CI": "stage4_success",
-        "archive": "archive_restore_included; stage4_15_table_hashes_match_after_pg_dump_restore"
+        "remote_CI": "stage7_success",
+        "archive": "OI6_20_stage7_table_hashes_match_after_pg_dump_restore"
       },
       "session_checkpoint": {
         "date": "2026-10-28",
         "requirement": "R47",
         "prototype": "P32",
-        "state": "stage7_final_acceptance_CI_pending",
+        "state": "stage7_verified_and_CI_published",
         "plan_complete": false,
         "next": "stage8_staging_and_GitOps"
       },
@@ -892,8 +907,11 @@
         "prototype": "P25",
         "branch": "oi/main",
         "scope": "source_commit_and_push_only",
-        "deployment": "not_requested_in_this_submission",
-        "full_plan_complete": false
+        "deployment": "not_deployed",
+        "full_plan_complete": false,
+        "commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+        "status": "committed_and_pushed",
+        "ci": "success"
       },
       "stage3": {
         "requirement": "R40",
@@ -947,22 +965,25 @@
       },
       "stage7": {
         "implementation": "implemented",
-        "verification": "local_acceptance_passed_CI_pending",
+        "verification": "verified_local_and_CI_with_documented_methods",
         "deployment": "not_deployed",
         "plan": "stage7-plan.md",
         "acceptance": "stage7-acceptance.json",
         "contract": "stage7-acceptance.md",
-        "release": "stage7-release.json"
+        "release": "stage7-release.json",
+        "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+        "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
+        "remaining": []
       }
     }
   ],
   "latest_checks": {
     "backend_tests": 196,
     "frontend_tests": 50,
-    "type_gate": "no_new_diagnostics_5781_upstream_remain",
-    "frontend_build": "stage4_production_build_passed",
+    "type_gate": "no_new_diagnostics_5765_local_upstream_remain",
+    "frontend_build": "stage7_local_and_CI_passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
-    "postgres_archive_restore": "OI5_15_table_hashes_match_with_concurrent_migration_and_server_copy",
+    "postgres_archive_restore": "OI6_18_legacy_and_20_stage7_table_hashes_match",
     "production_deployment": "unchanged",
     "stage2_HTTP": "specialized_chat422_no_provider_call_saved_B_and_unavailable_draft_preservation_passed",
     "stage3_HTTP": "owner_only_no_store_same_model_A_B_server_reorder_remove_draft_429_partial_usage_passed",
@@ -998,12 +1019,13 @@
     "stage7": {
       "backend_tests": 196,
       "frontend_tests": 50,
-      "type_delta": "no_new_diagnostics_5765_upstream_remain",
-      "production_build": "passed",
-      "stage7_HTTP": "passed_real_PostgreSQL_and_loopback_provider",
-      "legacy_postgres": "v0.12.3_to_OI6_and_restore_18_table_hashes_match",
-      "stage7_postgres": "20_table_content_hashes_match_after_pg_dump_restore",
-      "production_deployment": "unchanged"
+      "type_delta": "no_new_diagnostics; local_5765_upstream_diagnostics_remain",
+      "production_build": "passed_local_and_exact_source_CI",
+      "stage7_HTTP": "passed_local_and_CI",
+      "legacy_PostgreSQL_migration_restore": "OI6_18_table_hashes_match_local_and_CI",
+      "stage7_PostgreSQL_restore": "20_table_hashes_match_local_and_CI",
+      "prior_stage4_5_6_regressions": "passed_in_CI",
+      "browser": "passed_with_methods_in_stage7-acceptance.json"
     },
     "actual_CI_previous": {
       "commit": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
@@ -1020,8 +1042,17 @@
       "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
     },
     "actual_CI": {
-      "stage": 7,
-      "status": "pending_exact_source_commit"
+      "commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+      "run_id": 40663148496,
+      "url": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
+      "conclusion": "success",
+      "jobs": {
+        "backend": "success",
+        "frontend": "success",
+        "image": "success"
+      },
+      "image": "ghcr.io/bppleman/open-webui-oi:sha-9b850fcb85ffb43de4aed2555816c3129665f251",
+      "digest": "sha256:e818a85a248b17a3c2aeaff1846cd420ab98531ca69896787cb0a7b38b9b5798"
     }
   },
   "review_remediation": {
