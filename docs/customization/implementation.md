@@ -35,3 +35,5 @@ Stage5 is complete under the documented built-in-browser scope. See stage5-relea
 Stage7 implements atomic historical-cost JSON import, versioned cost replacement, partial/late usage preservation, fixed snapshot correction, canonical archive provenance and concurrent safe restore. See stage7-acceptance.md for the OI6 schema and portable archive contract; stage7-release.json records CI/image publication. Next is stage8 staging and GitOps; no production switch is included.
 
 R50 latest boundary: finish stage8A prelaunch preparation and acceptance only. User intends further tuning. No production OI/CPA replacement, no maintenance activation, no production database migration. Stage8B requires new explicit authorization.
+
+Stage8A is verified; current evidence is stage8-acceptance.json and stage8-release.json. Continue with user tuning. Stage8B production authorization has not been given.

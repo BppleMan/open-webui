@@ -1,0 +1,83 @@
+{
+  "stage": "8A",
+  "status": "verified_prelaunch_with_documented_boundaries",
+  "production_cutover_authorized": false,
+  "requirement": "R50",
+  "prototype": "P35",
+  "source_commit": "61ff81c61e2c9fee90d2237679c64833196978bb",
+  "checks": {
+    "local_backend_tests": 209,
+    "local_frontend_tests": 50,
+    "type_gate": "no_new_diagnostics; 5765 inherited diagnostics remain",
+    "build": "passed_local_and_CI; local_build_uses_8GB_Node_heap",
+    "CI": "backend/frontend/image success; prior stage4/5/6/7 integration regressions included",
+    "original_copy_restore": "49 table fingerprints match before migration",
+    "migration": "OI6 additive schema; 46 original-column table projections unchanged; version/config/disabled-functions intentional differences",
+    "used_database_restore": "63 table fingerprints match before service startup; 3 attachments restored into a distinct directory; login, refresh, long draft, ledger, models and credentials verified by running candidate image",
+    "fresh_final_backend_migration": "11 connections; exact official OpenRouter templates for 2 chat and 1 embedding connection; same IDs on retry; unresolved alias retained; one bounded live call confirms actual USD without manual override",
+    "live_supplier": "short synthetic text only via existing New API/OpenRouter connections; real confirmed-cost regen/fork isolation; unknown price remains explicit; bounded incomplete response retains confirmed cost",
+    "vector": "synthetic text upload, original attachment hash, real 3072-dimensional pgvector insert/readback/query",
+    "archive": "ZIP round trip retains branches, edits, bookmarks, attachments, identity and totals; retry stable; JSON baseline replacement/CAS and retry do not reset costs",
+    "browser": {
+      "modal_body_edit_and_diff_saved": true,
+      "bookmark_and_read_position_saved": true,
+      "typed_draft_characters": 5531,
+      "draft_after_reload_characters": 5531,
+      "server_saved_indicator": true,
+      "composer_context_ring_and_popup": true,
+      "provider_window": 1048576,
+      "provider_max_output": 65536,
+      "branch_and_session_calls": "2 / 3",
+      "session_actual_usd": "0.00082575",
+      "automatic_compaction": false,
+      "connection_group_search_and_keyboard_select": true,
+      "native_and_compatible_connection_templates": 17,
+      "mobile_widths": [
+        390,
+        430
+      ],
+      "desktop_widths": [
+        1280,
+        2560
+      ],
+      "app_scale": 1.1,
+      "escape_closes_popup": true,
+      "viewport_override_reset": true,
+      "layout_bookmark_edit_and_catalog_browsing_created_no_additional_call": true
+    },
+    "settings_layout": {
+      "method": "read-only DOM bounds on every form, screenshots of representative pages",
+      "forms": 17,
+      "viewports": [
+        390,
+        430,
+        1280,
+        2560
+      ],
+      "app_scale": 1.1,
+      "wide_form_width": 844.796875,
+      "wide_workspace_width": 2172.109375,
+      "forms_with_control_or_page_overflow": 0,
+      "workspace_panels": [
+        "connections",
+        "models",
+        "database"
+      ],
+      "browser_zoom_shortcut": "no effect in IAB; native browser chrome zoom not claimed"
+    },
+    "offline_release": "24 loopback HTTP maintenance-gate cases and 4 Helm render variants; not enabled in production",
+    "runtime": "fixed OCI digest, source hashes, independent authenticated Redis/DB/PVC, Synced/Healthy and actual user paths",
+    "production": "original upstream OI pod and immutable image unchanged, zero restarts; production schema and CPA image unchanged"
+  },
+  "boundaries": [
+    "User tuning and renewed production authorization are still required.",
+    "A duplicate legacy alias remains an explicit decision; no automatic selection.",
+    "Direct official-provider credentials, live Ollama and real supplier tool/media combinations were not available; preserve stage6 evidence limits.",
+    "Native IME was not claimed; simulated composition evidence remains in stage5. Physical PWA was waived.",
+    "IAB browser zoom shortcut had no effect; responsive viewports and application scale were verified, native browser chrome zoom was not claimed.",
+    "Production TLS/Ingress/drain/cutover acceptance happens only after a later deployment decision.",
+    "CPA companion source/image exists from stage6; production was not replaced."
+  ],
+  "remaining_prelaunch_implementation": [],
+  "next": "user_tuning; no production deployment"
+}

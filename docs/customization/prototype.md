@@ -233,3 +233,6 @@ P35 acceptance refinement: provider-reported actual USD and discovered shared-wi
 
 
 P35/F16 refinement: ordinary personal/admin forms share a 48rem content boundary. The trailing controls stay aligned within that column; connection/model management and other workspace panels retain the full content area. A 2560px/1.1x browser check reproduced a 2172px general form before this correction.
+
+
+P35收口：候选预览保留，17个连接模板、输入框上下文环形popup、原生费用、编辑/书签/归档及共享设置表单均有对应证据。普通表单48rem，复杂工作区保留宽度；不新增隐式RP上下文。正式路由和生产数据未切换。

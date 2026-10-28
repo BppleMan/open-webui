@@ -201,3 +201,8 @@ Final local production build passed; type delta has no new diagnostics with 5781
 196 backend and 50 frontend tests passed; type delta has no new diagnostics (5765 upstream remain), production build passed. Real PostgreSQL/HTTP fixtures cover fees, partial and late usage, fixed fork boundaries, baseline conflicts, atomic JSON import, original-call deduplication, concurrent ZIP restore, explicit model mapping, permissions and malformed inputs. Legacy migration/restore compares 18 table hashes; complete stage7 fixture restore compares 20. Built-in browser confirms native import/edit flows and cross-environment ZIP restore, including 2 current-branch calls / 4 session calls and original $0.35 cost after remapping. Methods and limits: stage7-acceptance.md/json. Exact remote CI/image: stage7-release.json. Production unchanged.
 
 Stage7 remote closure: source `9b850fcb85ffb43de4aed2555816c3129665f251`, [CI40663148496](https://github.com/BppleMan/open-webui/actions/runs/40663148496) frontend/backend/image all success. Registry index `sha256:e818a85a248b17a3c2aeaff1846cd420ab98531ca69896787cb0a7b38b9b5798` independently inspected. Stage7 complete; stage8 and production remain pending.
+
+
+### Stage 8A — prelaunch acceptance
+
+See stage8-acceptance.json for original-copy migration, 63-table/3-attachment recovery, actual runtime HTTP/browser, supplier cost/fork and 17-panel responsive evidence. stage8-release.json records exact final CI and immutable image. No production deployment; user tuning is next. Earlier pending notes above are historical checkpoints superseded by the later acceptance records.

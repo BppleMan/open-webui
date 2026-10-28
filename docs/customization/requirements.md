@@ -122,3 +122,6 @@ R50 implementation finding: preserve the exact official OpenRouter template duri
 
 
 R50/F16 closure: the shared settings shell must bound all ordinary form panels, while connection/model lists, analytics and large workspace editors retain their width. This completes the existing settings-layout scope.
+
+
+R50收口：已完成阶段8A的现有上线前实施与验收，普通设置页限宽补齐，生产保持原版。旧模型歧义、实际供应商凭据限制和未来正式切换单独列明；下一步由用户提出微调。

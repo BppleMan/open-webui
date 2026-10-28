@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-28",
-  "phase": "implementation",
+  "phase": "prelaunch_verified_waiting_for_user_tuning",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,8 +14,10 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
-    "latest_push": "origin/oi/main"
+    "latest_code_commit": "61ff81c61e2c9fee90d2237679c64833196978bb",
+    "latest_push": "origin/oi/main",
+    "production_deployment_changed": false,
+    "staging_deployment_changed": true
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -42,10 +44,10 @@
         "P20"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "template_connection_models_flow_with_native_components_and_persisted_defaults",
-      "verification": "three_native_preset_nonstream_http_roundtrips_with_synthetic_provider_passed_real_provider_matrix_pending",
-      "deployment": "not_deployed",
+      "status": "verified",
+      "implementation": "native_protocols_and_template_connection_model_flow",
+      "verification": "stage6 seven-protocol matrix and existing-CPA live paths; stage8 migrated New API/OpenRouter live paths; official-provider limits explicit",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "三家原生流式与非流式请求可用",
         "结构化历史、工具、多模态、usage 和错误正确处理",
@@ -56,17 +58,15 @@
       ],
       "template_workflow": {
         "implementation": "implemented",
-        "verification": "local_synthetic_verified",
+        "verification": "stage3/4/6/8 verified with documented provider boundaries",
         "deployment": "not_deployed",
         "templates": 17,
         "evidence": "validation.md#connection-template-acceptance-2026-10-25",
         "remaining": [
-          "all_22_model_surfaces",
-          "personal_browser_direct_migration",
-          "real_provider_acceptance"
+          "environment_specific_provider_checks_as_documented"
         ]
       },
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "review_fix_verification": "eight_review_defects_fixed; regression retained in final CI; feature evidence in stage4/5/6/7/8 acceptance",
       "stage6": {
         "implementation": "implemented",
         "verification": "verified_with_documented_provider_boundaries",
@@ -76,7 +76,13 @@
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
         "release": "stage6-release.json",
-        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
+        "remaining": "production_deployment_and_documented_provider_boundaries"
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -92,10 +98,10 @@
         "P19"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "replace_flat_panel_with_composer_ring_popover",
-      "verification": "composer_ring_popover_desktop_390px_escape_focus_verified_full_LC_fields_pending",
-      "deployment": "not_deployed",
+      "status": "verified",
+      "implementation": "composer_ring_popup_context_cache_budget_warnings_and_explicit_compaction",
+      "verification": "stage6 complete context/compaction matrix; stage8 discovered capacity and responsive popup",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "完整上下文分类与窗口、压缩阈值分离",
         "默认不压缩、不裁剪历史，超限明确失败",
@@ -116,7 +122,13 @@
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
         "release": "stage6-release.json",
-        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
+        "remaining": "production_deployment_and_documented_provider_boundaries"
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -132,15 +144,15 @@
       ],
       "priority": "P1",
       "status": "verified",
-      "implementation": "implemented_see_stage7_contract",
-      "verification": "verified_local_HTTP_PostgreSQL_browser_and_CI_see_stage7_acceptance",
-      "deployment": "not_deployed",
+      "implementation": "native_per_message_usage",
+      "verification": "stage6/7/8 usage, partial response and unknown-cost evidence",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "无需 usage Filter 或 Pipe 即可显示明细",
         "流式快照和增量不重复累计",
         "中断后保留已确认用量并标明缺失"
       ],
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "review_fix_verification": "eight_review_defects_fixed; regression retained in final CI; feature evidence in stage4/5/6/7/8 acceptance",
       "stage7": {
         "implementation": "implemented",
         "verification": "verified_local_and_CI_with_documented_methods",
@@ -152,6 +164,12 @@
         "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
         "remaining": []
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -164,16 +182,22 @@
         "P04"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "modal_revision_history_diff_undo_source_links_and_atomic_message_writes",
-      "verification": "local_HTTP_edit_restore_preserves_revision_native_invalidation_and_ledger; desktop_diff_UI_verified; broad_acceptance_pending",
-      "deployment": "not_deployed",
+      "status": "verified",
+      "implementation": "modal_revision_diff_undo_branch_and_native_replay_invalidation",
+      "verification": "review regression, stage7 archive/edit and stage8 actual modal/diff/save/bookmark paths",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "独立弹窗编辑与取消不扰动聊天滚动",
         "保存和另存分支正确",
         "编辑后历史回传正确且费用不变"
       ],
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending"
+      "review_fix_verification": "eight_review_defects_fixed; regression retained in final CI; feature evidence in stage4/5/6/7/8 acceptance",
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
+      }
     },
     {
       "id": "F05",
@@ -185,10 +209,10 @@
         "P05"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "native_discrete_and_budget_controls_with_exact_wire_validation",
-      "verification": "budget_unit_tests_passed_browser_outbound_acceptance_pending",
-      "deployment": "not_deployed",
+      "status": "verified",
+      "implementation": "declared_discrete_and_budget_native_controls",
+      "verification": "stage6 seven-protocol and real browser outbound checks; no guessed levels",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "按连接协议模型获取能力并生成原生控件",
         "档位顺序、默认值和实际出站参数一致",
@@ -206,7 +230,13 @@
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
         "release": "stage6-release.json",
-        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
+        "remaining": "production_deployment_and_documented_provider_boundaries"
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -223,9 +253,9 @@
       ],
       "priority": "P1",
       "status": "verified",
-      "implementation": "implemented_see_stage7_contract",
-      "verification": "verified_local_HTTP_PostgreSQL_browser_and_CI_see_stage7_acceptance",
-      "deployment": "not_deployed",
+      "implementation": "generation_call_ledger_snapshots_and_fork_boundaries",
+      "verification": "stage7 exact synthetic totals/concurrency/late settlement; stage8 real regen/fork totals",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "第一笔请求前建立生成记录",
         "regen 与继续回复分别记录新增费用",
@@ -236,7 +266,7 @@
       "depends_on": [
         "F13"
       ],
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "review_fix_verification": "eight_review_defects_fixed; regression retained in final CI; feature evidence in stage4/5/6/7/8 acceptance",
       "anchor_refinement": {
         "implementation": "source_message_reference_and_nullable_non_generation_snapshot",
         "verification": "92_backend_tests_and_real_local_HTTP_copy_fork_baseline_fork_passed",
@@ -253,6 +283,12 @@
         "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
         "remaining": []
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -268,9 +304,9 @@
       ],
       "priority": "P1",
       "status": "verified",
-      "implementation": "implemented_see_stage7_contract",
-      "verification": "verified_local_HTTP_PostgreSQL_browser_and_CI_see_stage7_acceptance",
-      "deployment": "not_deployed",
+      "implementation": "versioned_historical_cost_baselines",
+      "verification": "stage7/8 JSON import, replace, conflict and idempotent retry",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "导入时可填写并随后修改历史费用基数",
         "修改替换基数，同批单条旧 cost 不重复计入",
@@ -289,6 +325,12 @@
         "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
         "remaining": []
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -301,10 +343,10 @@
         "P08"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "persistence_api_and_ui_integration_in_progress",
-      "verification": "23_backend_fixtures_and_5_draft_frontend_tests_passed_user_paths_in_progress",
-      "deployment": "not_deployed",
+      "status": "verified",
+      "implementation": "native_CPA_AGY_protocol_adapter_and_companion_source",
+      "verification": "stage6 structured/history/tool/429 matrix and existing-gateway live paths; companion not deployed",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "复用 CPA OAuth、账号池和 RP 策略",
         "建立请求/返回字段保留与转换清单",
@@ -315,7 +357,7 @@
       "depends_on": [
         "F13"
       ],
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "review_fix_verification": "eight_review_defects_fixed; regression retained in final CI; feature evidence in stage4/5/6/7/8 acceptance",
       "stage6": {
         "implementation": "implemented",
         "verification": "verified_with_documented_provider_boundaries",
@@ -325,7 +367,13 @@
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
         "release": "stage6-release.json",
-        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
+        "remaining": "production_deployment_and_documented_provider_boundaries"
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -338,9 +386,9 @@
         "P09"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "public_fork_created_private_records_separated",
-      "verification": "repository_setup_in_progress",
+      "status": "verified",
+      "implementation": "public_fork_private_records_and_GitOps_separation",
+      "verification": "source/CI/image plus independent staging verified; production unchanged",
       "deployment": "not_applicable",
       "acceptance": [
         "源码位于 gemini-api/work/open-webui",
@@ -355,6 +403,12 @@
         "scope": "source_commit_and_push_only",
         "deployment": "not_requested_in_this_submission",
         "full_plan_complete": false
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -368,9 +422,9 @@
       ],
       "priority": "P0",
       "status": "verified",
-      "implementation": "persistence_api_and_ui_integration_in_progress",
-      "verification": "stage5_local_and_remote_CI_verified_physical_PWA_waived",
-      "deployment": "not_deployed",
+      "implementation": "session_refresh_and_inline_recovery",
+      "verification": "stage5 HTTP/Redis/browser matrix; stage8 refresh/authenticated socket and restore login",
+      "deployment": "staging_verified; production_not_deployed",
       "investigation": "fixed_expiry_mechanism_verified_other_incidents_not_fully_attributed",
       "acceptance": [
         "正常活动期间无感续期",
@@ -389,6 +443,12 @@
         "evidence": "stage5-acceptance.json",
         "release": "stage5-release.json",
         "source_commit": "c48cbac0abc9bd0e56545eee927dc363be97b760"
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -404,9 +464,9 @@
       ],
       "priority": "P0",
       "status": "verified",
-      "implementation": "persistence_api_and_ui_integration_in_progress",
-      "verification": "stage5_local_and_remote_CI_verified_physical_PWA_waived",
-      "deployment": "not_deployed",
+      "implementation": "per_chat_server_draft_and_device_recovery",
+      "verification": "stage5 matrix; stage8 6000-character cross-client/CAS/restore and 5531-character browser reload",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "同一用户每会话只有一份服务器草稿，跨分支和浏览器共用",
         "服务器持久保存，换浏览器和 PWA kill/reopen 后恢复已保存版本",
@@ -417,7 +477,7 @@
         "并发编辑不静默覆盖且服务端仍只有一份当前草稿",
         "只在服务端接受后清除已发送版本"
       ],
-      "review_fix_verification": "U22_recovery_candidates_fixed_with_versioned_atomic_IDB_transfer",
+      "review_fix_verification": "eight_review_defects_fixed; regression retained in final CI; feature evidence in stage4/5/6/7/8 acceptance",
       "queue_reliability": {
         "implementation": "implemented",
         "verification": "local_browser_refresh_model_identity_acceptance_replay_and_new_input_passed",
@@ -438,6 +498,12 @@
         "evidence": "stage5-acceptance.json",
         "release": "stage5-release.json",
         "source_commit": "c48cbac0abc9bd0e56545eee927dc363be97b760"
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -451,8 +517,8 @@
       ],
       "priority": "P0",
       "status": "verified",
-      "implementation": "local_documents_created",
-      "verification": "local_paths_traceability_and_evidence_validated",
+      "implementation": "three_layer_records_and_handoff",
+      "verification": "current requirements/prototype/Feature reconciled against acceptance evidence",
       "deployment": "not_applicable",
       "acceptance": [
         "本次所有用户要求和修正保留原话",
@@ -470,7 +536,7 @@
         "acceptance": "stage6-acceptance.json",
         "contract": "stage6-acceptance.md",
         "release": "stage6-release.json",
-        "remaining": "stages_7_8_and_environment_specific_provider_checks_as_documented"
+        "remaining": "production_deployment_and_documented_provider_boundaries"
       },
       "stage7": {
         "implementation": "implemented",
@@ -483,6 +549,12 @@
         "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
         "remaining": []
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -502,9 +574,9 @@
       ],
       "priority": "P1",
       "status": "verified",
-      "implementation": "all_22_connection_model_surfaces_implemented",
-      "verification": "stage4_per_entry_HTTP_UI_ledger_pgvector_and_authenticated_WS_accepted",
-      "deployment": "not_deployed",
+      "implementation": "global_connection_model_directory_and_browser_transport",
+      "verification": "stage3/4 M01-M22 plus stage8 identity/ambiguous-alias/migration/discovery verification",
+      "deployment": "staging_verified; production_not_deployed",
       "architecture_role": "shared_foundation_for_all_model_lists_and_selection",
       "coverage": {
         "inventory_groups": 22,
@@ -530,12 +602,12 @@
       ],
       "template_workflow": {
         "implementation": "implemented",
-        "verification": "local_synthetic_verified",
+        "verification": "stage3/4/6/8 verified with documented provider boundaries",
         "deployment": "not_deployed",
         "templates": 17,
         "evidence": "validation.md#connection-template-acceptance-2026-10-25",
         "remaining": [
-          "real_provider_acceptance_stage6"
+          "environment_specific_provider_checks_as_documented"
         ]
       },
       "ui_revision": "U21_corrected_and_locally_verified_not_production_deployed",
@@ -552,7 +624,7 @@
           "no_production_changes"
         ]
       },
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "review_fix_verification": "eight_review_defects_fixed; regression retained in final CI; feature evidence in stage4/5/6/7/8 acceptance",
       "capability_routing": {
         "implementation": "connection_scoped_embedding_rerank_TTS_STT_image_and_realtime_paths_implemented",
         "verification": "stage4_real_pgvector_and_HTTP_WS_plus_UI_passed",
@@ -605,6 +677,12 @@
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40338819017",
         "pushed": true,
         "checkpoint": "stage4_complete_full_plan_incomplete"
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -621,10 +699,10 @@
         "P20"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "template_connection_models_flow_with_native_components_and_persisted_defaults",
-      "verification": "template_http_persistence_native_request_builder_and_local_browser_flow_passed_broader_acceptance_pending",
-      "deployment": "not_deployed",
+      "status": "verified",
+      "implementation": "seventeen_templates_and_override_preserving_discovery",
+      "verification": "stage3/4/6 matrix; stage8 template UI, real migration and advertised capacity discovery",
+      "deployment": "staging_verified; production_not_deployed",
       "depends_on": [
         "F13",
         "F01",
@@ -644,17 +722,15 @@
       ],
       "template_workflow": {
         "implementation": "implemented",
-        "verification": "local_synthetic_verified",
+        "verification": "stage3/4/6/8 verified with documented provider boundaries",
         "deployment": "not_deployed",
         "templates": 17,
         "evidence": "validation.md#connection-template-acceptance-2026-10-25",
         "remaining": [
-          "all_22_model_surfaces",
-          "personal_browser_direct_migration",
-          "real_provider_acceptance"
+          "environment_specific_provider_checks_as_documented"
         ]
       },
-      "review_fix_verification": "U22_local_regressions_and_synthetic_HTTP_passed_full_feature_acceptance_pending",
+      "review_fix_verification": "eight_review_defects_fixed; regression retained in final CI; feature evidence in stage4/5/6/7/8 acceptance",
       "stage3": {
         "requirement": "R40",
         "prototype": "P27",
@@ -667,6 +743,12 @@
         "source_submission": "4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40313069562",
         "checkpoint": "stage3_complete_full_plan_incomplete"
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -683,10 +765,10 @@
         "P17"
       ],
       "priority": "uncommitted",
-      "status": "proposed",
-      "scope_confirmed": false,
-      "implementation": "not_started",
-      "verification": "existing_capabilities_source_checked_and_current_ui_inspected; runtime_generation_not_tested",
+      "status": "merged_into_existing",
+      "scope_confirmed": true,
+      "implementation": "accepted_UI_archive_scope_delivered_in_F17; other_RP_candidates_deferred",
+      "verification": "F17 and stage5/6/7/8 evidence; no new implicit RP context",
       "deployment": "not_deployed",
       "candidates": [
         {
@@ -700,8 +782,10 @@
           "id": "RP02",
           "title": "存档、分支与 regen 对比",
           "suggested_priority": "after_confirmed_core",
-          "status": "planned",
-          "disposition": "仅规划分支命名、原文对照和人工选用；不新增场景状态联动"
+          "status": "merged_into_existing",
+          "disposition": "仅规划分支命名、原文对照和人工选用；不新增场景状态联动",
+          "feature": "F17",
+          "verification": "verified"
         },
         {
           "id": "RP03",
@@ -728,15 +812,19 @@
           "id": "RP06",
           "title": "长篇阅读、搜索与编辑",
           "suggested_priority": "after_confirmed_core",
-          "status": "planned",
-          "disposition": "先复用搜索，仅规划阅读定位、书签和长文体验，不新增语义提取"
+          "status": "merged_into_existing",
+          "disposition": "先复用搜索，仅规划阅读定位、书签和长文体验，不新增语义提取",
+          "feature": "F17",
+          "verification": "verified"
         },
         {
           "id": "RP07",
           "title": "可完整还原的跑团归档",
           "suggested_priority": "after_confirmed_core",
-          "status": "planned",
-          "disposition": "先核对已有导出，补本期数据与费用账本的完整性；不新增定时调度"
+          "status": "merged_into_existing",
+          "disposition": "先核对已有导出，补本期数据与费用账本的完整性；不新增定时调度",
+          "feature": "F17",
+          "verification": "verified"
         },
         {
           "id": "RP08",
@@ -767,7 +855,10 @@
         "RP02/RP06/RP07 的建议范围限定为界面、元数据和归档增量",
         "原有 R05 推理滑杆、R02 上下文用量面板和 R09 不压缩约束仍保留"
       ],
-      "scope_revision": "U15 supersedes initial candidate priorities; deferred items excluded from current work"
+      "scope_revision": "U15 supersedes initial candidate priorities; deferred items excluded from current work",
+      "accepted_subset_features": [
+        "F17"
+      ]
     },
     {
       "id": "F16",
@@ -781,10 +872,10 @@
         "P21"
       ],
       "priority": "P1",
-      "status": "in_progress",
-      "implementation": "aligned_settings_rows_with_grouped_text_trailing_controls_and_width_limits",
-      "verification": "prior_personal_interface_checks_plus_Audio_Images_Documents_1275px_and_390px_bounded_forms_verified; remaining_settings_pending",
-      "deployment": "not_deployed",
+      "status": "verified",
+      "implementation": "bounded_shared_ordinary_settings_forms_and_aligned_rows",
+      "verification": "stage8 actual form/workspace responsive matrix; previous admin media/document checks retained",
+      "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "开关与标题属于同一紧凑视觉组，不随视口加宽被推到最右端",
         "普通表单限制宽度，复杂表格和编辑器不被一刀切收窄",
@@ -803,13 +894,14 @@
         "deployment": "not_deployed",
         "evidence": "validation.md#u21-settings-and-model-picker-correction",
         "limits": [
-          "broader_feature_acceptance_in_progress",
-          "no_production_changes"
+          "production_not_changed",
+          "methods_and_limits_in_stage8_acceptance"
         ]
       },
       "stage8A": {
-        "implementation": "shared_form_boundary_completed",
-        "verification": "final_responsive_matrix_pending",
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
         "production": "unchanged"
       }
     },
@@ -829,9 +921,9 @@
       "priority": "after_confirmed_core",
       "status": "verified",
       "scope_confirmed": true,
-      "implementation": "implemented_see_stage7_contract",
-      "verification": "verified_local_HTTP_PostgreSQL_browser_and_CI_see_stage7_acceptance",
-      "deployment": "not_deployed",
+      "implementation": "branch_reading_bookmark_and_portable_archive_metadata",
+      "verification": "stage7/8 real archive/restore, revisions, attachment and accounting evidence",
+      "deployment": "staging_verified; production_not_deployed",
       "candidate_ids": [
         "RP02",
         "RP06",
@@ -871,6 +963,12 @@
         "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
         "remaining": []
+      },
+      "stage8A": {
+        "verification": "verified_with_documented_methods",
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "production": "unchanged"
       }
     },
     {
@@ -881,39 +979,41 @@
         "R27",
         "R28",
         "R29",
-        "R30"
+        "R30",
+        "R50"
       ],
       "prototypes": [
-        "P18"
+        "P18",
+        "P35"
       ],
       "status": "in_progress",
-      "implementation": "stages_1_to_7_implemented; stage8_release_pending",
-      "verification": "stage7_verified; full_plan_staging_and_production_pending",
-      "deployment": "not_deployed",
+      "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
+      "verification": "stage8A_verified_with_documented_boundaries",
+      "deployment": "staging_only_production_unchanged",
       "postgres_rehearsal": {
-        "environment": "local_synthetic_postgres17",
+        "environment": "isolated_production_copy_PostgreSQL18",
         "migration": "v0.12.3_to_oi0000000006_passed",
-        "backup_restore": "18_legacy_table_hashes_and_20_stage7_table_hashes_match",
-        "concurrency": "six_restore_requests_one_chat; six_baseline_writers_one_winner; late_settlements_serialize",
-        "production_copy_rehearsal": "not_run_stage8",
-        "remote_CI": "stage7_success",
-        "archive": "OI6_20_stage7_table_hashes_match_after_pg_dump_restore"
+        "backup_restore": "49 source tables before migration; 63 used tables and 3 independent recovered attachments",
+        "concurrency": "stage7 synthetic PostgreSQL17 matrix rerun in final CI; production-copy rehearsal used sequential actual paths",
+        "production_copy_rehearsal": "passed_with_running_candidate_HTTP_readback",
+        "remote_CI": "stage8_success",
+        "prior_synthetic_evidence": "stage7-acceptance.json"
       },
       "session_checkpoint": {
         "requirement": "R50",
         "prototype": "P35",
-        "state": "stage8A_prelaunch_only",
+        "state": "stage8A_complete_waiting_user_tuning",
         "plan_complete": false,
-        "next": "complete_prelaunch_then_user_tuning"
+        "next": "user_tuning_only; stage8B_requires_new_authorization"
       },
       "source_submission": {
         "requirement": "R38",
         "prototype": "P25",
         "branch": "oi/main",
         "scope": "source_commit_and_push_only",
-        "deployment": "not_deployed",
+        "deployment": "staging_only_production_unchanged",
         "full_plan_complete": false,
-        "commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
+        "commit": "61ff81c61e2c9fee90d2237679c64833196978bb",
         "status": "committed_and_pushed",
         "ci": "success"
       },
@@ -980,35 +1080,27 @@
         "remaining": []
       },
       "stage8": {
-        "implementation": "in_progress",
-        "verification": "backup_and_clone_hashes_passed; staging_started_and_legacy_migrated; user_path_and_release_not_completed",
+        "implementation": "stage8A_complete",
+        "verification": "verified_with_documented_boundaries",
         "deployment": "staging_only_production_unchanged",
         "requirement": "R50",
         "prototype": "P35",
-        "execution": "stage8A_in_progress_R50",
+        "execution": "waiting_for_user_tuning",
         "production_cutover_authorized": false,
-        "local_regression": {
-          "backend": 209,
-          "frontend": 50,
-          "build": "passed",
-          "type_delta": 0,
-          "upstream_diagnostics": 5765
-        },
-        "fixes": [
-          "legacy_openrouter_cost_template",
-          "advertised_context_and_output_limits"
-        ]
+        "acceptance": "stage8-acceptance.json",
+        "release": "stage8-release.json",
+        "stage8B": "not_authorized"
       }
     }
   ],
   "latest_checks": {
-    "backend_tests": 196,
+    "backend_tests": 209,
     "frontend_tests": 50,
-    "type_gate": "no_new_diagnostics_5765_local_upstream_remain",
-    "frontend_build": "stage7_local_and_CI_passed",
+    "type_gate": "no_new_diagnostics_5765_upstream_remain",
+    "frontend_build": "passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
     "postgres_archive_restore": "OI6_18_legacy_and_20_stage7_table_hashes_match",
-    "production_deployment": "unchanged",
+    "production_deployment": "not_performed",
     "stage2_HTTP": "specialized_chat422_no_provider_call_saved_B_and_unavailable_draft_preservation_passed",
     "stage3_HTTP": "owner_only_no_store_same_model_A_B_server_reorder_remove_draft_429_partial_usage_passed",
     "stage4A_local": {
@@ -1035,7 +1127,7 @@
       "CI_result": "success",
       "image_digest": "sha256:628572adc5a45f41264ba41013924b9360b227fc656d39c174504ddd98870ed2"
     },
-    "type_delta": "no_new_diagnostics_5765_upstream_remain",
+    "type_delta": 0,
     "production_build": "passed",
     "stage7_HTTP": "passed_real_PostgreSQL_and_loopback_provider",
     "legacy_postgres": "v0.12.3_to_OI6_and_restore_18_table_hashes_match",
@@ -1065,18 +1157,12 @@
       "tag": "sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
       "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
     },
-    "actual_CI": {
-      "commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
-      "run_id": 40663148496,
-      "url": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
-      "conclusion": "success",
-      "jobs": {
-        "backend": "success",
-        "frontend": "success",
-        "image": "success"
-      },
-      "image": "ghcr.io/bppleman/open-webui-oi:sha-9b850fcb85ffb43de4aed2555816c3129665f251",
-      "digest": "sha256:e818a85a248b17a3c2aeaff1846cd420ab98531ca69896787cb0a7b38b9b5798"
+    "actual_CI": "https://github.com/BppleMan/open-webui/actions/runs/40694372379",
+    "stage8A": {
+      "status": "verified_with_documented_methods",
+      "source": "61ff81c61e2c9fee90d2237679c64833196978bb",
+      "acceptance": "stage8-acceptance.json",
+      "release": "stage8-release.json"
     }
   },
   "review_remediation": {

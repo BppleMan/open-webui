@@ -1,0 +1,25 @@
+{
+  "stage": "8A",
+  "status": "preview_verified_waiting_for_user_tuning",
+  "source_commit": "61ff81c61e2c9fee90d2237679c64833196978bb",
+  "backend_findings_commit": "43966cc37ef41230a3f7fb318b666ac71d7dc4f7",
+  "ci_run": 40694372379,
+  "ci_url": "https://github.com/BppleMan/open-webui/actions/runs/40694372379",
+  "ci_conclusion": "success",
+  "ci_jobs": {
+    "backend": "success",
+    "frontend": "success",
+    "image": "success"
+  },
+  "image_tag": "ghcr.io/bppleman/open-webui-oi:sha-61ff81c61e2c9fee90d2237679c64833196978bb",
+  "image_digest": "sha256:f8865c73ec3a8a0167fa0a345f69e08232e7a6194e0c4539326e00f91dc2a811",
+  "amd64_manifest": "sha256:e22db1b88a6d149e4b6bc50bf8ea638854439ac7d960dbe075573847b2522814",
+  "image_registry_verified": true,
+  "staging_runtime_verified": true,
+  "schema": "oi0000000006",
+  "production_deployment": "unchanged_upstream_v0.12.3",
+  "CPA": "unchanged_in_production; companion in stage6-release.json",
+  "full_plan_complete": false,
+  "production_cutover_authorized": false,
+  "next": "user_tuning_then_separate_stage8B_decision"
+}
