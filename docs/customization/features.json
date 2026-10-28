@@ -105,14 +105,12 @@
         "R02",
         "R09",
         "R31",
-        "R51",
-        "R52"
+        "R51"
       ],
       "prototypes": [
         "P02",
         "P19",
-        "P36",
-        "P37"
+        "P36"
       ],
       "priority": "P1",
       "status": "verified",
@@ -152,8 +150,7 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
-      },
-      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
+      }
     },
     {
       "id": "F03",
@@ -161,14 +158,12 @@
       "requirements": [
         "R03",
         "R47",
-        "R51",
-        "R52"
+        "R51"
       ],
       "prototypes": [
         "P03",
         "P32",
-        "P36",
-        "P37"
+        "P36"
       ],
       "priority": "P1",
       "status": "verified",
@@ -204,8 +199,7 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
-      },
-      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
+      }
     },
     {
       "id": "F04",
@@ -373,11 +367,13 @@
       "title": "CPA AGY 保真适配",
       "requirements": [
         "R10",
-        "R51"
+        "R51",
+        "R52"
       ],
       "prototypes": [
         "P08",
-        "P36"
+        "P36",
+        "P37"
       ],
       "priority": "P1",
       "status": "verified",
@@ -417,7 +413,8 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
-      }
+      },
+      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
     },
     {
       "id": "F09",
@@ -752,12 +749,14 @@
         "R19",
         "R32",
         "R33",
-        "R51"
+        "R51",
+        "R52"
       ],
       "prototypes": [
         "P14",
         "P20",
-        "P36"
+        "P36",
+        "P37"
       ],
       "priority": "P1",
       "status": "verified",
@@ -816,7 +815,8 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
-      }
+      },
+      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
     },
     {
       "id": "F15",
