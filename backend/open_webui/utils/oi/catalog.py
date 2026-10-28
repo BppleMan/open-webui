@@ -338,6 +338,21 @@ async def fetch_models(connection, transport=None):
 
 def discovered_capabilities(model):
     result = dict(model.get('capabilities') or {})
+    # OpenRouter advertises a shared input/output window. Do not turn it into an
+    # independent input limit, or invent reasoning levels from a parameter name.
+    provider = model.get('top_provider')
+    provider = provider if isinstance(provider, dict) else {}
+
+    def positive_integer(value):
+        return type(value) is int and value > 0
+
+    windows = [
+        value for value in (model.get('context_length'), provider.get('context_length')) if positive_integer(value)
+    ]
+    if windows:
+        result.setdefault('context_window', min(windows))
+    if positive_integer(provider.get('max_completion_tokens')):
+        result.setdefault('output_limit', provider['max_completion_tokens'])
     for source, target in (
         ('inputTokenLimit', 'input_limit'),
         ('outputTokenLimit', 'output_limit'),

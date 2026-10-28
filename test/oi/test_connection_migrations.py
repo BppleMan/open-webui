@@ -62,6 +62,58 @@ def choices(preview, ack=False):
 
 
 @pytest.mark.asyncio
+async def test_openrouter_migration_keeps_responses_protocol_and_settles_reported_usd(db, monkeypatch):
+    user, _ = await seed(db, monkeypatch)
+    await Config.upsert(
+        {
+            'openai.enable': True,
+            'openai.api_base_urls': ['https://openrouter.ai/api/v1/'],
+            'openai.api_keys': ['synthetic-openrouter-key'],
+            'openai.api_configs': {'0': {'api_type': 'responses', 'model_ids': ['fixture']}},
+        },
+        db=db,
+    )
+    await db.commit()
+    view = await migration.preview(db, user, 'server')
+    result = await migration.apply(db, user, 'server', view['version'], choices(view))
+    binding = await db.get(ModelBinding, result['connections'][0]['binding_ids'][0])
+    connection = await db.get(Connection, binding.connection_id)
+    assert connection.protocol == 'openai-responses'
+
+    @asynccontextmanager
+    async def session():
+        yield db
+
+    monkeypatch.setattr(runtime, 'get_async_db', session)
+    request = SimpleNamespace(state=SimpleNamespace(metadata={}))
+    form = {'model': binding.id, 'messages': [{'role': 'user', 'content': 'synthetic'}]}
+    await runtime.track_call(
+        request,
+        form,
+        user,
+        AsyncMock(return_value={'usage': {'input_tokens': 206, 'output_tokens': 42, 'cost': '0.000312'}}),
+        binding,
+        connection,
+    )
+    call = (await db.execute(select(ModelCall))).scalar_one()
+    assert call.actual_usd == '0.000312' and call.estimated_usd is None
+    assert connection.template == 'openrouter'
+
+
+@pytest.mark.parametrize(
+    'url,override,expected',
+    [
+        ('https://openrouter.ai/api/v1', {}, 'openrouter'),
+        ('https://openrouter.ai/api/v1', {'template': 'openai-compatible'}, 'openai-compatible'),
+        ('https://openrouter.ai.other.invalid/api/v1', {}, 'openai-compatible'),
+        ('https://proxy.invalid/api/v1', {}, 'openai-compatible'),
+    ],
+)
+def test_legacy_template_recognition_is_exact_and_preserves_explicit_overrides(url, override, expected):
+    assert migration.source_entry('openai:0', 'openai', 0, url, 'synthetic', override)['template'] == expected
+
+
+@pytest.mark.asyncio
 async def test_personal_migration_separates_duplicate_model_names_encrypts_and_is_idempotent(db, monkeypatch):
     user, legacy = await seed(db, monkeypatch)
     view = await migration.preview(db, user, 'personal')

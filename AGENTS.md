@@ -12,3 +12,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - Keep credentials, private source discussions, runtime configuration, private screenshots and deployment evidence outside this public checkout. Public tests use synthetic fixtures.
 - Formal deployment follows the separate GitOps repository after isolated migration and user-path acceptance.
 - Stage 7 is verified; see docs/customization/stage7-acceptance.json and stage7-release.json. Continue stage 8 staging/GitOps, including production-copy migration/restore and final user paths. Stage 6 provider boundaries remain documented in stage6-acceptance.json. Do not repeat stages 4–7 or deploy production before remaining release gates. Physical PWA was waived; native IME and direct official-provider/media validation were not claimed. Preserve synthetic/live/deployment evidence boundaries.
+
+- Latest user boundary R50: complete prelaunch stage8A only, then hand off for user tuning. Production OI/CPA, routes and databases must remain unchanged. Earlier full-plan deployment authorization is superseded; stage8B requires new explicit authorization.

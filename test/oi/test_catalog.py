@@ -8,6 +8,7 @@ from open_webui.utils.oi.catalog import (
     connection_json,
     credentials,
     discover,
+    discovered_capabilities,
     encrypt_credentials,
     reasoning_controls,
     request_headers,
@@ -113,3 +114,42 @@ def test_reasoning_controls_keep_order_and_nested_wire_fields():
     assert control.display == 'slider'
     assert list(control.options) == ['level_0', 'level_1', 'level_2']
     assert control.options[control.default].params == {'reasoning': {'effort': 'low'}}
+
+
+def test_discovery_reads_advertised_shared_window_without_guessing_reasoning_or_prices():
+    result = discovered_capabilities(
+        {
+            'context_length': 1048576,
+            'top_provider': {'context_length': 524288, 'max_completion_tokens': 65536},
+            'supported_parameters': ['reasoning', 'reasoning_effort'],
+        }
+    )
+    assert result == {'context_window': 524288, 'output_limit': 65536}
+
+
+@pytest.mark.parametrize('invalid', [None, True, 0, -1, '1048576', 1.5])
+def test_discovery_keeps_invalid_provider_limits_unknown(invalid):
+    assert (
+        discovered_capabilities(
+            {'context_length': invalid, 'top_provider': {'context_length': invalid, 'max_completion_tokens': invalid}}
+        )
+        == {}
+    )
+
+
+@pytest.mark.asyncio
+async def test_refresh_keeps_window_override_and_model_identity(db):
+    c = connection()
+    b = binding('a', 'oi:existing')
+    b.capabilities = {'discovered': {}, 'overrides': {'context_window': 16000}}
+    db.add_all([c, b])
+    await db.flush()
+    transport = httpx.MockTransport(
+        lambda _: httpx.Response(200, json={'data': [{'id': 'same-model', 'context_length': 128000}]})
+    )
+    result = await discover(db, c, transport)
+    assert len(result) == 1 and result[0].id == b.id
+    assert result[0].capabilities == {
+        'discovered': {'context_window': 128000},
+        'overrides': {'context_window': 16000},
+    }

@@ -895,12 +895,11 @@
         "archive": "OI6_20_stage7_table_hashes_match_after_pg_dump_restore"
       },
       "session_checkpoint": {
-        "date": "2026-10-28",
-        "requirement": "R47",
-        "prototype": "P32",
-        "state": "stage7_verified_and_CI_published",
+        "requirement": "R50",
+        "prototype": "P35",
+        "state": "stage8A_prelaunch_only",
         "plan_complete": false,
-        "next": "stage8_staging_and_GitOps"
+        "next": "complete_prelaunch_then_user_tuning"
       },
       "source_submission": {
         "requirement": "R38",
@@ -974,6 +973,26 @@
         "source_commit": "9b850fcb85ffb43de4aed2555816c3129665f251",
         "CI": "https://github.com/BppleMan/open-webui/actions/runs/40663148496",
         "remaining": []
+      },
+      "stage8": {
+        "implementation": "in_progress",
+        "verification": "backup_and_clone_hashes_passed; staging_started_and_legacy_migrated; user_path_and_release_not_completed",
+        "deployment": "staging_only_production_unchanged",
+        "requirement": "R50",
+        "prototype": "P35",
+        "execution": "stage8A_in_progress_R50",
+        "production_cutover_authorized": false,
+        "local_regression": {
+          "backend": 209,
+          "frontend": 50,
+          "build": "passed",
+          "type_delta": 0,
+          "upstream_diagnostics": 5765
+        },
+        "fixes": [
+          "legacy_openrouter_cost_template",
+          "advertised_context_and_output_limits"
+        ]
       }
     }
   ],

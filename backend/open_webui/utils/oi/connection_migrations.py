@@ -67,6 +67,16 @@ def source_entry(
         params['provider_options'] = {**extra, **params.get('provider_options', {})}
     if not isinstance(params, dict):
         raise ValueError('Parameters must be an object')
+    template = config.get('template')
+    if not template:
+        if kind == 'ollama':
+            template = 'ollama'
+        elif config.get('azure'):
+            template = 'azure-openai'
+        elif url.rstrip('/') == catalog.get_template('openrouter')['base_url']:
+            template = 'openrouter'
+        else:
+            template = 'openai-compatible'
     source = {
         'id': key,
         'kind': kind,
@@ -74,8 +84,7 @@ def source_entry(
         'transport': transport,
         'url': url.rstrip('/'),
         'protocol': config.get('protocol') or protocol,
-        'template': config.get('template')
-        or ('ollama' if kind == 'ollama' else 'azure-openai' if config.get('azure') else 'openai-compatible'),
+        'template': template,
         'name': config.get('name') or config.get('prefix_id') or f'{urlsplit(url).hostname} · {key}',
         'credentials': {'api_key': api_key or '', 'headers': copy.deepcopy(config.get('headers') or {})},
         'settings': settings,
@@ -192,11 +201,9 @@ def sources(state, scope):
                     {
                         'name': capability,
                         'protocol': 'gemini' if engine == 'gemini' else 'openai-chat',
-                        'template': 'gemini'
-                        if engine == 'gemini'
-                        else 'azure-openai'
-                        if version
-                        else 'openai-compatible',
+                        'template': (
+                            'gemini' if engine == 'gemini' else 'azure-openai' if version else 'openai-compatible'
+                        ),
                         'azure': bool(version),
                         'api_version': version,
                         'params': {'capability_params': {capability: options}},
@@ -312,11 +319,9 @@ async def preview(db, user, scope):
                 'issue': item['issue'],
                 'ambiguous': item['ambiguous'],
                 'existing_connection': catalog.connection_json(existing or old, user) if existing or old else None,
-                'suggested_action': 'reuse'
-                if existing
-                else 'review'
-                if old or item['ambiguous'] or item['issue']
-                else 'create',
+                'suggested_action': (
+                    'reuse' if existing else 'review' if old or item['ambiguous'] or item['issue'] else 'create'
+                ),
             }
         )
     return {'scope': scope, 'version': digest({'user': user.id, 'scope': scope, 'state': state}), 'entries': entries}

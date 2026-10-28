@@ -104,3 +104,18 @@ R46阶段六收口：源码1c68b47235188f0aea4ae9f8ae42bb9a6cb3a670，CI40498639
 R47实施追踪：JSON导入可填写历史实际/估算费用，默认未知；版本冲突不覆盖输入，重复导入不重置基数。累计快照校正、跨账户原始调用去重、归档完整性及权限/并发/恢复已补齐；最终验收与CI见stage7-acceptance.json、stage7-release.json，正式部署仍留阶段八。
 
 R47阶段七收口：源码9b850fcb85ffb43de4aed2555816c3129665f251、CI40663148496前后端和image全部success，镜像digest独立核验。费用/归档按stage7-acceptance.json方法验收，正式环境未切换；下一步阶段八。
+
+
+## R48 — 阶段八发布完成
+按已批准计划完成源码与发布审计、独立预发、正式数据库副本迁移/恢复、用户路径验收、GitOps切换与运行核验；实施、验证和部署分列。对应P33/F18，保留此前明确的测试边界。
+
+
+## R49 — 用户要求立即暂停阶段八
+用户获知阶段八最终涉及线上替换后明确要求停止。阶段八暂停，不再执行部署或业务数据变更；正式切换需用户后续明确授权。本次仅完成隔离预发与数据副本准备，正式OI仍为原版v0.12.3。对应P34/F18。
+
+
+## R50 — 完成上线前工作，等待用户微调
+恢复阶段8A：完成当前计划中上线前的准备、隔离预发、迁移/恢复、用户路径验收与发布材料。正式实例、线上镜像、路由、业务数据库和CPA生产实例均不切换；正式上线另需明确授权。完成后交给用户继续微调，不把8A完成等同于上线批准。对应P35/F18。
+
+
+R50 implementation finding: preserve the exact official OpenRouter template during legacy import so reported USD is not misclassified as unknown; discover advertised context/output limits without guessing unavailable metadata.
