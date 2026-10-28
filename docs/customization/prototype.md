@@ -236,3 +236,7 @@ P35/F16 refinement: ordinary personal/admin forms share a 48rem content boundary
 
 
 P35收口：候选预览保留，17个连接模板、输入框上下文环形popup、原生费用、编辑/书签/归档及共享设置表单均有对应证据。普通表单48rem，复杂工作区保留宽度；不新增隐式RP上下文。正式路由和生产数据未切换。
+
+
+## P36 — Existing-component refinement
+Model names remain primary; upstream ID is secondary only when different. Expanded connection lists scroll within five consistent-height rows, with actions outside the scroll region. Composer utility buttons share a centered hit area and no extra wrapper padding. Context remains anchored to the composer, uses the visible viewport, and scrolls within a bounded panel even when every section is expanded; unknown capacity never implies a percentage. Usage shows readable status and confirmed totals, separates missing data, and folds technical IDs. Dropdown options share a listbox surface with selection, disabled, keyboard and focus behavior. CPA discovery and generation must use the same protocol-specific prefix and preserve reverse-proxy paths, stable IDs and RP headers.

@@ -125,3 +125,7 @@ R50/F16 closure: the shared settings shell must bound all ordinary form panels, 
 
 
 R50收口：已完成阶段8A的现有上线前实施与验收，普通设置页限宽补齐，生产保持原版。旧模型歧义、实际供应商凭据限制和未来正式切换单独列明；下一步由用户提出微调。
+
+
+## R51 — Preview refinement and CPA routing correction
+Remove redundant model subtitles, limit each connection's expanded model list to five visible rows with internal scrolling, align composer controls, fix expanded context popup positioning/scrolling, improve per-message usage hierarchy, and style dropdown options using existing accessible components. Diagnose the CPA 404 without retry fallback or production changes. R50 remains in force.

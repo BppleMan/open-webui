@@ -443,32 +443,47 @@
 				</div>
 				{#if expanded.has(connection.id) || search.trim()}
 					<div class="ml-11 mt-1 border-l border-gray-100 pl-4 dark:border-white/5">
-						{#each connection.models as model (model.id)}
-							<div class="flex items-center gap-3 py-2.5">
-								<div class="min-w-0 flex-1">
-									<p class="truncate text-[0.8125rem] text-gray-700 dark:text-gray-300">
-										{model.name}
-									</p>
-									<p class="mt-0.5 truncate text-[0.6875rem] text-gray-400 dark:text-gray-600">
-										{model.upstream_id}{!model.available ? ' · 上游不可用' : ''}
-									</p>
+						<div
+							class="max-h-[16.25rem] overflow-y-auto overscroll-contain"
+							role="list"
+							aria-label={`${connection.name} 的模型`}
+							data-testid="connection-model-list"
+						>
+							{#each connection.models as model (model.id)}
+								<div class="flex h-[3.25rem] items-center gap-3 pe-1" role="listitem">
+									<div class="min-w-0 flex-1">
+										<p class="truncate text-[0.8125rem] text-gray-700 dark:text-gray-300">
+											{model.name}
+										</p>
+										{#if model.name.trim() !== model.upstream_id.trim() || !model.available}
+											<p class="mt-0.5 truncate text-[0.6875rem] text-gray-500 dark:text-gray-400">
+												{model.name.trim() !== model.upstream_id.trim()
+													? model.upstream_id
+													: ''}{!model.available
+													? model.name.trim() !== model.upstream_id.trim()
+														? ' · 上游不可用'
+														: '上游不可用'
+													: ''}
+											</p>
+										{/if}
+									</div>
+									{#if connection.owner_id}<Tooltip content="配置模型"
+											><button
+												type="button"
+												aria-label={`配置模型 ${model.name}`}
+												class={iconClass}
+												on:click={() => editModel(connection, model)}
+												><Cog6 className="size-3.5" /></button
+											></Tooltip
+										><Switch
+											state={model.enabled}
+											disabled={busy}
+											ariaLabel={`启用模型 ${model.name}`}
+											on:change={(e) => toggleModel(model, e.detail)}
+										/>{/if}
 								</div>
-								{#if connection.owner_id}<Tooltip content="配置模型"
-										><button
-											type="button"
-											aria-label={`配置模型 ${model.name}`}
-											class={iconClass}
-											on:click={() => editModel(connection, model)}
-											><Cog6 className="size-3.5" /></button
-										></Tooltip
-									><Switch
-										state={model.enabled}
-										disabled={busy}
-										ariaLabel={`启用模型 ${model.name}`}
-										on:change={(e) => toggleModel(model, e.detail)}
-									/>{/if}
-							</div>
-						{/each}
+							{/each}
+						</div>
 						{#if !connection.models.length}<p class="py-3 text-xs text-gray-400 dark:text-gray-500">
 								{search
 									? '没有匹配的模型。'
@@ -602,8 +617,9 @@
 			>
 			<label class="block space-y-1.5 text-xs text-gray-500"
 				>请求执行位置
-				<select
-					class={inputClass}
+				<SettingsSelect
+					className="w-full"
+					ariaLabel="请求执行位置"
 					bind:value={connectionEdit.transport}
 					disabled={!!connectionEdit.id}
 					on:change={() => {
@@ -615,7 +631,7 @@
 						disabled={!['openai-chat', 'openai-responses'].includes(connectionEdit.protocol)}
 						>浏览器直连</option
 					>
-				</select>
+				</SettingsSelect>
 			</label>
 			{#if connectionEdit.id && connectionEdit.transport === 'browser'}<button
 					type="button"
@@ -638,9 +654,15 @@
 					type="url"
 					bind:value={connectionEdit.base_url}
 					class={inputClass}
-					placeholder="https://…/v1"
+					placeholder={connectionEdit.protocol === 'cpa-agy'
+						? 'https://…/v1beta'
+						: selectedTemplate(connectionEdit)?.base_url || 'https://…/v1'}
 				/></label
 			>
+			{#if connectionEdit.protocol === 'cpa-agy'}<p class="text-xs leading-relaxed text-gray-500">
+					使用 CPA 的 Gemini 原生接口。服务根地址或以 /v1 结尾的兼容地址会按 /v1beta
+					路由；反向代理前缀保留。
+				</p>{/if}
 			{#each selectedTemplate(connectionEdit)?.fields || [] as field}
 				<label class="block space-y-1.5 text-xs text-gray-500"
 					>{field.label}

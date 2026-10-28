@@ -23,17 +23,22 @@
 
 {#if state.status !== 'idle'}
 	<Dropdown bind:show side="top" align="end" visualViewportAware={true} sideOffset={10}>
-		<Tooltip content={show ? '' : label} allowHTML={false} placement="top">
+		<Tooltip
+			content={show ? '' : label}
+			allowHTML={false}
+			placement="top"
+			className="flex items-center"
+		>
 			<button
 				type="button"
 				aria-label={label}
 				aria-expanded={show}
-				class="focus-ring flex size-7 items-center justify-center rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/5 {attention
+				class="focus-ring flex size-[1.875rem] items-center justify-center rounded-full transition-colors hover:bg-black/5 dark:hover:bg-white/5 {attention
 					? 'text-amber-600 dark:text-amber-400'
 					: 'text-gray-400 dark:text-gray-600'}"
 			>
 				<svg
-					class="size-3.5"
+					class="size-4"
 					viewBox="0 0 20 20"
 					fill="none"
 					stroke="currentColor"

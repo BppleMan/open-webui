@@ -22,6 +22,7 @@ from open_webui.utils.oi.connection_templates import (
     get_template as get_template,
 )
 from open_webui.utils.oi.storage import identifier, now
+from open_webui.utils.oi.endpoints import api_base
 from sqlalchemy import select
 
 
@@ -323,7 +324,7 @@ async def fetch_models(connection, transport=None):
     params, cursors, models = {}, set(), []
     async with httpx.AsyncClient(trust_env=True, timeout=30, transport=transport) as client:
         for _ in range(100):
-            response = await client.get(connection.base_url + path, params=params, headers=request_headers(connection))
+            response = await client.get(api_base(connection) + path, params=params, headers=request_headers(connection))
             response.raise_for_status()
             page, cursor = _model_page(response.json(), protocol)
             models.extend(page)

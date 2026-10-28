@@ -45,6 +45,9 @@
 	};
 
 	const handleKeyDown = (event: KeyboardEvent) => {
+		// A portaled listbox consumes Escape before it reaches the surrounding form.
+		// Closing both would discard the connection editor's unsaved changes.
+		if (event.defaultPrevented) return;
 		if (
 			(event.key === 'Escape' ||
 				($settings?.keyboardShortcuts !== false &&

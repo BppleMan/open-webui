@@ -101,19 +101,24 @@
 	sideOffset={10}
 	visualViewportAware={true}
 	maxHeight="min(36rem, calc(100dvh - 2rem))"
-	contentClass="overflow-y-auto overscroll-contain rounded-2xl"
+	contentClass="w-[23rem] max-w-[calc(100vw-1.5rem)] overflow-y-auto overscroll-contain rounded-2xl border border-gray-200/70 bg-white shadow-xl dark:border-white/10 dark:bg-gray-850"
 	onOpenChange={(open) => {
 		if (open) void store.refresh();
 	}}
 >
-	<Tooltip content={show ? '' : label} placement="top" allowHTML={false}>
+	<Tooltip
+		content={show ? '' : label}
+		placement="top"
+		allowHTML={false}
+		className="flex items-center"
+	>
 		<button
 			type="button"
 			aria-label={label}
 			aria-expanded={show}
 			aria-haspopup="dialog"
 			data-testid="context-window-trigger"
-			class="focus-ring flex size-8 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
+			class="focus-ring flex size-[1.875rem] shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
 		>
 			<svg width="20" height="20" viewBox="0 0 20 20" class="-rotate-90" aria-hidden="true">
 				<circle
@@ -122,7 +127,9 @@
 					r="8"
 					fill="none"
 					stroke-width="2.4"
-					class="stroke-gray-200 dark:stroke-gray-700"
+					class={percent == null
+						? 'stroke-gray-400 dark:stroke-gray-500'
+						: 'stroke-gray-200 dark:stroke-gray-700'}
 					stroke-dasharray={percent == null ? '2 3' : undefined}
 				/>
 				{#if percent != null}<circle
@@ -149,7 +156,7 @@
 		aria-label="上下文与会话用量"
 		tabindex="-1"
 		data-testid="context-window-popover"
-		class="w-[23rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-gray-200/70 bg-white p-4 text-sm text-gray-700 shadow-xl dark:border-white/10 dark:bg-gray-850 dark:text-gray-200"
+		class="p-4 text-sm text-gray-700 dark:text-gray-200"
 	>
 		<div class="flex items-center justify-between gap-3">
 			<h3 class="font-semibold">上下文窗口</h3>

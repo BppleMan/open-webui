@@ -121,11 +121,11 @@
 
 {#if permitted && available.length}
 	<Dropdown align="end" visualViewportAware onOpenChange={() => (active = null)}>
-		<Tooltip content={$i18n.t('Model controls')} placement="top">
+		<Tooltip content={$i18n.t('Model controls')} placement="top" className="flex items-center">
 			<button
 				type="button"
 				aria-label={$i18n.t('Model controls')}
-				class="mr-2 flex shrink-0 items-center justify-center text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+				class="focus-ring flex size-[1.875rem] shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-black/5 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
 			>
 				<Knobs className="size-4" />
 			</button>

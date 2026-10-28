@@ -16,6 +16,7 @@ from open_webui.models.chats import Chats
 from open_webui.utils.chat_id import is_saved_chat_id
 from open_webui.utils.oi import accounting, catalog
 from open_webui.utils.oi.runtime import SSEDecoder
+from open_webui.utils.oi.endpoints import api_base
 from starlette.responses import JSONResponse, StreamingResponse
 
 
@@ -205,7 +206,7 @@ def build_request(form, binding, connection):
     source = merge(source, native_options)
     source['model'] = binding.upstream_id
     source.setdefault('store', False)
-    base = connection.base_url.rstrip('/')
+    base = api_base(connection, protocol)
     if protocol == 'openai-chat':
         source['messages'] = [
             clean_message(((native_for(m, protocol, binding.id) or {}).get('choices') or [{}])[0].get('message') or m)

@@ -242,3 +242,43 @@ def test_display_identity_does_not_change_outbound_context(protocol):
     assert build_request(body, binding(protocol), connection(protocol)) == build_request(
         decorated, binding(protocol), connection(protocol)
     )
+
+
+@pytest.mark.parametrize('suffix', ['', '/v1', '/v1/', '/v1beta', '/v1beta/'])
+@pytest.mark.parametrize('prefix', ['', '/gateway/cpa'])
+@pytest.mark.asyncio
+async def test_cpa_service_addresses_share_native_discovery_and_generation(suffix, prefix):
+    from open_webui.utils.oi.catalog import fetch_models, request_headers
+
+    conn = connection('cpa-agy')
+    conn.base_url = 'https://provider.invalid' + prefix + suffix
+    base = 'https://provider.invalid' + prefix + '/v1beta'
+    discovered = []
+
+    def respond(request):
+        discovered.append(str(request.url))
+        return httpx.Response(200, json={'models': [{'name': 'models/native-model'}]})
+
+    models = await fetch_models(conn, transport=httpx.MockTransport(respond))
+    assert models == [{'name': 'models/native-model'}]
+    assert discovered == [base + '/models']
+    for stream in (False, True):
+        url, payload = build_request(
+            {'stream': stream, 'messages': [{'role': 'user', 'content': 'synthetic'}]},
+            binding('cpa-agy'),
+            conn,
+        )
+        assert url == base + '/models/native-model:' + (
+            'streamGenerateContent?alt=sse' if stream else 'generateContent'
+        )
+        assert payload['contents'][0]['parts'] == [{'text': 'synthetic'}]
+    headers = request_headers(conn, user_id='owner', chat_id='stable-chat')
+    assert headers['X-RP-Chat-ID'] == 'stable-chat'
+    assert headers['X-RP-User-ID'] == 'owner'
+
+
+def test_cpa_native_root_does_not_rewrite_explicit_openai_protocol():
+    conn = connection('cpa-agy')
+    conn.base_url = 'https://provider.invalid/gateway/v1'
+    url, _ = build_request({'messages': [{'role': 'user', 'content': 'synthetic'}]}, binding('openai-chat'), conn)
+    assert url == 'https://provider.invalid/gateway/v1/chat/completions'

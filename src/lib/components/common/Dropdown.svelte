@@ -175,7 +175,12 @@
 		contentEl.style.position = 'fixed';
 		contentEl.style.zIndex = '9999';
 
-		const contentHeight = naturalContentHeight();
+		// Measure the rendered box at the caller's CSS height limit. scrollHeight is
+		// the full, scrollable content, and using it here detaches a capped popover
+		// from its trigger as soon as a disclosure is expanded.
+		resolvedMaxHeight = maxHeight;
+		contentEl.style.maxHeight = maxHeight;
+		const contentHeight = contentEl.offsetHeight;
 		const spaceBelow = viewportBottom - rect.bottom - sideOffset - pad;
 		const spaceAbove = rect.top - viewport.top - sideOffset - pad;
 
@@ -188,9 +193,9 @@
 		}
 
 		const availableHeight = Math.max(0, openAbove ? spaceAbove : spaceBelow);
-		const constrainedHeight = contentHeight
-			? Math.min(contentHeight, availableHeight)
-			: contentHeight;
+		resolvedMaxHeight = `min(${maxHeight}, ${availableHeight}px)`;
+		contentEl.style.maxHeight = resolvedMaxHeight;
+		const constrainedHeight = contentEl.offsetHeight;
 		const preferredTop = openAbove
 			? rect.top - constrainedHeight - sideOffset
 			: rect.bottom + sideOffset;
@@ -205,9 +210,6 @@
 		contentEl.style.bottom = 'auto';
 		contentEl.style.left = `${Math.max(viewport.left + pad, Math.min(preferredLeft, maxLeft))}px`;
 		contentEl.style.right = 'auto';
-		resolvedMaxHeight =
-			contentHeight > availableHeight ? `min(${maxHeight}, ${availableHeight}px)` : maxHeight;
-		contentEl.style.maxHeight = resolvedMaxHeight;
 	}
 
 	function positionContent() {
@@ -311,7 +313,7 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && show) {
+		if (event.key === 'Escape' && show && !event.defaultPrevented) {
 			closeDropdown();
 		}
 	}

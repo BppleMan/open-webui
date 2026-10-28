@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "project": "OI Open WebUI customization",
-  "updated_on": "2026-10-28",
-  "phase": "prelaunch_verified_waiting_for_user_tuning",
+  "updated_on": "2026-10-29",
+  "phase": "preview_tuning_R51",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -37,14 +37,16 @@
       "requirements": [
         "R01",
         "R32",
-        "R33"
+        "R33",
+        "R51"
       ],
       "prototypes": [
         "P01",
-        "P20"
+        "P20",
+        "P36"
       ],
       "priority": "P1",
-      "status": "verified",
+      "status": "in_progress",
       "implementation": "native_protocols_and_template_connection_model_flow",
       "verification": "stage6 seven-protocol matrix and existing-CPA live paths; stage8 migrated New API/OpenRouter live paths; official-provider limits explicit",
       "deployment": "staging_verified; production_not_deployed",
@@ -83,6 +85,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "tuning_R51": {
+        "implementation": "implemented_pending_preview",
+        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
+        "deployment": "previous_preview_only; production_unchanged"
       }
     },
     {
@@ -91,14 +98,16 @@
       "requirements": [
         "R02",
         "R09",
-        "R31"
+        "R31",
+        "R51"
       ],
       "prototypes": [
         "P02",
-        "P19"
+        "P19",
+        "P36"
       ],
       "priority": "P1",
-      "status": "verified",
+      "status": "in_progress",
       "implementation": "composer_ring_popup_context_cache_budget_warnings_and_explicit_compaction",
       "verification": "stage6 complete context/compaction matrix; stage8 discovered capacity and responsive popup",
       "deployment": "staging_verified; production_not_deployed",
@@ -129,6 +138,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "tuning_R51": {
+        "implementation": "implemented_pending_preview",
+        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
+        "deployment": "previous_preview_only; production_unchanged"
       }
     },
     {
@@ -136,14 +150,16 @@
       "title": "OI 内置单条 usage",
       "requirements": [
         "R03",
-        "R47"
+        "R47",
+        "R51"
       ],
       "prototypes": [
         "P03",
-        "P32"
+        "P32",
+        "P36"
       ],
       "priority": "P1",
-      "status": "verified",
+      "status": "in_progress",
       "implementation": "native_per_message_usage",
       "verification": "stage6/7/8 usage, partial response and unknown-cost evidence",
       "deployment": "staging_verified; production_not_deployed",
@@ -170,6 +186,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "tuning_R51": {
+        "implementation": "implemented_pending_preview",
+        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
+        "deployment": "previous_preview_only; production_unchanged"
       }
     },
     {
@@ -337,13 +358,15 @@
       "id": "F08",
       "title": "CPA AGY 保真适配",
       "requirements": [
-        "R10"
+        "R10",
+        "R51"
       ],
       "prototypes": [
-        "P08"
+        "P08",
+        "P36"
       ],
       "priority": "P1",
-      "status": "verified",
+      "status": "in_progress",
       "implementation": "native_CPA_AGY_protocol_adapter_and_companion_source",
       "verification": "stage6 structured/history/tool/429 matrix and existing-gateway live paths; companion not deployed",
       "deployment": "staging_verified; production_not_deployed",
@@ -374,6 +397,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "tuning_R51": {
+        "implementation": "implemented_pending_preview",
+        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
+        "deployment": "previous_preview_only; production_unchanged"
       }
     },
     {
@@ -457,13 +485,15 @@
       "requirements": [
         "R13",
         "R14",
-        "R16"
+        "R16",
+        "R51"
       ],
       "prototypes": [
-        "P11"
+        "P11",
+        "P36"
       ],
       "priority": "P0",
-      "status": "verified",
+      "status": "in_progress",
       "implementation": "per_chat_server_draft_and_device_recovery",
       "verification": "stage5 matrix; stage8 6000-character cross-client/CAS/restore and 5531-character browser reload",
       "deployment": "staging_verified; production_not_deployed",
@@ -504,6 +534,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "tuning_R51": {
+        "implementation": "implemented_pending_preview",
+        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
+        "deployment": "previous_preview_only; production_unchanged"
       }
     },
     {
@@ -565,15 +600,17 @@
         "R19",
         "R32",
         "R33",
-        "R35"
+        "R35",
+        "R51"
       ],
       "prototypes": [
         "P13",
         "P20",
-        "P22"
+        "P22",
+        "P36"
       ],
       "priority": "P1",
-      "status": "verified",
+      "status": "in_progress",
       "implementation": "global_connection_model_directory_and_browser_transport",
       "verification": "stage3/4 M01-M22 plus stage8 identity/ambiguous-alias/migration/discovery verification",
       "deployment": "staging_verified; production_not_deployed",
@@ -683,6 +720,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "tuning_R51": {
+        "implementation": "implemented_pending_preview",
+        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
+        "deployment": "previous_preview_only; production_unchanged"
       }
     },
     {
@@ -692,14 +734,16 @@
         "R18",
         "R19",
         "R32",
-        "R33"
+        "R33",
+        "R51"
       ],
       "prototypes": [
         "P14",
-        "P20"
+        "P20",
+        "P36"
       ],
       "priority": "P1",
-      "status": "verified",
+      "status": "in_progress",
       "implementation": "seventeen_templates_and_override_preserving_discovery",
       "verification": "stage3/4/6 matrix; stage8 template UI, real migration and advertised capacity discovery",
       "deployment": "staging_verified; production_not_deployed",
@@ -749,6 +793,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "tuning_R51": {
+        "implementation": "implemented_pending_preview",
+        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
+        "deployment": "previous_preview_only; production_unchanged"
       }
     },
     {
@@ -865,14 +914,16 @@
       "title": "设置页标签与控件的关联布局",
       "requirements": [
         "R24",
-        "R34"
+        "R34",
+        "R51"
       ],
       "prototypes": [
         "P16",
-        "P21"
+        "P21",
+        "P36"
       ],
       "priority": "P1",
-      "status": "verified",
+      "status": "in_progress",
       "implementation": "bounded_shared_ordinary_settings_forms_and_aligned_rows",
       "verification": "stage8 actual form/workspace responsive matrix; previous admin media/document checks retained",
       "deployment": "staging_verified; production_not_deployed",
@@ -903,6 +954,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "tuning_R51": {
+        "implementation": "implemented_pending_preview",
+        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
+        "deployment": "previous_preview_only; production_unchanged"
       }
     },
     {
@@ -980,11 +1036,13 @@
         "R28",
         "R29",
         "R30",
-        "R50"
+        "R50",
+        "R51"
       ],
       "prototypes": [
         "P18",
-        "P35"
+        "P35",
+        "P36"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1090,6 +1148,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "stage8B": "not_authorized"
+      },
+      "tuning_R51": {
+        "implementation": "implemented_pending_preview",
+        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
+        "deployment": "previous_preview_only; production_unchanged"
       }
     }
   ],
