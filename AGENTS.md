@@ -14,3 +14,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - Stage 8A prelaunch is verified; read docs/customization/stage8-acceptance.json and stage8-release.json. The current next step is user tuning. The preview uses a fixed CI image with independent DB/Redis/PVC; production remains upstream. Do not repeat completed stages or interpret continuation as production authorization. Keep the documented supplier, browser and alias-decision boundaries. Stage 8B requires a new explicit user decision.
 
 - Latest user boundary R50: complete prelaunch stage8A only, then hand off for user tuning. Production OI/CPA, routes and databases must remain unchanged. Earlier full-plan deployment authorization is superseded; stage8B requires new explicit authorization.
+
+- Latest preview refinement R51/R52 is verified; read docs/customization/preview-refinement-2026-10-29.json. CPA/AGY uses /v1beta; do not generalize this to other CPA protocols. R50 production hold remains in force.

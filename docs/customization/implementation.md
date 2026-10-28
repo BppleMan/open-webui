@@ -37,3 +37,6 @@ Stage7 implements atomic historical-cost JSON import, versioned cost replacement
 R50 latest boundary: finish stage8A prelaunch preparation and acceptance only. User intends further tuning. No production OI/CPA replacement, no maintenance activation, no production database migration. Stage8B requires new explicit authorization.
 
 Stage8A is verified; current evidence is stage8-acceptance.json and stage8-release.json. Continue with user tuning. Stage8B production authorization has not been given.
+
+
+R51/P36 preview refinement is verified at a198214b3. Context popovers use rendered capped height, connection lists expose five scrollable rows, composer controls align, settings options reuse Bits UI, and usage details distinguish confirmed/unknown data. CPA/AGY discovery and generation share native /v1beta routing; R52/P37 documents the protocol distinction. See preview-refinement-2026-10-29.json for CI, real synthetic CPA and browser evidence. Production remains unchanged under R50.

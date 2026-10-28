@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "preview_tuning_R51",
+  "phase": "preview_tuning_R51_R52_verified_production_held",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,10 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "61ff81c61e2c9fee90d2237679c64833196978bb",
+    "latest_code_commit": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
-    "staging_deployment_changed": true
+    "staging_deployment_changed": true,
+    "latest_commit": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+    "latest_documentation_revision": "R51/P36 and R52/P37"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -38,15 +40,17 @@
         "R01",
         "R32",
         "R33",
-        "R51"
+        "R51",
+        "R52"
       ],
       "prototypes": [
         "P01",
         "P20",
-        "P36"
+        "P36",
+        "P37"
       ],
       "priority": "P1",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "native_protocols_and_template_connection_model_flow",
       "verification": "stage6 seven-protocol matrix and existing-CPA live paths; stage8 migrated New API/OpenRouter live paths; official-provider limits explicit",
       "deployment": "staging_verified; production_not_deployed",
@@ -87,10 +91,12 @@
         "production": "unchanged"
       },
       "tuning_R51": {
-        "implementation": "implemented_pending_preview",
-        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
-        "deployment": "previous_preview_only; production_unchanged"
-      }
+        "implementation": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+        "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
+        "deployment": "isolated preview digest verified; production unchanged",
+        "evidence": "preview-refinement-2026-10-29.json"
+      },
+      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
     },
     {
       "id": "F02",
@@ -99,15 +105,17 @@
         "R02",
         "R09",
         "R31",
-        "R51"
+        "R51",
+        "R52"
       ],
       "prototypes": [
         "P02",
         "P19",
-        "P36"
+        "P36",
+        "P37"
       ],
       "priority": "P1",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "composer_ring_popup_context_cache_budget_warnings_and_explicit_compaction",
       "verification": "stage6 complete context/compaction matrix; stage8 discovered capacity and responsive popup",
       "deployment": "staging_verified; production_not_deployed",
@@ -140,10 +148,12 @@
         "production": "unchanged"
       },
       "tuning_R51": {
-        "implementation": "implemented_pending_preview",
-        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
-        "deployment": "previous_preview_only; production_unchanged"
-      }
+        "implementation": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+        "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
+        "deployment": "isolated preview digest verified; production unchanged",
+        "evidence": "preview-refinement-2026-10-29.json"
+      },
+      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
     },
     {
       "id": "F03",
@@ -151,15 +161,17 @@
       "requirements": [
         "R03",
         "R47",
-        "R51"
+        "R51",
+        "R52"
       ],
       "prototypes": [
         "P03",
         "P32",
-        "P36"
+        "P36",
+        "P37"
       ],
       "priority": "P1",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "native_per_message_usage",
       "verification": "stage6/7/8 usage, partial response and unknown-cost evidence",
       "deployment": "staging_verified; production_not_deployed",
@@ -188,10 +200,12 @@
         "production": "unchanged"
       },
       "tuning_R51": {
-        "implementation": "implemented_pending_preview",
-        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
-        "deployment": "previous_preview_only; production_unchanged"
-      }
+        "implementation": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+        "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
+        "deployment": "isolated preview digest verified; production unchanged",
+        "evidence": "preview-refinement-2026-10-29.json"
+      },
+      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
     },
     {
       "id": "F04",
@@ -366,7 +380,7 @@
         "P36"
       ],
       "priority": "P1",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "native_CPA_AGY_protocol_adapter_and_companion_source",
       "verification": "stage6 structured/history/tool/429 matrix and existing-gateway live paths; companion not deployed",
       "deployment": "staging_verified; production_not_deployed",
@@ -399,9 +413,10 @@
         "production": "unchanged"
       },
       "tuning_R51": {
-        "implementation": "implemented_pending_preview",
-        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
-        "deployment": "previous_preview_only; production_unchanged"
+        "implementation": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+        "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
+        "deployment": "isolated preview digest verified; production unchanged",
+        "evidence": "preview-refinement-2026-10-29.json"
       }
     },
     {
@@ -493,7 +508,7 @@
         "P36"
       ],
       "priority": "P0",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "per_chat_server_draft_and_device_recovery",
       "verification": "stage5 matrix; stage8 6000-character cross-client/CAS/restore and 5531-character browser reload",
       "deployment": "staging_verified; production_not_deployed",
@@ -536,9 +551,10 @@
         "production": "unchanged"
       },
       "tuning_R51": {
-        "implementation": "implemented_pending_preview",
-        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
-        "deployment": "previous_preview_only; production_unchanged"
+        "implementation": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+        "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
+        "deployment": "isolated preview digest verified; production unchanged",
+        "evidence": "preview-refinement-2026-10-29.json"
       }
     },
     {
@@ -610,7 +626,7 @@
         "P36"
       ],
       "priority": "P1",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "global_connection_model_directory_and_browser_transport",
       "verification": "stage3/4 M01-M22 plus stage8 identity/ambiguous-alias/migration/discovery verification",
       "deployment": "staging_verified; production_not_deployed",
@@ -722,9 +738,10 @@
         "production": "unchanged"
       },
       "tuning_R51": {
-        "implementation": "implemented_pending_preview",
-        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
-        "deployment": "previous_preview_only; production_unchanged"
+        "implementation": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+        "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
+        "deployment": "isolated preview digest verified; production unchanged",
+        "evidence": "preview-refinement-2026-10-29.json"
       }
     },
     {
@@ -743,7 +760,7 @@
         "P36"
       ],
       "priority": "P1",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "seventeen_templates_and_override_preserving_discovery",
       "verification": "stage3/4/6 matrix; stage8 template UI, real migration and advertised capacity discovery",
       "deployment": "staging_verified; production_not_deployed",
@@ -795,9 +812,10 @@
         "production": "unchanged"
       },
       "tuning_R51": {
-        "implementation": "implemented_pending_preview",
-        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
-        "deployment": "previous_preview_only; production_unchanged"
+        "implementation": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+        "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
+        "deployment": "isolated preview digest verified; production unchanged",
+        "evidence": "preview-refinement-2026-10-29.json"
       }
     },
     {
@@ -923,7 +941,7 @@
         "P36"
       ],
       "priority": "P1",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "bounded_shared_ordinary_settings_forms_and_aligned_rows",
       "verification": "stage8 actual form/workspace responsive matrix; previous admin media/document checks retained",
       "deployment": "staging_verified; production_not_deployed",
@@ -956,9 +974,10 @@
         "production": "unchanged"
       },
       "tuning_R51": {
-        "implementation": "implemented_pending_preview",
-        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
-        "deployment": "previous_preview_only; production_unchanged"
+        "implementation": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+        "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
+        "deployment": "isolated preview digest verified; production unchanged",
+        "evidence": "preview-refinement-2026-10-29.json"
       }
     },
     {
@@ -1150,9 +1169,10 @@
         "stage8B": "not_authorized"
       },
       "tuning_R51": {
-        "implementation": "implemented_pending_preview",
-        "verification": "220 backend and 50 frontend passed; no new type diagnostics; browser refinement in progress",
-        "deployment": "previous_preview_only; production_unchanged"
+        "implementation": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+        "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
+        "deployment": "isolated preview digest verified; production unchanged",
+        "evidence": "preview-refinement-2026-10-29.json"
       }
     }
   ],
@@ -1226,6 +1246,67 @@
       "source": "61ff81c61e2c9fee90d2237679c64833196978bb",
       "acceptance": "stage8-acceptance.json",
       "release": "stage8-release.json"
+    },
+    "preview_refinement_2026_10_29": {
+      "requirements": [
+        "R51",
+        "R52"
+      ],
+      "prototypes": [
+        "P36",
+        "P37"
+      ],
+      "source_commit": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+      "ci": {
+        "run_id": 40727518936,
+        "url": "https://github.com/BppleMan/open-webui/actions/runs/40727518936",
+        "frontend": "success",
+        "backend": "success",
+        "image": "success"
+      },
+      "image": "ghcr.io/bppleman/open-webui-oi:sha-a198214b3d07d9a2ba5764c1c31000038b0db7f8@sha256:bffbbd51e9f0f320499b55c8beb941a9b76e7537e96dde139c4a36e8ca63fb1f",
+      "gitops_commit": "cf3874d896ab090273c2056d962a71935f28e313",
+      "scope": "isolated preview only; production OI and CPA unchanged",
+      "checks": {
+        "backend": 220,
+        "frontend": 50,
+        "new_type_diagnostics": 0,
+        "upstream_type_diagnostics": 5765,
+        "production_build": "passed",
+        "viewport_widths": [
+          390,
+          430,
+          1293
+        ],
+        "app_scale": 1.1,
+        "expanded_context_anchor_gap_px": 10.4,
+        "five_visible_rows": true,
+        "all_connection_models_scrollable": true,
+        "duplicate_name_hidden": true,
+        "utility_controls_aligned": true,
+        "styled_options_keyboard_binding": true,
+        "escape_preserves_parent_form": true,
+        "usage_status_cost_and_technical_details_separated": true
+      },
+      "live_CPA": {
+        "synthetic_calls": 1,
+        "status": "completed",
+        "input_tokens": 255,
+        "output_tokens": 39,
+        "reasoning_tokens": 30,
+        "actual_usd": null,
+        "estimated_usd": null,
+        "unknown_cost_kept": true,
+        "native_model_capacity": "not advertised; remains unknown",
+        "legacy_base_compatible": true,
+        "no_automatic_retry": true
+      },
+      "boundaries": [
+        "No production rollout",
+        "No CPA server changes",
+        "No accounting migration or invented pricing/capacity",
+        "Earlier supplier/device/legacy-alias limitations remain in their stage records"
+      ]
     }
   },
   "review_remediation": {

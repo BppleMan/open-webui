@@ -1,0 +1,61 @@
+{
+  "requirements": [
+    "R51",
+    "R52"
+  ],
+  "prototypes": [
+    "P36",
+    "P37"
+  ],
+  "source_commit": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+  "ci": {
+    "run_id": 40727518936,
+    "url": "https://github.com/BppleMan/open-webui/actions/runs/40727518936",
+    "frontend": "success",
+    "backend": "success",
+    "image": "success"
+  },
+  "image": "ghcr.io/bppleman/open-webui-oi:sha-a198214b3d07d9a2ba5764c1c31000038b0db7f8@sha256:bffbbd51e9f0f320499b55c8beb941a9b76e7537e96dde139c4a36e8ca63fb1f",
+  "gitops_commit": "cf3874d896ab090273c2056d962a71935f28e313",
+  "scope": "isolated preview only; production OI and CPA unchanged",
+  "checks": {
+    "backend": 220,
+    "frontend": 50,
+    "new_type_diagnostics": 0,
+    "upstream_type_diagnostics": 5765,
+    "production_build": "passed",
+    "viewport_widths": [
+      390,
+      430,
+      1293
+    ],
+    "app_scale": 1.1,
+    "expanded_context_anchor_gap_px": 10.4,
+    "five_visible_rows": true,
+    "all_connection_models_scrollable": true,
+    "duplicate_name_hidden": true,
+    "utility_controls_aligned": true,
+    "styled_options_keyboard_binding": true,
+    "escape_preserves_parent_form": true,
+    "usage_status_cost_and_technical_details_separated": true
+  },
+  "live_CPA": {
+    "synthetic_calls": 1,
+    "status": "completed",
+    "input_tokens": 255,
+    "output_tokens": 39,
+    "reasoning_tokens": 30,
+    "actual_usd": null,
+    "estimated_usd": null,
+    "unknown_cost_kept": true,
+    "native_model_capacity": "not advertised; remains unknown",
+    "legacy_base_compatible": true,
+    "no_automatic_retry": true
+  },
+  "boundaries": [
+    "No production rollout",
+    "No CPA server changes",
+    "No accounting migration or invented pricing/capacity",
+    "Earlier supplier/device/legacy-alias limitations remain in their stage records"
+  ]
+}

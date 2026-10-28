@@ -129,3 +129,7 @@ R50收口：已完成阶段8A的现有上线前实施与验收，普通设置页
 
 ## R51 — Preview refinement and CPA routing correction
 Remove redundant model subtitles, limit each connection's expanded model list to five visible rows with internal scrolling, align composer controls, fix expanded context popup positioning/scrolling, improve per-message usage hierarchy, and style dropdown options using existing accessible components. Diagnose the CPA 404 without retry fallback or production changes. R50 remains in force.
+
+
+## R52 — Distinguish CPA gateway, client protocol and upstream channel
+The CPA/AGY template uses native Gemini; use a /v1beta API base for new connections. Its legacy /v1 input compatibility must not rewrite explicit OpenAI Chat/Responses or Anthropic Messages requests. CPA is a gateway and AGY is an upstream channel, independent of the client-facing protocol. A registered endpoint alone is not proof that every upstream/model supports it. R50 still applies.
