@@ -30,6 +30,7 @@ class ModelBinding(Base):
     connection_id = Column(Text, nullable=False, index=True)
     upstream_id = Column(Text, nullable=False)
     protocol = Column(Text, nullable=False)
+    protocol_override = Column(Text, nullable=True)
     name = Column(Text, nullable=False)
     enabled = Column(Boolean, nullable=False, default=True)
     available = Column(Boolean, nullable=False, default=True)
@@ -38,7 +39,6 @@ class ModelBinding(Base):
     params = Column(JSON, nullable=False, default=dict)
     aliases = Column(JSON, nullable=False, default=list)
     updated_at = Column(BigInteger, nullable=False)
-    __table_args__ = (UniqueConstraint('connection_id', 'upstream_id', 'protocol', name='uq_oi_binding'),)
 
 
 class ConnectionMigration(Base):

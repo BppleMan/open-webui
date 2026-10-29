@@ -92,7 +92,17 @@ if mode == 'prepare':
             )
         )
     engine.dispose()
+    command.upgrade(config, 'oi0000000006')
+    import runpy
+
+    routing_fixture = runpy.run_path(str(repo / 'scripts/oi/protocol-migration-fixture.py'))
+    engine = sa.create_engine(url)
+    with engine.begin() as db:
+        routing_fixture['seed'](db)
     command.upgrade(config, 'head')
+    with engine.begin() as db:
+        routing_fixture['verify'](db)
+    engine.dispose()
 
 
 async def run():
@@ -350,7 +360,7 @@ with engine.connect() as db:
         ).encode()
         manifest[name] = {'count': len(rows), 'sha256': hashlib.sha256(encoded).hexdigest()}
     revision = db.execute(sa.text('SELECT version_num FROM alembic_version')).scalar_one()
-    assert revision == 'oi0000000006'
+    assert revision == 'oi0000000007'
 path = repo / '.oi-local/pg-before-restore.json'
 if mode == 'prepare':
     path.write_text(json.dumps(manifest, indent=2))

@@ -40,3 +40,7 @@ Stage8A is verified; current evidence is stage8-acceptance.json and stage8-relea
 
 
 R51/P36 preview refinement is verified at a198214b3. Context popovers use rendered capped height, connection lists expose five scrollable rows, composer controls align, settings options reuse Bits UI, and usage details distinguish confirmed/unknown data. CPA/AGY discovery and generation share native /v1beta routing; R52/P37 documents the protocol distinction. See preview-refinement-2026-10-29.json for CI, real synthetic CPA and browser evidence. Production remains unchanged under R50.
+
+## R53 / P38 — protocol decoupling
+
+Protocol registry, persisted service routing and OI7 model inheritance are implemented. Browser RPC carries explicit streaming and validates the resolved endpoint. The compact connection editor uses common mode choices and readonly URL previews. Local checks: 350 backend and 57 frontend tests, no new type/a11y diagnostics (5765 existing upstream diagnostics), production build passed. CI, populated PostgreSQL migration and actual browser/preview evidence are pending; R50 holds. See protocol-decoupling.md.

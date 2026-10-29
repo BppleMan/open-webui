@@ -244,3 +244,7 @@ Model names remain primary; upstream ID is secondary only when different. Expand
 
 ## P37 — CPA protocol guidance
 Show /v1beta for CPA/AGY native Gemini. Preserve the /v1 family for OpenAI Chat/Responses and Anthropic Messages. Gateway identity, client protocol and upstream routing are separate concepts. Existing model/connection identities remain stable; registered routes are not advertised as universal model capability.
+
+
+## P38 — Protocol-first configuration and compact lists
+Primary fields: connection name, execution transport, service address, default interface mode and readonly resolved URL, followed by shared credentials. Models show inherited/effective mode and can override. Four common modes are not template-filtered; legacy extensions remain. Provider compatibility is independent from wire format. Enabled-first ordering is stable while toggling; five-row scrolling uses 2rem/2.5rem rows; connection separators removed; form toggles use a fixed right column. Validation and preview must use the same resolver as generation.

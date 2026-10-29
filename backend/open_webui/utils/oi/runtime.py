@@ -1,5 +1,7 @@
 """Accounting at the provider-call boundary, independent of display history."""
 
+from open_webui.utils.oi.endpoints import compatibility_profile
+
 import asyncio
 import codecs
 import copy
@@ -232,7 +234,10 @@ async def track_call(request, form, user, dispatch, binding=None, connection=Non
             supplied_cost = (
                 raw.get('cost')
                 if connection
-                and (connection.template == 'openrouter' or connection.settings.get('cost_currency') == 'USD')
+                and (
+                    compatibility_profile(connection) == 'openrouter'
+                    or connection.settings.get('cost_currency') == 'USD'
+                )
                 else data.get('oi_actual_usd')
             )
             if supplied_cost is not None:

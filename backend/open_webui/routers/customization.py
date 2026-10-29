@@ -1,6 +1,7 @@
 """Authenticated OI catalog, draft, billing and navigation APIs."""
 
 from typing import Any, Literal
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -20,6 +21,9 @@ from open_webui.models.customization import (
 )
 from open_webui.utils.auth import get_verified_user
 from open_webui.utils.oi import accounting, catalog, drafts
+from open_webui.utils.oi.protocol_registry import COMMON_PROTOCOLS, PROTOCOLS, canonical_protocol, protocol_directory
+from open_webui.utils.oi.endpoints import resolve_endpoint, compatibility_profile
+from open_webui.utils.oi.selection import effective_protocol
 from open_webui.utils.oi.storage import identifier, insert_once, now
 from pydantic import BaseModel, Field, SecretStr
 from sqlalchemy import select, update
@@ -213,6 +217,34 @@ async def templates(user=Depends(get_verified_user)):
     return catalog.TEMPLATES
 
 
+@router.get('/protocols')
+async def protocols(user=Depends(get_verified_user)):
+    return protocol_directory()
+
+
+class EndpointPreviewForm(ConnectionForm):
+    model: str | None = None
+
+
+@router.post('/connections/resolve')
+async def preview_connection(form: EndpointPreviewForm, user=Depends(get_verified_user)):
+    try:
+        defaults = catalog.connection_defaults(form)
+        address = catalog.validate_url(defaults['base_url'])
+        connection = SimpleNamespace(template=form.template, **{**defaults, 'base_url': address})
+        mode = defaults['protocol']
+        return {
+            'service_address': address,
+            'protocol': mode,
+            'generate_url': resolve_endpoint(connection, mode, model=form.model),
+            'stream_url': resolve_endpoint(connection, mode, model=form.model, stream=True),
+            'discovery_url': resolve_endpoint(connection, mode, 'models'),
+            'needs_review': bool(defaults['settings'].get('routing', {}).get('needs_review')),
+        }
+    except (ValueError, KeyError, TypeError) as error:
+        raise HTTPException(422, str(error)) from None
+
+
 @router.post('/connections/import-legacy')
 async def import_legacy(
     request: Request, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)
@@ -343,8 +375,8 @@ async def save_connection(db, user, form, row=None):
         raise HTTPException(403, 'Only administrators may publish shared connections')
     try:
         defaults = catalog.connection_defaults(form, row)
-        if form.transport == 'browser' and defaults['protocol'] not in {'openai-chat', 'openai-responses'}:
-            raise ValueError('Browser connections currently support OpenAI Chat and Responses protocols')
+        if form.transport == 'browser' and defaults['protocol'] not in COMMON_PROTOCOLS:
+            raise ValueError('This extension protocol does not support browser transport')
         url = catalog.validate_url(defaults['base_url'])
         secrets = catalog.credentials(row) if row else {}
     except ValueError as error:
@@ -400,7 +432,7 @@ async def discover_models(
     connection_id: str, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)
 ):
     connection = await connection_access(db, user, connection_id, True)
-    if catalog.get_template(connection.template)['discovery'] == 'manual':
+    if compatibility_profile(connection) == 'azure-openai' and connection.protocol == 'openai-chat':
         raise HTTPException(422, 'Add models using their deployment names for this template')
     try:
         rows = await catalog.discover(db, connection)
@@ -415,6 +447,7 @@ async def discover_models(
 async def browser_config(
     connection_id: str,
     revision: int | None = None,
+    binding_id: str | None = None,
     user=Depends(get_verified_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -427,13 +460,34 @@ async def browser_config(
     await require_browser_owner(connection, user)
     if revision is not None and revision != connection.revision:
         raise HTTPException(409, 'Connection changed; reload before sending', headers={'Cache-Control': 'no-store'})
+    from open_webui.utils.oi.selection import snapshot_target
+
+    protocol, upstream = connection.protocol, None
+    if binding_id:
+        binding = await db.get(ModelBinding, binding_id)
+        if (
+            binding is None
+            or binding.connection_id != connection.id
+            or not await catalog.binding_readable(db, binding, connection, user)
+        ):
+            raise HTTPException(404, 'Browser model unavailable', headers={'Cache-Control': 'no-store'})
+        binding, connection = snapshot_target(binding, connection)
+        protocol, upstream = binding.protocol, binding.upstream_id
+    headers = catalog.request_headers(connection, protocol=protocol)
+    if canonical_protocol(protocol) == 'anthropic':
+        headers.setdefault('anthropic-dangerous-direct-browser-access', 'true')
     return JSONResponse(
         {
             'id': connection.id,
             'revision': connection.revision,
             'base_url': connection.base_url,
-            'protocol': connection.protocol,
-            'headers': catalog.request_headers(connection),
+            'protocol': canonical_protocol(protocol),
+            'headers': headers,
+            'endpoints': {
+                'generate': resolve_endpoint(connection, protocol, model=upstream),
+                'stream': resolve_endpoint(connection, protocol, model=upstream, stream=True),
+                'models': resolve_endpoint(connection, protocol, 'models'),
+            },
         },
         headers={'Cache-Control': 'no-store, private', 'Pragma': 'no-cache', 'Vary': 'Authorization, Cookie'},
     )
@@ -534,6 +588,7 @@ async def copy_browser_to_server(
             connection_id=target.id,
             upstream_id=old.upstream_id,
             protocol=old.protocol,
+            protocol_override=old.protocol_override,
             name=old.name,
             enabled=old.enabled,
             available=old.available,
@@ -594,7 +649,8 @@ class BindingForm(BaseModel):
     connection_id: str
     upstream_id: str = Field(min_length=1)
     name: str = Field(min_length=1)
-    protocol: str
+    protocol: str | None = None
+    protocol_override: str | None = None
     enabled: bool = True
     capabilities: dict = Field(default_factory=dict)
     capability_overrides: dict | None = None
@@ -604,7 +660,12 @@ class BindingForm(BaseModel):
 
 async def save_binding(db, user, form, binding_id=None):
     connection = await connection_access(db, user, form.connection_id, True)
-    if form.protocol not in catalog.PROTOCOLS:
+    if (
+        form.protocol is not None
+        and form.protocol not in PROTOCOLS
+        or form.protocol_override is not None
+        and form.protocol_override not in PROTOCOLS
+    ):
         raise HTTPException(422, 'Unsupported protocol')
     for rate in (form.pricing.get('rates') or {}).values():
         try:
@@ -623,21 +684,40 @@ async def save_binding(db, user, form, binding_id=None):
     except ValueError as error:
         raise HTTPException(422, 'Invalid reasoning capability: ' + str(error)) from None
     manual = row is None or (row.capabilities or {}).get('manual', False)
+    if 'protocol_override' in form.model_fields_set:
+        override = canonical_protocol(form.protocol_override) if form.protocol_override else None
+    elif row is not None and form.protocol in {None, effective_protocol(row, connection)}:
+        override = row.protocol_override
+    else:
+        override = canonical_protocol(form.protocol) if form.protocol else None
+        if override == connection.protocol:
+            override = None
+    mode = override or connection.protocol
+    if connection.transport == 'browser' and mode not in COMMON_PROTOCOLS:
+        raise HTTPException(422, 'This extension protocol does not support browser transport')
+    await db.execute(update(Connection).where(Connection.id == connection.id).values(updated_at=Connection.updated_at))
     existing = (
-        await db.execute(
-            select(ModelBinding).where(
-                ModelBinding.connection_id == connection.id,
-                ModelBinding.upstream_id == form.upstream_id,
-                ModelBinding.protocol == form.protocol,
+        (
+            await db.execute(
+                select(ModelBinding).where(
+                    ModelBinding.connection_id == connection.id, ModelBinding.upstream_id == form.upstream_id
+                )
             )
         )
-    ).scalar_one_or_none()
-    if existing and existing.id != binding_id:
-        raise HTTPException(409, 'This connection already contains the model')
+        .scalars()
+        .all()
+    )
+    if any(item.id != binding_id and effective_protocol(item, connection) == mode for item in existing):
+        # Existing variants may converge when the connection default changes. A normal
+        # edit of such a row must remain possible; never merge their stable identities.
+        if row is None or row.upstream_id != form.upstream_id or effective_protocol(row, connection) != mode:
+            raise HTTPException(409, 'This connection already contains the model with this protocol')
     if row is None:
         row = ModelBinding(id='oi:' + identifier(), connection_id=connection.id, aliases=[], available=True)
         db.add(row)
-    for key in ('upstream_id', 'name', 'protocol', 'enabled', 'pricing', 'params'):
+    row.protocol = mode
+    row.protocol_override = override
+    for key in ('upstream_id', 'name', 'enabled', 'pricing', 'params'):
         setattr(row, key, getattr(form, key))
     row.capabilities = {
         'discovered': (row.capabilities or {}).get('discovered', {}),

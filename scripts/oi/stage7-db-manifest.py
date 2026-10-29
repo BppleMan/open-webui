@@ -26,7 +26,7 @@ with engine.connect() as db:
             sorted(rows, key=lambda row: json.dumps(row, sort_keys=True, default=str)), sort_keys=True, default=str
         ).encode()
         result[name] = {'rows': len(rows), 'sha256': hashlib.sha256(encoded).hexdigest()}
-    assert db.execute(sa.text('select version_num from alembic_version')).scalar_one() == 'oi0000000006'
+    assert db.execute(sa.text('select version_num from alembic_version')).scalar_one() == 'oi0000000007'
 path = Path(os.environ.get('OI_STAGE7_MANIFEST', '.oi-local/stage7-db-manifest.json'))
 if sys.argv[1] == 'prepare':
     path.write_text(json.dumps(result, indent=2) + '\n')

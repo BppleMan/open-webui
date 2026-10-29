@@ -1,4 +1,4 @@
-"""Run native OpenAI protocol requests through the owner's existing browser RPC."""
+"""Run native protocol requests through the owner's existing browser RPC."""
 
 import asyncio
 import json
@@ -8,6 +8,8 @@ import httpx
 from fastapi import HTTPException
 from open_webui.models.config import Config
 from open_webui.utils.oi import catalog
+from open_webui.utils.oi.endpoints import resolve_endpoint
+from open_webui.utils.oi.protocol_registry import canonical_protocol
 
 
 async def require_browser_owner(connection, user):
@@ -72,8 +74,11 @@ class BrowserTransport(httpx.AsyncBaseTransport):
         self.channel = f'{self.user.id}:{self.metadata["session_id"]}:{uuid4()}'
         queue = asyncio.Queue()
         EVENT_QUEUES[self.channel] = queue
-        base = self.connection.base_url.rstrip('/')
-        if not str(request.url).startswith(base + '/'):
+        stream = bool(request.extensions.get('oi_stream', False))
+        expected = resolve_endpoint(
+            self.connection, self.binding.protocol, model=self.binding.upstream_id, stream=stream
+        )
+        if request.method != 'POST' or str(request.url) != expected:
             await self.aclose()
             raise HTTPException(422, 'Browser request endpoint mismatch')
         caller = await get_event_call(self.metadata)
@@ -86,7 +91,14 @@ class BrowserTransport(httpx.AsyncBaseTransport):
                         'channel': self.channel,
                         'session_id': self.metadata['session_id'],
                         'form_data': payload,
-                        'path': str(request.url)[len(base) :],
+                        'url': str(request.url),
+                        'protocol': canonical_protocol(self.binding.protocol),
+                        'stream': stream,
+                        'protocol_headers': {
+                            key: value
+                            for key, value in request.headers.items()
+                            if key.lower().startswith('x-rp-') or key.lower() == 'anthropic-version'
+                        },
                         'model': {
                             'id': self.binding.id,
                             'direct': True,
@@ -107,7 +119,7 @@ class BrowserTransport(httpx.AsyncBaseTransport):
                 for key, value in (result.get('headers') or {}).items()
                 if key.lower() in {'content-type', 'retry-after', 'x-request-id'}
             }
-            if payload.get('stream') and status < 400:
+            if stream and status < 400:
                 return httpx.Response(status, headers=headers, stream=BrowserStream(self, queue))
             await self.aclose()
             return httpx.Response(status, headers=headers, content=result.get('body', ''))

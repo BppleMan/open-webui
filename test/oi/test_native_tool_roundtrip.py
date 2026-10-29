@@ -164,9 +164,14 @@ def assert_followup_history(protocol, payloads):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    'protocol', ['openai-chat', 'openai-responses', 'anthropic', 'gemini', 'gemini-interactions', 'cpa-agy', 'ollama']
+    'protocol,transport_kind',
+    [
+        (p, 'server')
+        for p in ['openai-chat', 'openai-responses', 'anthropic', 'gemini', 'gemini-interactions', 'cpa-agy', 'ollama']
+    ]
+    + [(p, 'browser') for p in ['openai-chat', 'openai-responses', 'anthropic', 'gemini']],
 )
-async def test_two_tool_rounds_keep_native_history_and_charge_each_call_once(db, monkeypatch, protocol):
+async def test_two_tool_rounds_keep_native_history_and_charge_each_call_once(db, monkeypatch, protocol, transport_kind):
     @asynccontextmanager
     async def session():
         yield db
@@ -197,6 +202,29 @@ async def test_two_tool_rounds_keep_native_history_and_charge_each_call_once(db,
     b, c = binding(protocol), connection(protocol)
 
     transport = httpx.MockTransport(lambda req: provider_response(protocol, payloads, req))
+    if transport_kind == 'browser':
+        from open_webui.socket import main as socket
+        from open_webui.utils.oi.browser_transport import BrowserTransport
+
+        c.transport, c.owner_id, c.enabled, c.revision = 'browser', user.id, True, 1
+        metadata['session_id'] = 'synthetic-session'
+        monkeypatch.setattr('open_webui.models.config.Config.get', AsyncMock(return_value=True))
+        monkeypatch.setattr(socket, 'SESSION_POOL', {'synthetic-session': {'id': user.id}})
+        monkeypatch.setattr(socket.sio, 'emit', AsyncMock())
+
+        async def relay(event):
+            data = event['data']
+            assert data['protocol'] == protocol and data['stream'] is True
+            if protocol == 'gemini':
+                assert 'stream' not in data['form_data']
+            response = provider_response(protocol, payloads, httpx.Request('POST', data['url'], json=data['form_data']))
+            queue = socket.EVENT_QUEUES[data['channel']]
+            await queue.put(response.content)
+            await queue.put({'done': True})
+            return {'status_code': 200, 'headers': {'content-type': 'text/event-stream'}}
+
+        monkeypatch.setattr(socket, 'get_event_call', AsyncMock(return_value=relay))
+        transport = BrowserTransport(user, metadata, b, c)
     messages = [{'role': 'user', 'content': 'Use lookup twice then answer.'}]
     for turn in range(1, 4):
         form = {'model': 'nested-preset', 'messages': copy.deepcopy(messages), 'stream': True, 'metadata': metadata}

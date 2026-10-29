@@ -11,7 +11,7 @@ from open_webui.models.customization import Connection, ModelBinding
 from open_webui.routers.customization import router
 from open_webui.utils.auth import get_verified_user
 from open_webui.utils.oi import catalog
-from open_webui.utils.oi.connection_templates import TEMPLATES
+from open_webui.utils.oi.connection_templates import TEMPLATES, TEMPLATE_VERSION
 from open_webui.utils.oi.protocols import build_request
 from sqlalchemy import select
 
@@ -42,7 +42,7 @@ async def test_template_defaults_reach_native_dispatch(api, db, template, protoc
     assert created.status_code == 200, created.text
     value = created.json()
     assert value['protocol'] == protocol
-    assert value['settings']['template_version'] == 1
+    assert value['settings']['template_version'] == TEMPLATE_VERSION
     assert 'synthetic' not in created.text and 'credentials' not in value
     response = await api.post(
         'model-bindings',
@@ -92,7 +92,7 @@ async def test_repeat_template_connections_keep_independent_models_and_overrides
     assert ids[0] != ids[1]
     selected = next(t for t in TEMPLATES if t['id'] == 'gemini')
     monkeypatch.setitem(selected, 'base_url', 'https://changed-template.test/v9')
-    monkeypatch.setitem(selected, 'version', 2)
+    monkeypatch.setitem(selected, 'version', TEMPLATE_VERSION + 1)
     edit = await api.put(
         f'connections/{ids[0]}',
         json={
@@ -102,8 +102,8 @@ async def test_repeat_template_connections_keep_independent_models_and_overrides
         },
     )
     assert edit.status_code == 200, edit.text
-    assert edit.json()['base_url'] == 'https://custom.test/v1beta'
-    assert edit.json()['settings']['template_version'] == 1
+    assert edit.json()['base_url'] == 'https://custom.test'
+    assert edit.json()['settings']['template_version'] == TEMPLATE_VERSION
     updated = (await api.get('model-bindings')).json()
     for model in models:
         if model['connection_id'] == ids[0]:

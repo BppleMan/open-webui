@@ -16,3 +16,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - Latest user boundary R50: complete prelaunch stage8A only, then hand off for user tuning. Production OI/CPA, routes and databases must remain unchanged. Earlier full-plan deployment authorization is superseded; stage8B requires new explicit authorization.
 
 - Latest preview refinement R51/R52 is verified; read docs/customization/preview-refinement-2026-10-29.json. CPA/AGY uses /v1beta; do not generalize this to other CPA protocols. R50 production hold remains in force.
+
+- R53 supersedes R52 address entry: enter a service root; protocol registry generates versioned endpoints. Read docs/customization/protocol-decoupling.md. Template defaults do not restrict protocol choices. Preserve migrated effective routes, model identity, browser ownership and R50.

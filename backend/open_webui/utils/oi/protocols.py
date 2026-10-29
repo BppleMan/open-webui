@@ -7,7 +7,6 @@ prompt injection, or provider-side conversation storage is enabled here.
 import copy
 import json
 import re
-from urllib.parse import quote
 from uuid import uuid4
 
 import httpx
@@ -16,7 +15,9 @@ from open_webui.models.chats import Chats
 from open_webui.utils.chat_id import is_saved_chat_id
 from open_webui.utils.oi import accounting, catalog
 from open_webui.utils.oi.runtime import SSEDecoder
-from open_webui.utils.oi.endpoints import api_base
+from open_webui.utils.oi.endpoints import resolve_endpoint
+from open_webui.utils.oi.selection import snapshot_target
+from open_webui.utils.oi.protocol_registry import canonical_protocol
 from starlette.responses import JSONResponse, StreamingResponse
 
 
@@ -111,7 +112,7 @@ def native_for(message, protocol, binding_id):
         if isinstance(native, dict)
         and not message.get('oi_native_invalidated')
         and native.get('replayable', True)
-        and native.get('protocol') == protocol
+        and canonical_protocol(native.get('protocol')) == canonical_protocol(protocol)
         and native.get('binding_id') == binding_id
         else None
     )
@@ -175,7 +176,20 @@ def response_items(messages, binding):
     return output
 
 
+def _contains_opaque_native(value):
+    if isinstance(value, list):
+        return any(_contains_opaque_native(item) for item in value)
+    if isinstance(value, dict):
+        if any(value.get(key) for key in ('signature', 'thoughtSignature', 'encrypted_content')):
+            return True
+        if value.get('type') in {'redacted_thinking', 'server_tool_use', 'computer_use'}:
+            return True
+        return any(_contains_opaque_native(item) for item in value.values())
+    return False
+
+
 def build_request(form, binding, connection):
+    binding, connection = snapshot_target(binding, connection)
     protocol = binding.protocol
     source = copy.deepcopy(form)
     messages = source.pop('messages', [])
@@ -206,7 +220,29 @@ def build_request(form, binding, connection):
     source = merge(source, native_options)
     source['model'] = binding.upstream_id
     source.setdefault('store', False)
-    base = api_base(connection, protocol)
+    for message in messages:
+        native = message.get('oi_native') or {}
+        if (
+            isinstance(native, dict)
+            and native.get('protocol')
+            and canonical_protocol(native['protocol']) != canonical_protocol(protocol)
+        ):
+            if _contains_opaque_native(native.get('body')):
+                raise HTTPException(
+                    422,
+                    'This history contains signed native content from another protocol; use its original protocol to preserve it',
+                )
+    try:
+        url = resolve_endpoint(
+            connection,
+            protocol,
+            model=binding.upstream_id.removeprefix('models/')
+            if protocol in {'gemini', 'cpa-agy'}
+            else binding.upstream_id,
+            stream=stream,
+        )
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
     if protocol == 'openai-chat':
         source['messages'] = [
             clean_message(((native_for(m, protocol, binding.id) or {}).get('choices') or [{}])[0].get('message') or m)
@@ -214,13 +250,7 @@ def build_request(form, binding, connection):
         ]
         if stream:
             source['stream_options'] = {**(form.get('stream_options') or {}), 'include_usage': True}
-        if connection.template == 'azure-openai':
-            deployment = quote(connection.settings.get('deployment') or binding.upstream_id, safe='')
-            version = quote(connection.settings.get('api_version') or '', safe='')
-            if not version:
-                raise HTTPException(422, 'Azure requires an explicit API version')
-            return f'{base}/openai/deployments/{deployment}/chat/completions?api-version={version}', source
-        return base + '/chat/completions', source
+        return url, source
     if protocol == 'openai-responses':
         source['input'] = response_items(messages, binding)
         source['truncation'] = 'disabled'
@@ -244,7 +274,7 @@ def build_request(form, binding, connection):
             source['tool_choice'] = {'type': 'function', 'name': source['tool_choice']['function']['name']}
         source.pop('n', None)
         source.setdefault('include', ['reasoning.encrypted_content'])
-        return base + '/responses', source
+        return url, source
     if protocol == 'ollama':
         from open_webui.utils.payload import convert_payload_openai_to_ollama
 
@@ -259,7 +289,7 @@ def build_request(form, binding, connection):
             if native and native.get('message'):
                 converted.clear()
                 converted.update(copy.deepcopy(native['message']))
-        return base + '/api/chat', payload
+        return url, payload
 
     source.pop('store', None)
     system, conversation = split_system(messages)
@@ -322,7 +352,7 @@ def build_request(form, binding, connection):
                 **source.get('tool_choice', {'type': 'auto'}),
                 'disable_parallel_tool_use': not source.pop('parallel_tool_calls'),
             }
-        return base + '/messages', source
+        return url, source
 
     if protocol in {'gemini', 'cpa-agy'}:
         contents, names, provider_ids = [], {}, set()
@@ -413,8 +443,7 @@ def build_request(form, binding, connection):
             )
             source['toolConfig'] = {**source.get('toolConfig', {}), 'functionCallingConfig': cfg}
         source.pop('parallel_tool_calls', None)
-        operation = 'streamGenerateContent?alt=sse' if stream else 'generateContent'
-        return base + '/models/' + quote(binding.upstream_id.removeprefix('models/'), safe='') + ':' + operation, source
+        return url, source
 
     if protocol == 'gemini-interactions':
         source['store'] = False
@@ -442,7 +471,7 @@ def build_request(form, binding, connection):
         source['tools'] = [
             ({'type': 'function', **t['function']} if 'function' in t else t) for t in source.get('tools', [])
         ]
-        return base + '/interactions', source
+        return url, source
     raise HTTPException(422, 'Unsupported native protocol')
 
 
@@ -873,6 +902,7 @@ async def save_native(metadata, binding, call_id, body, replayable=True):
 async def generate(request, form, user, binding, connection, call_id, transport=None):
     from open_webui.utils.oi.replay import remember_native
 
+    binding, connection = snapshot_target(binding, connection)
     url, payload = build_request(form, binding, connection)
     metadata = form.get('metadata') or getattr(request.state, 'metadata', {}) or {}
     rp_chat_id = (
@@ -890,7 +920,10 @@ async def generate(request, form, user, binding, connection, call_id, transport=
     )
     try:
         response = await client.send(
-            client.build_request('POST', url, json=payload, headers=headers), stream=bool(form.get('stream'))
+            client.build_request(
+                'POST', url, json=payload, headers=headers, extensions={'oi_stream': bool(form.get('stream'))}
+            ),
+            stream=bool(form.get('stream')),
         )
     except BaseException:
         await client.aclose()

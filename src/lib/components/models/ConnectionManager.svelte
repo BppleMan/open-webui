@@ -6,6 +6,8 @@
 	import { oiApi } from '$lib/apis/customization';
 	import { discoverBrowserModels } from '$lib/utils/browserConnections';
 	import ConnectionMigrationModal from './ConnectionMigrationModal.svelte';
+	import ConnectionEndpointPreview from './ConnectionEndpointPreview.svelte';
+	import { modelRanks } from '$lib/utils/connectionManagement';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import Switch from '$lib/components/common/Switch.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
@@ -20,7 +22,14 @@
 	import Search from '$lib/components/icons/Search.svelte';
 	let connections: any[] = [],
 		bindings: any[] = [],
-		templates: any[] = [];
+		templates: any[] = [],
+		protocolDirectory: any[] = [];
+	let ranks = new Map<string, number>();
+	let rankedSearch = '';
+	$: if (search !== rankedSearch) {
+		ranks = modelRanks(bindings);
+		rankedSearch = search;
+	}
 	let search = '',
 		busy = false,
 		loading = true,
@@ -37,15 +46,7 @@
 		'focus-ring flex size-7 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-black/5 hover:text-gray-700 disabled:opacity-40 dark:text-gray-500 dark:hover:bg-white/5 dark:hover:text-gray-200';
 	const primaryClass =
 		'rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-black disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white';
-	const protocolLabels: Record<string, string> = {
-		'openai-chat': 'OpenAI · Chat Completions',
-		'openai-responses': 'OpenAI · Responses',
-		anthropic: 'Claude · Messages',
-		gemini: 'Gemini · GenerateContent',
-		'gemini-interactions': 'Gemini · Interactions',
-		'cpa-agy': 'CPA / AGY · Gemini 原生',
-		ollama: 'Ollama'
-	};
+	$: protocolLabels = Object.fromEntries(protocolDirectory.map((p) => [p.id, p.label]));
 	const templateName = (connection: any) =>
 		templates.find((t) => t.id === connection.template)?.name ||
 		protocolLabels[connection.protocol] ||
@@ -53,20 +54,27 @@
 	const toggle = (id: string) => {
 		const next = new Set(expanded);
 		if (next.has(id)) next.delete(id);
-		else next.add(id);
+		else {
+			next.add(id);
+			ranks = modelRanks(bindings, ranks, id);
+		}
 		expanded = next;
 	};
 	const templateDescription = (template: any) =>
 		template.description || protocolLabels[template.protocol];
 	const selectedTemplate = (connection: any) =>
 		templates.find((t) => t.id === connection?.template);
-	const connectionProtocols = (connection: any) => [
-		...new Set([...(selectedTemplate(connection)?.protocols || protocols), connection.protocol])
-	];
-	const manualModels = (connection: any) => selectedTemplate(connection)?.discovery === 'manual';
+	const manualModels = (connection: any) =>
+		connection.settings?.routing?.profile === 'azure-openai' &&
+		connection.protocol === 'openai-chat';
+	const templateFieldsFor = (connection: any) =>
+		(selectedTemplate(connection)?.fields || []).filter(
+			(f: any) => !f.protocols || f.protocols.includes(connection.protocol)
+		);
 
 	let connectionEdit: any = null,
 		modelEdit: any = null;
+	$: modelConnection = connections.find((c) => c.id === modelEdit?.connection_id);
 	let originalCapabilities: Record<string, any> = {};
 	let customHeaders = '';
 	let apiKey = '',
@@ -82,15 +90,6 @@
 	let levels = '',
 		reasoningParameter = '',
 		reasoningDefault = '';
-	const protocols = [
-		'openai-chat',
-		'openai-responses',
-		'anthropic',
-		'gemini',
-		'gemini-interactions',
-		'cpa-agy',
-		'ollama'
-	];
 	const capabilities = [
 		'chat',
 		'vision',
@@ -118,31 +117,35 @@
 		'output_image',
 		'cache_read_image'
 	];
-	const load = async () => {
+	const load = async (reorder = true) => {
 		loadError = '';
 		try {
-			[connections, bindings, templates] = await Promise.all([
+			[connections, bindings, templates, protocolDirectory] = await Promise.all([
 				oiApi('/connections?include_deleted=true'),
 				oiApi('/model-bindings'),
-				oiApi('/connections/templates')
+				oiApi('/connections/templates'),
+				oiApi('/protocols')
 			]);
+			if (reorder) ranks = modelRanks(bindings);
 		} catch (e) {
 			loadError = String(e);
 		} finally {
 			loading = false;
 		}
 	};
-	onMount(load);
-	const refresh = async () => {
-		await load();
+	onMount(() => {
+		void load();
+	});
+	const refresh = async (reorder = true) => {
+		await load(reorder);
 		models.set(await getModels(localStorage.token));
 	};
-	const run = async (action: () => Promise<any>) => {
+	const run = async (action: () => Promise<any>, reorder = true) => {
 		if (busy) return;
 		busy = true;
 		try {
 			await action();
-			await refresh();
+			await refresh(reorder);
 		} catch (e) {
 			toast.error(String(e));
 		} finally {
@@ -185,6 +188,7 @@
 			delete settings[field.key];
 		}
 		delete settings.template_version;
+		delete settings.routing;
 		nativeSettings = JSON.stringify(settings, null, 2);
 	};
 	const saveConnection = () =>
@@ -206,7 +210,12 @@
 				created ? 'POST' : 'PUT',
 				{
 					...connectionEdit,
-					settings: { ...options, ...templateFields, auth: connectionAuth },
+					settings: {
+						routing: connectionEdit.settings?.routing,
+						...options,
+						...templateFields,
+						auth: connectionAuth
+					},
 					...(apiKey ? { api_key: apiKey } : {}),
 					...(headers !== undefined ? { headers } : {})
 				}
@@ -234,11 +243,13 @@
 					name: '',
 					upstream_id: '',
 					protocol: connection.protocol,
+					protocol_override: '',
 					enabled: true,
 					capabilities: {},
 					pricing: { currency: 'USD', rates: {} },
 					params: {}
 				};
+		modelEdit.protocol_override ??= '';
 		originalCapabilities = structuredClone(modelEdit.capabilities || {});
 		modelEdit.pricing ||= {};
 		modelEdit.pricing.rates ||= {};
@@ -296,7 +307,11 @@
 			await oiApi(
 				'/model-bindings' + (modelEdit.id ? '/' + modelEdit.id : ''),
 				modelEdit.id ? 'PUT' : 'POST',
-				{ ...modelEdit, params: JSON.parse(customParams) }
+				{
+					...modelEdit,
+					protocol_override: modelEdit.protocol_override || null,
+					params: JSON.parse(customParams)
+				}
 			);
 			modelEdit = null;
 		});
@@ -307,13 +322,19 @@
 		.map((connection) => ({
 			...connection,
 			totalModels: bindings.filter((b) => b.connection_id === connection.id).length,
-			models: bindings.filter(
-				(b) =>
-					b.connection_id === connection.id &&
-					`${connection.name} ${templateName(connection)} ${connection.base_url || ''} ${b.name} ${b.upstream_id}`
-						.toLowerCase()
-						.includes(search.toLowerCase())
-			)
+			models: bindings
+				.filter(
+					(b) =>
+						b.connection_id === connection.id &&
+						`${connection.name} ${templateName(connection)} ${connection.base_url || ''} ${b.name} ${b.upstream_id}`
+							.toLowerCase()
+							.includes(search.toLowerCase())
+				)
+				.sort(
+					(a, b) =>
+						(ranks.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+						(ranks.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+				)
 		}))
 		.filter(
 			(c) =>
@@ -324,9 +345,9 @@
 		);
 
 	const toggleConnection = (connection: any, enabled: boolean) =>
-		run(() => oiApi(`/connections/${connection.id}`, 'PUT', { ...connection, enabled }));
+		run(() => oiApi(`/connections/${connection.id}`, 'PUT', { ...connection, enabled }), false);
 	const toggleModel = (model: any, enabled: boolean) =>
-		run(() => oiApi(`/model-bindings/${model.id}`, 'PUT', { ...model, enabled }));
+		run(() => oiApi(`/model-bindings/${model.id}`, 'PUT', { ...model, enabled }), false);
 	$: filteredTemplates = templates.filter((t) =>
 		`${t.name} ${templateDescription(t)}`.toLowerCase().includes(templateSearch.toLowerCase())
 	);
@@ -363,13 +384,13 @@
 				class={inputClass + ' pl-9'}
 			/>
 		</div>{/if}
-	<div class="divide-y divide-gray-100 dark:divide-white/[0.05]">
+	<div class="space-y-0">
 		{#each visible as connection (connection.id)}
-			<div class="py-2" data-connection-id={connection.id}>
+			<div class="py-0" data-connection-id={connection.id}>
 				<div class="flex min-w-0 items-center gap-2">
 					<button
 						type="button"
-						class="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-lg py-2 text-left"
+						class="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-lg py-1.5 text-left hover:bg-black/[0.025] dark:hover:bg-white/[0.025]"
 						aria-expanded={expanded.has(connection.id)}
 						on:click={() => toggle(connection.id)}
 					>
@@ -388,9 +409,9 @@
 								>
 							</div>
 							<p class="mt-0.5 truncate text-[0.6875rem] text-gray-400 dark:text-gray-500">
-								{connection.transport === 'browser' ? '浏览器直连' : '服务器'} · {templateName(
-									connection
-								)}{connection.base_url ? ` · ${connection.base_url}` : ''}
+								{connection.transport === 'browser' ? '浏览器直连' : '服务器'} · {protocolLabels[
+									connection.protocol
+								] || connection.protocol}{connection.base_url ? ` · ${connection.base_url}` : ''}
 							</p>
 						</div>
 						<span
@@ -444,19 +465,21 @@
 				{#if expanded.has(connection.id) || search.trim()}
 					<div class="ml-11 mt-1 border-l border-gray-100 pl-4 dark:border-white/5">
 						<div
-							class="max-h-[16.25rem] overflow-y-auto overscroll-contain"
+							class="max-h-[12.5rem] sm:max-h-40 overflow-y-auto overscroll-contain"
 							role="list"
 							aria-label={`${connection.name} 的模型`}
 							data-testid="connection-model-list"
 						>
 							{#each connection.models as model (model.id)}
-								<div class="flex h-[3.25rem] items-center gap-3 pe-1" role="listitem">
+								<div class="flex h-10 sm:h-8 items-center gap-3 pe-1" role="listitem">
 									<div class="min-w-0 flex-1">
-										<p class="truncate text-[0.8125rem] text-gray-700 dark:text-gray-300">
+										<p class="truncate text-[0.8125rem] leading-4 text-gray-700 dark:text-gray-300">
 											{model.name}
 										</p>
 										{#if model.name.trim() !== model.upstream_id.trim() || !model.available}
-											<p class="mt-0.5 truncate text-[0.6875rem] text-gray-500 dark:text-gray-400">
+											<p
+												class="truncate text-[0.6875rem] leading-3 text-gray-500 dark:text-gray-400"
+											>
 												{model.name.trim() !== model.upstream_id.trim()
 													? model.upstream_id
 													: ''}{!model.available
@@ -514,8 +537,10 @@
 		{/each}
 	</div>
 	{#if loading}<p class="py-6 text-center text-xs text-gray-400">正在加载连接…</p>
-	{:else if loadError}<button type="button" class="py-6 text-xs text-gray-500" on:click={load}
-			>连接加载失败，点击重试</button
+	{:else if loadError}<button
+			type="button"
+			class="py-6 text-xs text-gray-500"
+			on:click={() => load()}>连接加载失败，点击重试</button
 		>
 	{:else if !scopedConnections.length}<p
 			class="py-6 text-center text-xs leading-relaxed text-gray-400 dark:text-gray-500"
@@ -628,8 +653,8 @@
 				>
 					<option value="server">服务器</option><option
 						value="browser"
-						disabled={!['openai-chat', 'openai-responses'].includes(connectionEdit.protocol)}
-						>浏览器直连</option
+						disabled={!protocolDirectory.find((p) => p.id === connectionEdit.protocol)
+							?.browser_supported}>浏览器直连</option
 					>
 				</SettingsSelect>
 			</label>
@@ -649,21 +674,61 @@
 						})}>验证并复制为服务器个人连接</button
 				>{/if}
 			<label class="block space-y-1.5 text-xs text-gray-500"
-				>API 根地址<input
+				>服务地址<input
 					required
 					type="url"
 					bind:value={connectionEdit.base_url}
 					class={inputClass}
-					placeholder={connectionEdit.protocol === 'cpa-agy'
-						? 'https://…/v1beta'
-						: selectedTemplate(connectionEdit)?.base_url || 'https://…/v1'}
+					placeholder="https://example.com"
+					aria-describedby="service-address-hint"
 				/></label
 			>
-			{#if connectionEdit.protocol === 'cpa-agy'}<p class="text-xs leading-relaxed text-gray-500">
-					使用 CPA 的 Gemini 原生接口。服务根地址或以 /v1 结尾的兼容地址会按 /v1beta
-					路由；反向代理前缀保留。
-				</p>{/if}
-			{#each selectedTemplate(connectionEdit)?.fields || [] as field}
+			<p id="service-address-hint" class="text-xs text-gray-500">
+				填写服务根地址，接口模式会自动生成 /v1、/v1beta 等路径。
+			</p>
+			<label class="block space-y-1.5 text-xs text-gray-500"
+				>接口模式
+				<SettingsSelect
+					bind:value={connectionEdit.protocol}
+					className="w-full"
+					ariaLabel="连接接口模式"
+				>
+					<optgroup label="常用协议"
+						>{#each protocolDirectory.filter((p) => !p.extension) as protocol}<option
+								value={protocol.id}>{protocol.label}</option
+							>{/each}</optgroup
+					>
+					<optgroup label="扩展协议"
+						>{#each protocolDirectory.filter((p) => p.extension) as protocol}<option
+								value={protocol.id}
+								disabled={connectionEdit.transport === 'browser' && !protocol.browser_supported}
+								>{protocol.label}</option
+							>{/each}</optgroup
+					>
+				</SettingsSelect>
+			</label>
+			<ConnectionEndpointPreview
+				connection={connectionEdit}
+				protocol={connectionEdit.protocol}
+				settingsText={nativeSettings}
+				extraSettings={{ ...templateFields, auth: connectionAuth }}
+			/>
+			{#if connectionEdit.settings?.routing?.needs_review}<button
+					type="button"
+					class="text-xs text-blue-600 dark:text-blue-400"
+					on:click={() => {
+						connectionEdit.settings.routing = {
+							version: 1,
+							profile: connectionEdit.settings.routing.profile,
+							prefixes: {}
+						};
+						connectionEdit = { ...connectionEdit };
+					}}>改用自动路径规则并预览</button
+				>{/if}
+			<p class="text-xs text-gray-500">
+				接口模式决定请求格式，实际支持范围以服务商为准。请求失败不会自动切换模式。
+			</p>
+			{#each templateFieldsFor(connectionEdit) as field}
 				<label class="block space-y-1.5 text-xs text-gray-500"
 					>{field.label}
 					<input
@@ -685,11 +750,11 @@
 					/>
 				</div>
 			{/if}
-			<div class="flex items-center gap-4 text-xs text-gray-500">
+			<div class="flex items-center justify-between gap-4 text-xs text-gray-500">
 				<span>启用连接</span><Switch bind:state={connectionEdit.enabled} ariaLabel="启用连接" />
 			</div>
 			{#if $user?.role === 'admin' && connectionEdit.transport !== 'browser'}<div
-					class="flex items-center gap-4 text-xs text-gray-500"
+					class="flex items-center justify-between gap-4 text-xs text-gray-500"
 				>
 					<span>对其他用户共享</span><Switch
 						bind:state={connectionEdit.shared}
@@ -700,12 +765,6 @@
 				<summary class="cursor-pointer">高级选项</summary>
 				<div class="mt-3 space-y-3">
 					<label class="block space-y-1.5"
-						>接口模式<SettingsSelect bind:value={connectionEdit.protocol} className="w-full"
-							>{#each connectionProtocols(connectionEdit) as protocol}<option value={protocol}
-									>{protocolLabels[protocol]}</option
-								>{/each}</SettingsSelect
-						></label
-					><label class="block space-y-1.5"
 						>认证方式<SettingsSelect bind:value={connectionAuth} className="w-full">
 							<option value="bearer">Bearer Token</option><option value="x-api-key"
 								>x-api-key</option
@@ -834,6 +893,40 @@
 						/></label
 					>
 					{#if reasoningMode === 'budget'}
+						<label class="block space-y-1.5 text-xs text-gray-500"
+							>接口模式
+							<SettingsSelect
+								className="w-full"
+								bind:value={modelEdit.protocol_override}
+								ariaLabel="模型接口模式"
+							>
+								<option value=""
+									>继承连接 · {protocolLabels[modelConnection?.protocol] ||
+										modelConnection?.protocol}</option
+								>
+								<optgroup label="常用协议"
+									>{#each protocolDirectory.filter((p) => !p.extension) as protocol}<option
+											value={protocol.id}>{protocol.label}</option
+										>{/each}</optgroup
+								>
+								<optgroup label="扩展协议"
+									>{#each protocolDirectory.filter((p) => p.extension) as protocol}<option
+											value={protocol.id}
+											disabled={modelConnection?.transport === 'browser' &&
+												!protocol.browser_supported}>{protocol.label}</option
+										>{/each}</optgroup
+								>
+							</SettingsSelect>
+						</label>
+						<p class="text-xs text-gray-500">
+							实际模式：{protocolLabels[modelEdit.protocol_override || modelConnection?.protocol]} ·
+							{modelEdit.protocol_override ? '模型单独设置' : '跟随连接'}
+						</p>
+						<ConnectionEndpointPreview
+							connection={modelConnection}
+							protocol={modelEdit.protocol_override || modelConnection?.protocol}
+							model={modelEdit.upstream_id}
+						/>
 						<div class="grid grid-cols-2 gap-3">
 							<label class="space-y-1.5"
 								>最小预算<input
@@ -909,13 +1002,7 @@
 			<details class="text-xs text-gray-500">
 				<summary class="cursor-pointer">高级参数</summary>
 				<div class="mt-3 space-y-3">
-					<label class="block space-y-1.5"
-						>接口模式<SettingsSelect className="w-full" bind:value={modelEdit.protocol}
-							>{#each protocols as protocol}<option value={protocol}
-									>{protocolLabels[protocol]}</option
-								>{/each}</SettingsSelect
-						></label
-					><textarea
+					<textarea
 						aria-label="模型参数 JSON"
 						rows="7"
 						class={inputClass + ' font-mono text-xs'}

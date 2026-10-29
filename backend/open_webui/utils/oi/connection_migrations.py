@@ -1,5 +1,8 @@
 """Explicit versioned configuration migration. Preview never returns credentials."""
 
+from open_webui.utils.oi.endpoints import normalize_service_address
+from open_webui.utils.oi.protocol_registry import canonical_protocol
+
 import copy
 import hashlib
 import hmac
@@ -73,7 +76,7 @@ def source_entry(
             template = 'ollama'
         elif config.get('azure'):
             template = 'azure-openai'
-        elif url.rstrip('/') == catalog.get_template('openrouter')['base_url']:
+        elif url.rstrip('/') in {'https://openrouter.ai/api/v1', 'https://openrouter.ai/api'}:
             template = 'openrouter'
         else:
             template = 'openai-compatible'
@@ -383,7 +386,7 @@ async def apply(db, user, scope, version, choices):
                     409,
                     'Global configuration requires a shared server connection; private access is not expanded automatically',
                 )
-            if existing.protocol != item['protocol']:
+            if canonical_protocol(existing.protocol) != canonical_protocol(item['protocol']):
                 raise HTTPException(409, 'Target protocol does not match the source')
             prepared.append((choice, item, existing, []))
             continue
@@ -414,6 +417,10 @@ async def apply(db, user, scope, version, choices):
             created_at=now(),
             updated_at=now(),
         )
+        target.base_url, target.settings = normalize_service_address(
+            target.base_url, target.settings, target.protocol, target.template, legacy=True
+        )
+        target.protocol = canonical_protocol(target.protocol)
         models = [{'id': m} for m in item['models'] if isinstance(m, str) and m]
         if not models and item['transport'] == 'server' and item['enabled']:
             try:

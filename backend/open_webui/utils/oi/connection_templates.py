@@ -2,9 +2,11 @@
 
 from copy import deepcopy
 
-PROTOCOLS = {'openai-chat', 'openai-responses', 'anthropic', 'gemini', 'gemini-interactions', 'cpa-agy', 'ollama'}
+from open_webui.utils.oi.protocol_registry import PROTOCOLS, PROTOCOL_REGISTRY, canonical_protocol
+from open_webui.utils.oi.endpoints import normalize_service_address
+
 AUTH_TYPES = {'bearer', 'x-api-key', 'x-goog-api-key', 'api-key', 'none'}
-TEMPLATE_VERSION = 1
+TEMPLATE_VERSION = 2
 
 
 def template(id, name, protocol, base_url, auth='bearer', **options):
@@ -130,6 +132,19 @@ TEMPLATES = [
 ]
 
 
+# Templates seed independent persisted routing; their old protocol lists are only recommendations.
+for _item in TEMPLATES:
+    _item['recommended_protocols'] = list(dict.fromkeys(canonical_protocol(p) for p in _item['protocols']))
+    _item['protocols'] = list(PROTOCOL_REGISTRY)
+    _item['protocol'] = canonical_protocol(_item['protocol'])
+    _item['base_url'], _item['settings'] = normalize_service_address(
+        _item['base_url'], _item['settings'], _item['protocol'], _item['id']
+    )
+    for _field in _item['fields']:
+        if _item['id'] == 'azure-openai':
+            _field['protocols'] = ['openai-chat']
+
+
 def get_template(template_id):
     value = next((item for item in TEMPLATES if item['id'] == template_id), None)
     if value is None:
@@ -142,7 +157,9 @@ def connection_defaults(form, existing=None):
     selected = get_template(form.template)
     if existing is not None and existing.template != form.template:
         raise ValueError('Create a new connection to use a different template')
-    protocol = form.protocol or (existing.protocol if existing is not None else selected['protocol'])
+    protocol = canonical_protocol(
+        form.protocol or (existing.protocol if existing is not None else selected['protocol'])
+    )
     if protocol not in PROTOCOLS:
         raise ValueError('Unsupported protocol')
     base_url = (
@@ -150,18 +167,25 @@ def connection_defaults(form, existing=None):
         if form.base_url is not None
         else (existing.base_url if existing is not None else selected['base_url'])
     )
-    settings = deepcopy(
-        form.settings
-        if form.settings is not None
-        else (existing.settings if existing is not None else selected['settings'])
-    )
+    settings = deepcopy(existing.settings if existing is not None else selected['settings'])
+    if form.settings is not None:
+        settings.update(deepcopy(form.settings))
     if existing is None:
-        settings = {**selected['settings'], **settings, 'template_version': selected['version']}
+        settings['template_version'] = selected['version']
     elif 'template_version' in existing.settings:
         settings['template_version'] = existing.settings['template_version']
+    if existing is not None and base_url.rstrip('/') != existing.base_url.rstrip('/'):
+        routing = settings.get('routing') or {}
+        routing.pop('legacy_prefix', None)
+        routing.pop('needs_review', None)
+    base_url, settings = normalize_service_address(base_url, settings, protocol, form.template)
     if settings.get('auth', selected['auth']) not in AUTH_TYPES:
         raise ValueError('Unsupported authentication method')
     for field in selected['fields']:
-        if field.get('required') and not str(settings.get(field['key']) or '').strip():
+        if (
+            protocol in field.get('protocols', [protocol])
+            and field.get('required')
+            and not str(settings.get(field['key']) or '').strip()
+        ):
             raise ValueError(f'{field["label"]} is required')
     return {'protocol': protocol, 'base_url': base_url, 'settings': settings}

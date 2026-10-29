@@ -22,7 +22,9 @@ from open_webui.utils.oi.connection_templates import (
     get_template as get_template,
 )
 from open_webui.utils.oi.storage import identifier, now
-from open_webui.utils.oi.endpoints import api_base
+from open_webui.utils.oi.endpoints import resolve_endpoint, compatibility_profile
+from open_webui.utils.oi.selection import effective_protocol, snapshot_target
+from open_webui.utils.oi.protocol_registry import canonical_protocol
 from sqlalchemy import select
 
 
@@ -113,6 +115,22 @@ def binding_json(binding, connection):
             'aliases',
         )
     } | {
+        'protocol': effective_protocol(binding, connection),
+        'effective_protocol': effective_protocol(binding, connection),
+        'protocol_override': getattr(binding, 'protocol_override', None)
+        if (connection.settings or {}).get('routing')
+        else (
+            canonical_protocol(binding.protocol)
+            if canonical_protocol(binding.protocol) != canonical_protocol(connection.protocol)
+            else None
+        ),
+        'protocol_source': 'model'
+        if (
+            getattr(binding, 'protocol_override', None)
+            if (connection.settings or {}).get('routing')
+            else canonical_protocol(binding.protocol) != canonical_protocol(connection.protocol)
+        )
+        else 'connection',
         'connection_name': connection.name,
         'transport': getattr(connection, 'transport', None) or 'server',
         'capabilities': capabilities(binding),
@@ -152,13 +170,26 @@ async def resolve(db, reference, user, *, require_enabled=True):
     binding, connection = matches[0]
     if require_enabled and not (binding.enabled and binding.available and connection.enabled):
         raise ValueError('The selected connection or model is unavailable')
-    return binding, connection
+    return snapshot_target(binding, connection)
 
 
 def reasoning_controls(binding):
     reasoning = capabilities(binding).get('reasoning') or {}
     levels = reasoning.get('levels')
     parameter = reasoning.get('parameter')
+    mode = canonical_protocol(getattr(binding, 'protocol', ''))
+    family = (
+        'gemini'
+        if str(parameter).startswith('generationConfig.')
+        else 'anthropic'
+        if str(parameter).startswith(('thinking.', 'output_config.'))
+        else 'openai'
+        if str(parameter).startswith(('reasoning.', 'reasoning_effort'))
+        else None
+    )
+    current_family = 'openai' if mode in {'openai-chat', 'openai-responses'} else mode
+    if family and mode and family != current_family:
+        return {}  # Do not send the previous protocol's reasoning controls to the new endpoint.
     # A declared parameter is required: never guess a provider's wire semantics from its model name.
     if not parameter:
         return {}
@@ -228,6 +259,7 @@ async def model_catalog(db, user, *, internal=False):
             continue
         if not internal and not await binding_readable(db, binding, connection, user):
             continue
+        binding, connection = snapshot_target(binding, connection)
         caps = capabilities(binding)
         controls = {**(binding.params or {}).get('model_controls', {}), **reasoning_controls(binding)}
         result.append(
@@ -243,7 +275,7 @@ async def model_catalog(db, user, *, internal=False):
                 'connection': {
                     'id': connection.id,
                     'name': connection.name,
-                    'protocol': binding.protocol,
+                    'protocol': canonical_protocol(binding.protocol),
                     'transport': getattr(connection, 'transport', None) or 'server',
                 },
                 'direct': getattr(connection, 'transport', None) == 'browser',
@@ -289,13 +321,14 @@ def request_headers(connection, *, user_id=None, chat_id=None, protocol=None):
             headers[auth] = key
     if (protocol or connection.protocol) == 'anthropic':
         headers.setdefault('anthropic-version', '2023-06-01')
-    if (connection.template == 'cpa-agy' or protocol == 'cpa-agy') and user_id is not None:
-        if not chat_id:
-            raise ValueError('CPA requires a stable conversation ID before the first request')
+    if compatibility_profile(connection) == 'cpa-agy' or protocol == 'cpa-agy':
         for key in list(headers):
             if key.lower().startswith('x-rp-'):
                 del headers[key]
-        headers.update({'X-RP-Client': 'openwebui', 'X-RP-User-ID': user_id, 'X-RP-Chat-ID': chat_id})
+        if user_id is not None:
+            if not chat_id:
+                raise ValueError('CPA requires a stable conversation ID before the first request')
+            headers.update({'X-RP-Client': 'openwebui', 'X-RP-User-ID': user_id, 'X-RP-Chat-ID': chat_id})
     return headers
 
 
@@ -320,11 +353,11 @@ def _model_page(body, protocol):
 
 async def fetch_models(connection, transport=None):
     protocol = connection.protocol
-    path = '/api/tags' if protocol == 'ollama' else '/models'
+    url = resolve_endpoint(connection, protocol, 'models')
     params, cursors, models = {}, set(), []
     async with httpx.AsyncClient(trust_env=True, timeout=30, transport=transport) as client:
         for _ in range(100):
-            response = await client.get(api_base(connection) + path, params=params, headers=request_headers(connection))
+            response = await client.get(url, params=params, headers=request_headers(connection))
             response.raise_for_status()
             page, cursor = _model_page(response.json(), protocol)
             models.extend(page)
@@ -390,33 +423,40 @@ async def discover(db, connection, transport=None):
 
 
 async def apply_discovered_models(db, connection, models):
-    protocol = connection.protocol
+    from sqlalchemy import update
+
+    # A write lock also serializes SQLite; PostgreSQL holds it until commit.
+    await db.execute(update(Connection).where(Connection.id == connection.id).values(updated_at=Connection.updated_at))
+    protocol = canonical_protocol(connection.protocol)
     seen, result = set(), []
     for model in models:
         upstream = model.get('id') or model.get('name') or model.get('model')
         if not isinstance(upstream, str) or not upstream:
             raise ValueError('The provider returned a model without an ID')
-        if protocol.startswith('gemini') or protocol == 'cpa-agy':
+        if protocol.startswith('gemini'):
             upstream = upstream.removeprefix('models/')
         if upstream in seen:
             continue
         seen.add(upstream)
-        row = (
-            await db.execute(
-                select(ModelBinding).where(
-                    ModelBinding.connection_id == connection.id,
-                    ModelBinding.upstream_id == upstream,
-                    ModelBinding.protocol == protocol,
+        existing = (
+            (
+                await db.execute(
+                    select(ModelBinding).where(
+                        ModelBinding.connection_id == connection.id, ModelBinding.upstream_id == upstream
+                    )
                 )
             )
-        ).scalar_one_or_none()
+            .scalars()
+            .all()
+        )
         discovered = discovered_capabilities(model)
-        if row is None:
+        if not existing:
             row = ModelBinding(
                 id='oi:' + identifier(),
                 connection_id=connection.id,
                 upstream_id=upstream,
                 protocol=protocol,
+                protocol_override=None,
                 name=model.get('displayName') or model.get('display_name') or model.get('name') or upstream,
                 enabled=False,
                 available=True,
@@ -427,15 +467,16 @@ async def apply_discovered_models(db, connection, models):
                 updated_at=now(),
             )
             db.add(row)
-        else:
+            existing = [row]
+        for row in existing:
             old = row.capabilities or {}
             row.capabilities = {**old, 'discovered': discovered, 'overrides': old.get('overrides', {})}
             row.available = True
             row.updated_at = now()
-        result.append(row)
+            result.append(row)
     # Only a successful discovery can mark an absent model unavailable; never delete user overrides.
     for row in (await db.execute(select(ModelBinding).where(ModelBinding.connection_id == connection.id))).scalars():
-        if row.protocol == protocol and row.upstream_id not in seen and not (row.capabilities or {}).get('manual'):
+        if row.upstream_id not in seen and not (row.capabilities or {}).get('manual'):
             row.available = False
     await db.flush()
     return result

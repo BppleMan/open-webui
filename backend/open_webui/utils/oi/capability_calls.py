@@ -14,6 +14,7 @@ from open_webui.internal.db import get_async_db
 from open_webui.utils.models import check_model_access
 from open_webui.utils.oi import catalog, runtime
 from open_webui.utils.oi.model_targets import resolve_native_target
+from open_webui.utils.oi.endpoints import resolve_endpoint
 from starlette.responses import Response
 
 OPENAI = {'openai-chat', 'openai-responses'}
@@ -68,15 +69,12 @@ async def target_for(reference, capability, user=None):
 
 
 def endpoint(target, path):
-    connection = target.connection
-    base = connection.base_url.rstrip('/')
-    if connection.template == 'azure-openai':
-        deployment = quote(connection.settings.get('deployment') or target.binding.upstream_id, safe='')
-        version = quote(connection.settings.get('api_version') or '', safe='')
-        if not version:
-            raise HTTPException(422, 'Azure requires an explicit API version')
-        return f'{base}/openai/deployments/{deployment}{path}?api-version={version}'
-    return base + path
+    try:
+        return resolve_endpoint(
+            target.connection, target.binding.protocol, 'capability', model=target.binding.upstream_id, path=path
+        )
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
 
 
 def parameters(target, capability):

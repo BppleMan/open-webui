@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "preview_tuning_R51_R52_verified_production_held",
+  "phase": "protocol_decoupling_R53_in_progress",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -41,13 +41,15 @@
         "R32",
         "R33",
         "R51",
-        "R52"
+        "R52",
+        "R53"
       ],
       "prototypes": [
         "P01",
         "P20",
         "P36",
-        "P37"
+        "P37",
+        "P38"
       ],
       "priority": "P1",
       "status": "verified",
@@ -96,7 +98,12 @@
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
       },
-      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
+      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol",
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
+      }
     },
     {
       "id": "F02",
@@ -105,12 +112,14 @@
         "R02",
         "R09",
         "R31",
-        "R51"
+        "R51",
+        "R53"
       ],
       "prototypes": [
         "P02",
         "P19",
-        "P36"
+        "P36",
+        "P38"
       ],
       "priority": "P1",
       "status": "verified",
@@ -150,6 +159,11 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
+      },
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
       }
     },
     {
@@ -158,12 +172,14 @@
       "requirements": [
         "R03",
         "R47",
-        "R51"
+        "R51",
+        "R53"
       ],
       "prototypes": [
         "P03",
         "P32",
-        "P36"
+        "P36",
+        "P38"
       ],
       "priority": "P1",
       "status": "verified",
@@ -199,6 +215,11 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
+      },
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
       }
     },
     {
@@ -232,10 +253,12 @@
       "id": "F05",
       "title": "自动生成推理滑杆",
       "requirements": [
-        "R05"
+        "R05",
+        "R53"
       ],
       "prototypes": [
-        "P05"
+        "P05",
+        "P38"
       ],
       "priority": "P1",
       "status": "verified",
@@ -266,6 +289,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
       }
     },
     {
@@ -274,11 +302,13 @@
       "requirements": [
         "R06",
         "R07",
-        "R47"
+        "R47",
+        "R53"
       ],
       "prototypes": [
         "P06",
-        "P32"
+        "P32",
+        "P38"
       ],
       "priority": "P1",
       "status": "verified",
@@ -318,6 +348,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
       }
     },
     {
@@ -368,12 +403,14 @@
       "requirements": [
         "R10",
         "R51",
-        "R52"
+        "R52",
+        "R53"
       ],
       "prototypes": [
         "P08",
         "P36",
-        "P37"
+        "P37",
+        "P38"
       ],
       "priority": "P1",
       "status": "verified",
@@ -414,7 +451,12 @@
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
       },
-      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
+      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol",
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
+      }
     },
     {
       "id": "F09",
@@ -614,13 +656,15 @@
         "R32",
         "R33",
         "R35",
-        "R51"
+        "R51",
+        "R53"
       ],
       "prototypes": [
         "P13",
         "P20",
         "P22",
-        "P36"
+        "P36",
+        "P38"
       ],
       "priority": "P1",
       "status": "verified",
@@ -739,6 +783,11 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
+      },
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
       }
     },
     {
@@ -750,13 +799,15 @@
         "R32",
         "R33",
         "R51",
-        "R52"
+        "R52",
+        "R53"
       ],
       "prototypes": [
         "P14",
         "P20",
         "P36",
-        "P37"
+        "P37",
+        "P38"
       ],
       "priority": "P1",
       "status": "verified",
@@ -816,7 +867,12 @@
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
       },
-      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol"
+      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol",
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
+      }
     },
     {
       "id": "F15",
@@ -933,12 +989,14 @@
       "requirements": [
         "R24",
         "R34",
-        "R51"
+        "R51",
+        "R53"
       ],
       "prototypes": [
         "P16",
         "P21",
-        "P36"
+        "P36",
+        "P38"
       ],
       "priority": "P1",
       "status": "verified",
@@ -978,6 +1036,11 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
+      },
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
       }
     },
     {
@@ -1056,12 +1119,14 @@
         "R29",
         "R30",
         "R50",
-        "R51"
+        "R51",
+        "R53"
       ],
       "prototypes": [
         "P18",
         "P35",
-        "P36"
+        "P36",
+        "P38"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1173,6 +1238,11 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
+      },
+      "protocol_decoupling_R53": {
+        "implementation": "in_progress",
+        "verification": "pending",
+        "deployment": "not_deployed; R50 production hold"
       }
     }
   ],

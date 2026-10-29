@@ -8,6 +8,7 @@ from uuid import NAMESPACE_URL, uuid4, uuid5
 from fastapi import HTTPException
 from open_webui.internal.db import get_async_db
 from open_webui.utils.oi import accounting, catalog
+from open_webui.utils.oi.endpoints import api_base, compatibility_profile
 from open_webui.utils.oi.capability_calls import OPENAI, target_for
 
 
@@ -16,8 +17,12 @@ async def connection(config, user, chat_id):
     transcription, _ = await target_for(config['audio.realtime.transcription_model'], 'stt', user)
     if voice.binding.protocol not in OPENAI or transcription.connection.id != voice.connection.id:
         raise HTTPException(422, 'Realtime and transcription models must use the same compatible connection')
-    url = urlsplit(voice.connection.base_url)
-    if voice.connection.template == 'azure-openai':
+    url = urlsplit(
+        voice.connection.base_url
+        if compatibility_profile(voice.connection) == 'azure-openai'
+        else api_base(voice.connection, voice.binding.protocol)
+    )
+    if compatibility_profile(voice.connection) == 'azure-openai':
         settings = voice.connection.settings
         if not settings.get('api_version'):
             raise HTTPException(422, 'Azure Realtime requires an explicit API version')
@@ -95,7 +100,9 @@ class CallLedger:
                 usage['finish'] = ending
             actual = None
             connection = entry['target'].connection
-            if raw and (connection.template == 'openrouter' or connection.settings.get('cost_currency') == 'USD'):
+            if raw and (
+                compatibility_profile(connection) == 'openrouter' or connection.settings.get('cost_currency') == 'USD'
+            ):
                 try:
                     if raw.get('cost') is not None:
                         actual = accounting.money(raw['cost'])

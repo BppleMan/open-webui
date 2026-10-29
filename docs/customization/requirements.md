@@ -133,3 +133,7 @@ Remove redundant model subtitles, limit each connection's expanded model list to
 
 ## R52 — Distinguish CPA gateway, client protocol and upstream channel
 The CPA/AGY template uses native Gemini; use a /v1beta API base for new connections. Its legacy /v1 input compatibility must not rewrite explicit OpenAI Chat/Responses or Anthropic Messages requests. CPA is a gateway and AGY is an upstream channel, independent of the client-facing protocol. A registered endpoint alone is not proof that every upstream/model supports it. R50 still applies.
+
+
+## R53 — Protocol decoupling and compact connection management
+Implement the approved protocol-decoupling plan: unrestricted common protocol selection, connection defaults with model overrides, one shared service root/key/auth, automatic protocol paths, server and browser parity, stable identities and native-history compatibility. Compact enabled-first model lists and right-aligned switches. This supersedes R52's manual /v1beta entry: service addresses no longer require protocol prefixes. R50 production hold remains. Corresponds to P38.
