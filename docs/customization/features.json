@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "R54_context_popover_verified_user_tuning",
+  "phase": "R55_model_editor_refinement_in_progress",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -115,14 +115,16 @@
         "R31",
         "R51",
         "R53",
-        "R54"
+        "R54",
+        "R55"
       ],
       "prototypes": [
         "P02",
         "P19",
         "P36",
         "P38",
-        "P39"
+        "P39",
+        "P40"
       ],
       "priority": "P1",
       "status": "verified",
@@ -175,6 +177,11 @@
         "verification": "native_wheel_both_ends_placement_resize_keyboard_outside_dismissal_and_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "context-popover-acceptance.json"
+      },
+      "model_editor_R55": {
+        "implementation": "implemented",
+        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     },
     {
@@ -625,11 +632,13 @@
       "title": "需求原型 Feature 三层记录",
       "requirements": [
         "R15",
-        "R54"
+        "R54",
+        "R55"
       ],
       "prototypes": [
         "P12",
-        "P39"
+        "P39",
+        "P40"
       ],
       "priority": "P0",
       "status": "verified",
@@ -678,6 +687,11 @@
         "verification": "native_wheel_both_ends_placement_resize_keyboard_outside_dismissal_and_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "context-popover-acceptance.json"
+      },
+      "model_editor_R55": {
+        "implementation": "implemented",
+        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     },
     {
@@ -690,14 +704,16 @@
         "R33",
         "R35",
         "R51",
-        "R53"
+        "R53",
+        "R55"
       ],
       "prototypes": [
         "P13",
         "P20",
         "P22",
         "P36",
-        "P38"
+        "P38",
+        "P40"
       ],
       "priority": "P1",
       "status": "verified",
@@ -822,6 +838,11 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "model_editor_R55": {
+        "implementation": "implemented",
+        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     },
     {
@@ -834,14 +855,16 @@
         "R33",
         "R51",
         "R52",
-        "R53"
+        "R53",
+        "R55"
       ],
       "prototypes": [
         "P14",
         "P20",
         "P36",
         "P37",
-        "P38"
+        "P38",
+        "P40"
       ],
       "priority": "P1",
       "status": "verified",
@@ -907,6 +930,11 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "model_editor_R55": {
+        "implementation": "implemented",
+        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     },
     {
@@ -1025,13 +1053,15 @@
         "R24",
         "R34",
         "R51",
-        "R53"
+        "R53",
+        "R55"
       ],
       "prototypes": [
         "P16",
         "P21",
         "P36",
-        "P38"
+        "P38",
+        "P40"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1077,6 +1107,11 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "model_editor_R55": {
+        "implementation": "implemented",
+        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     },
     {
@@ -1157,14 +1192,16 @@
         "R50",
         "R51",
         "R53",
-        "R54"
+        "R54",
+        "R55"
       ],
       "prototypes": [
         "P18",
         "P35",
         "P36",
         "P38",
-        "P39"
+        "P39",
+        "P40"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1289,6 +1326,11 @@
         "verification": "native_wheel_both_ends_placement_resize_keyboard_outside_dismissal_and_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "context-popover-acceptance.json"
+      },
+      "model_editor_R55": {
+        "implementation": "implemented",
+        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     }
   ],

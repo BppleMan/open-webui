@@ -41,7 +41,11 @@
 	let showMigration = false;
 	let showRemoved = false;
 	const inputClass =
-		'w-full min-w-0 rounded-lg border border-gray-100/50 bg-gray-50/40 px-2.5 py-2 text-sm text-gray-700 outline-hidden transition-colors focus:border-blue-400 dark:border-white/[0.04] dark:bg-white/[0.03] dark:text-gray-200 dark:focus:border-blue-500';
+		'w-full min-w-0 rounded-lg border border-gray-100/50 bg-gray-50/40 px-2.5 text-xs text-gray-700 outline-hidden transition-colors focus:border-blue-400 dark:border-white/[0.04] dark:bg-white/[0.03] dark:text-gray-200 dark:focus:border-blue-500';
+	const singleLineClass = inputClass + ' h-7 py-0';
+	const textAreaClass = inputClass + ' resize-y py-2 font-mono';
+	const editorClass =
+		'flex h-[min(44rem,calc(100dvh-3rem))] flex-col overflow-hidden rounded-3xl bg-white dark:bg-gray-900';
 	const iconClass =
 		'focus-ring flex size-7 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-black/5 hover:text-gray-700 disabled:opacity-40 dark:text-gray-500 dark:hover:bg-white/5 dark:hover:text-gray-200';
 	const primaryClass =
@@ -381,7 +385,7 @@
 				aria-label="搜索连接或模型"
 				bind:value={search}
 				placeholder="搜索连接或模型"
-				class={inputClass + ' pl-9'}
+				class={singleLineClass + ' pl-9'}
 			/>
 		</div>{/if}
 	<div class="space-y-0">
@@ -463,7 +467,10 @@
 					{/if}
 				</div>
 				{#if expanded.has(connection.id) || search.trim()}
-					<div class="ml-11 mt-1 border-l border-gray-100 pl-4 dark:border-white/5">
+					<div
+						class="mt-1 w-full min-w-0 rounded-xl bg-gray-50/60 px-2 dark:bg-white/[0.025]"
+						data-testid="connection-model-region"
+					>
 						<div
 							class="max-h-[12.5rem] sm:max-h-40 overflow-y-auto overscroll-contain"
 							role="list"
@@ -587,7 +594,7 @@
 			<p class="mb-4 text-xs text-gray-500">选择模板，配置接口地址和凭据，再添加模型。</p>
 			<input
 				aria-label="搜索连接模板"
-				class={inputClass}
+				class={singleLineClass}
 				placeholder="搜索连接模板"
 				bind:value={templateSearch}
 			/>
@@ -611,8 +618,14 @@
 	</Modal>
 {/if}
 {#if connectionEdit}
-	<Modal show size="sm" ariaLabel="编辑连接" onRequestClose={() => (connectionEdit = null)}>
-		<div class="flex items-center justify-between px-5 pb-2 pt-4">
+	<Modal
+		show
+		size="sm"
+		ariaLabel="编辑连接"
+		className={editorClass}
+		onRequestClose={() => (connectionEdit = null)}
+	>
+		<div class="flex shrink-0 items-center justify-between px-5 pb-3 pt-4">
 			<h2 class="text-lg font-medium">{connectionEdit.id ? '编辑连接' : '新增连接'}</h2>
 			<button
 				type="button"
@@ -622,179 +635,200 @@
 			>
 		</div>
 		<form
-			class="max-h-[78dvh] space-y-4 overflow-y-auto px-5 pb-5"
+			class="flex min-h-0 flex-1 flex-col"
+			data-testid="connection-editor-form"
 			on:submit|preventDefault={saveConnection}
 		>
-			<div class="flex items-center justify-between gap-3 text-xs text-gray-400 dark:text-gray-500">
-				<span>{templateName(connectionEdit)}</span>
-				{#if !connectionEdit.id}<button
-						type="button"
-						class="hover:text-gray-700 dark:hover:text-gray-200"
-						disabled={busy}
-						on:click={() => {
-							connectionEdit = null;
-							chooseTemplate = true;
-						}}>更换模板</button
-					>{/if}
-			</div>
-			<label class="block space-y-1.5 text-xs text-gray-500"
-				>连接名称<input required bind:value={connectionEdit.name} class={inputClass} /></label
+			<div
+				class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 pb-4"
+				style="scrollbar-gutter: stable;"
+				data-testid="connection-editor-body"
 			>
-			<label class="block space-y-1.5 text-xs text-gray-500"
-				>请求执行位置
-				<SettingsSelect
-					className="w-full"
-					ariaLabel="请求执行位置"
-					bind:value={connectionEdit.transport}
-					disabled={!!connectionEdit.id}
-					on:change={() => {
-						if (connectionEdit.transport === 'browser') connectionEdit.shared = false;
-					}}
+				<div
+					class="flex items-center justify-between gap-3 text-xs text-gray-400 dark:text-gray-500"
 				>
-					<option value="server">服务器</option><option
-						value="browser"
-						disabled={!protocolDirectory.find((p) => p.id === connectionEdit.protocol)
-							?.browser_supported}>浏览器直连</option
-					>
-				</SettingsSelect>
-			</label>
-			{#if connectionEdit.id && connectionEdit.transport === 'browser'}<button
-					type="button"
-					class="text-xs text-blue-600"
-					disabled={busy}
-					on:click={() =>
-						run(async () => {
-							const copied = await oiApi(`/connections/${connectionEdit.id}/server-copy`, 'POST', {
-								revision: connectionEdit.revision,
-								request_id: crypto.randomUUID()
-							});
-							expanded = new Set([...expanded, copied.connection_id]);
-							connectionEdit = null;
-							toast.success('已验证服务器可达并创建个人连接，原直连保留');
-						})}>验证并复制为服务器个人连接</button
-				>{/if}
-			<label class="block space-y-1.5 text-xs text-gray-500"
-				>服务地址<input
-					required
-					type="url"
-					bind:value={connectionEdit.base_url}
-					class={inputClass}
-					placeholder="https://example.com"
-					aria-describedby="service-address-hint"
-				/></label
-			>
-			<p id="service-address-hint" class="text-xs text-gray-500">
-				填写服务根地址，接口模式会自动生成 /v1、/v1beta 等路径。
-			</p>
-			<label class="block space-y-1.5 text-xs text-gray-500"
-				>接口模式
-				<SettingsSelect
-					bind:value={connectionEdit.protocol}
-					className="w-full"
-					ariaLabel="连接接口模式"
+					<span>{templateName(connectionEdit)}</span>
+					{#if !connectionEdit.id}<button
+							type="button"
+							class="hover:text-gray-700 dark:hover:text-gray-200"
+							disabled={busy}
+							on:click={() => {
+								connectionEdit = null;
+								chooseTemplate = true;
+							}}>更换模板</button
+						>{/if}
+				</div>
+				<label class="block space-y-1 text-xs text-gray-500"
+					>连接名称<input
+						required
+						bind:value={connectionEdit.name}
+						class={singleLineClass}
+					/></label
 				>
-					<optgroup label="常用协议"
-						>{#each protocolDirectory.filter((p) => !p.extension) as protocol}<option
-								value={protocol.id}>{protocol.label}</option
-							>{/each}</optgroup
+				<label class="block space-y-1 text-xs text-gray-500"
+					>请求执行位置
+					<SettingsSelect
+						className="w-full"
+						ariaLabel="请求执行位置"
+						bind:value={connectionEdit.transport}
+						disabled={!!connectionEdit.id}
+						on:change={() => {
+							if (connectionEdit.transport === 'browser') connectionEdit.shared = false;
+						}}
 					>
-					<optgroup label="扩展协议"
-						>{#each protocolDirectory.filter((p) => p.extension) as protocol}<option
-								value={protocol.id}
-								disabled={connectionEdit.transport === 'browser' && !protocol.browser_supported}
-								>{protocol.label}</option
-							>{/each}</optgroup
-					>
-				</SettingsSelect>
-			</label>
-			<ConnectionEndpointPreview
-				connection={connectionEdit}
-				protocol={connectionEdit.protocol}
-				settingsText={nativeSettings}
-				extraSettings={{ ...templateFields, auth: connectionAuth }}
-			/>
-			{#if connectionEdit.settings?.routing?.needs_review}<button
-					type="button"
-					class="text-xs text-blue-600 dark:text-blue-400"
-					on:click={() => {
-						connectionEdit.settings.routing = {
-							version: 1,
-							profile: connectionEdit.settings.routing.profile,
-							prefixes: {}
-						};
-						connectionEdit = { ...connectionEdit };
-					}}>改用自动路径规则并预览</button
-				>{/if}
-			<p class="text-xs text-gray-500">
-				接口模式决定请求格式，实际支持范围以服务商为准。请求失败不会自动切换模式。
-			</p>
-			{#each templateFieldsFor(connectionEdit) as field}
-				<label class="block space-y-1.5 text-xs text-gray-500"
-					>{field.label}
-					<input
-						required={field.required}
-						placeholder={field.placeholder}
-						bind:value={templateFields[field.key]}
-						class={inputClass}
-					/>
+						<option value="server">服务器</option><option
+							value="browser"
+							disabled={!protocolDirectory.find((p) => p.id === connectionEdit.protocol)
+								?.browser_supported}>浏览器直连</option
+						>
+					</SettingsSelect>
 				</label>
-			{/each}
-			{#if connectionAuth !== 'none'}<div class="space-y-1.5 text-xs text-gray-500">
-					<span>API Key</span><SensitiveInput
-						type="password"
-						required={false}
-						autocomplete="new-password"
-						bind:value={apiKey}
-						placeholder={connectionEdit.has_credentials ? '留空保留原凭据' : '输入 API Key'}
-						outerClassName={inputClass + ' flex'}
-					/>
-				</div>
-			{/if}
-			<div class="flex items-center justify-between gap-4 text-xs text-gray-500">
-				<span>启用连接</span><Switch bind:state={connectionEdit.enabled} ariaLabel="启用连接" />
-			</div>
-			{#if $user?.role === 'admin' && connectionEdit.transport !== 'browser'}<div
-					class="flex items-center justify-between gap-4 text-xs text-gray-500"
+				{#if connectionEdit.id && connectionEdit.transport === 'browser'}<button
+						type="button"
+						class="text-xs text-blue-600"
+						disabled={busy}
+						on:click={() =>
+							run(async () => {
+								const copied = await oiApi(
+									`/connections/${connectionEdit.id}/server-copy`,
+									'POST',
+									{
+										revision: connectionEdit.revision,
+										request_id: crypto.randomUUID()
+									}
+								);
+								expanded = new Set([...expanded, copied.connection_id]);
+								connectionEdit = null;
+								toast.success('已验证服务器可达并创建个人连接，原直连保留');
+							})}>验证并复制为服务器个人连接</button
+					>{/if}
+				<label class="block space-y-1 text-xs text-gray-500"
+					>服务地址<input
+						required
+						type="url"
+						bind:value={connectionEdit.base_url}
+						class={singleLineClass}
+						placeholder="https://example.com"
+						aria-describedby="service-address-hint"
+					/></label
 				>
-					<span>对其他用户共享</span><Switch
-						bind:state={connectionEdit.shared}
-						ariaLabel="共享连接"
-					/>
-				</div>{/if}
-			<details class="text-xs text-gray-500">
-				<summary class="cursor-pointer">高级选项</summary>
-				<div class="mt-3 space-y-3">
-					<label class="block space-y-1.5"
-						>认证方式<SettingsSelect bind:value={connectionAuth} className="w-full">
-							<option value="bearer">Bearer Token</option><option value="x-api-key"
-								>x-api-key</option
-							>
-							<option value="x-goog-api-key">x-goog-api-key</option><option value="api-key"
-								>api-key</option
-							><option value="none">无需认证</option>
-						</SettingsSelect></label
-					><label class="block space-y-1.5"
-						>自定义请求头<textarea
-							aria-label="自定义请求头 JSON"
-							class={inputClass + ' font-mono text-xs'}
-							rows="3"
-							bind:value={customHeaders}
-							placeholder={'留空保留现有请求头；{} 清空'}
-							autocomplete="off"
-						></textarea><span class="text-xs text-gray-500"
-							>加密保存；不会在普通连接列表中回显。</span
-						></label
-					><label class="block space-y-1.5"
-						>连接选项<textarea
-							aria-label="连接选项 JSON"
-							class={inputClass + ' font-mono text-xs'}
-							rows="5"
-							bind:value={nativeSettings}
-						></textarea></label
+				<p id="service-address-hint" class="text-xs text-gray-500">
+					填写服务根地址，接口模式会自动生成 /v1、/v1beta 等路径。
+				</p>
+				<label class="block space-y-1 text-xs text-gray-500"
+					>接口模式
+					<SettingsSelect
+						bind:value={connectionEdit.protocol}
+						className="w-full"
+						ariaLabel="连接接口模式"
 					>
+						<optgroup label="常用协议"
+							>{#each protocolDirectory.filter((p) => !p.extension) as protocol}<option
+									value={protocol.id}>{protocol.label}</option
+								>{/each}</optgroup
+						>
+						<optgroup label="扩展协议"
+							>{#each protocolDirectory.filter((p) => p.extension) as protocol}<option
+									value={protocol.id}
+									disabled={connectionEdit.transport === 'browser' && !protocol.browser_supported}
+									>{protocol.label}</option
+								>{/each}</optgroup
+						>
+					</SettingsSelect>
+				</label>
+				<ConnectionEndpointPreview
+					connection={connectionEdit}
+					protocol={connectionEdit.protocol}
+					settingsText={nativeSettings}
+					extraSettings={{ ...templateFields, auth: connectionAuth }}
+				/>
+				{#if connectionEdit.settings?.routing?.needs_review}<button
+						type="button"
+						class="text-xs text-blue-600 dark:text-blue-400"
+						on:click={() => {
+							connectionEdit.settings.routing = {
+								version: 1,
+								profile: connectionEdit.settings.routing.profile,
+								prefixes: {}
+							};
+							connectionEdit = { ...connectionEdit };
+						}}>改用自动路径规则并预览</button
+					>{/if}
+				<p class="text-xs text-gray-500">
+					接口模式决定请求格式，实际支持范围以服务商为准。请求失败不会自动切换模式。
+				</p>
+				{#each templateFieldsFor(connectionEdit) as field}
+					<label class="block space-y-1 text-xs text-gray-500"
+						>{field.label}
+						<input
+							required={field.required}
+							placeholder={field.placeholder}
+							bind:value={templateFields[field.key]}
+							class={singleLineClass}
+						/>
+					</label>
+				{/each}
+				{#if connectionAuth !== 'none'}<div class="space-y-1 text-xs text-gray-500">
+						<span>API Key</span><SensitiveInput
+							type="password"
+							required={false}
+							autocomplete="new-password"
+							bind:value={apiKey}
+							placeholder={connectionEdit.has_credentials ? '留空保留原凭据' : '输入 API Key'}
+							variant="settings"
+							outerClassName="flex w-full"
+						/>
+					</div>
+				{/if}
+				<div class="flex items-center justify-between gap-4 text-xs text-gray-500">
+					<span>启用连接</span><Switch bind:state={connectionEdit.enabled} ariaLabel="启用连接" />
 				</div>
-			</details>
-			<div class="flex justify-end gap-2 pt-1">
+				{#if $user?.role === 'admin' && connectionEdit.transport !== 'browser'}<div
+						class="flex items-center justify-between gap-4 text-xs text-gray-500"
+					>
+						<span>对其他用户共享</span><Switch
+							bind:state={connectionEdit.shared}
+							ariaLabel="共享连接"
+						/>
+					</div>{/if}
+				<details class="text-xs text-gray-500">
+					<summary class="cursor-pointer">高级选项</summary>
+					<div class="mt-3 space-y-3">
+						<label class="block space-y-1"
+							>认证方式<SettingsSelect bind:value={connectionAuth} className="w-full">
+								<option value="bearer">Bearer Token</option><option value="x-api-key"
+									>x-api-key</option
+								>
+								<option value="x-goog-api-key">x-goog-api-key</option><option value="api-key"
+									>api-key</option
+								><option value="none">无需认证</option>
+							</SettingsSelect></label
+						><label class="block space-y-1"
+							>自定义请求头<textarea
+								aria-label="自定义请求头 JSON"
+								class={textAreaClass}
+								rows="3"
+								bind:value={customHeaders}
+								placeholder={'留空保留现有请求头；{} 清空'}
+								autocomplete="off"
+							></textarea><span class="text-xs text-gray-500"
+								>加密保存；不会在普通连接列表中回显。</span
+							></label
+						><label class="block space-y-1"
+							>连接选项<textarea
+								aria-label="连接选项 JSON"
+								class={textAreaClass}
+								rows="5"
+								bind:value={nativeSettings}
+							></textarea></label
+						>
+					</div>
+				</details>
+			</div>
+			<div
+				class="flex shrink-0 justify-end gap-2 border-t border-gray-100 px-5 py-3 dark:border-white/5"
+				data-testid="connection-editor-footer"
+			>
 				<button
 					type="button"
 					class="rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-black/5 dark:hover:bg-white/5"
@@ -805,8 +839,14 @@
 	</Modal>
 {/if}
 {#if modelEdit}
-	<Modal show size="md" ariaLabel="配置模型" onRequestClose={() => (modelEdit = null)}>
-		<div class="flex items-center justify-between px-5 pb-2 pt-4">
+	<Modal
+		show
+		size="md"
+		ariaLabel="配置模型"
+		className={editorClass}
+		onRequestClose={() => (modelEdit = null)}
+	>
+		<div class="flex shrink-0 items-center justify-between px-5 pb-3 pt-4">
 			<h2 class="text-lg font-medium">配置模型</h2>
 			<button
 				type="button"
@@ -816,201 +856,223 @@
 			>
 		</div>
 		<form
-			class="max-h-[78dvh] space-y-4 overflow-y-auto px-5 pb-5"
+			class="flex min-h-0 flex-1 flex-col"
+			data-testid="model-editor-form"
 			on:submit|preventDefault={saveModel}
 		>
-			<p class="text-xs text-gray-400 dark:text-gray-500">
-				{connections.find((c) => c.id === modelEdit.connection_id)?.name}
-			</p>
-			<div class="grid gap-4 sm:grid-cols-2">
-				<label class="space-y-1.5 text-xs text-gray-500"
-					>显示名称<input class={inputClass} required bind:value={modelEdit.name} /></label
-				><label class="space-y-1.5 text-xs text-gray-500"
-					>{connections.find((c) => c.id === modelEdit.connection_id)?.template === 'azure-openai'
-						? '部署名称'
-						: '上游模型 ID'}<input
-						class={inputClass}
-						required
-						bind:value={modelEdit.upstream_id}
-					/></label
-				>
-			</div>
-			<label class="block space-y-1.5 text-xs text-gray-500"
-				>接口模式
-				<SettingsSelect
-					className="w-full"
-					bind:value={modelEdit.protocol_override}
-					ariaLabel="模型接口模式"
-				>
-					<option value=""
-						>继承连接 · {protocolLabels[modelConnection?.protocol] ||
-							modelConnection?.protocol}</option
-					>
-					<optgroup label="常用协议"
-						>{#each protocolDirectory.filter((p) => !p.extension) as protocol}<option
-								value={protocol.id}>{protocol.label}</option
-							>{/each}</optgroup
-					>
-					<optgroup label="扩展协议"
-						>{#each protocolDirectory.filter((p) => p.extension) as protocol}<option
-								value={protocol.id}
-								disabled={modelConnection?.transport === 'browser' && !protocol.browser_supported}
-								>{protocol.label}</option
-							>{/each}</optgroup
-					>
-				</SettingsSelect>
-			</label>
-			<p class="text-xs text-gray-500">
-				实际模式：{protocolLabels[modelEdit.protocol_override || modelConnection?.protocol]} ·
-				{modelEdit.protocol_override ? '模型单独设置' : '跟随连接'}
-			</p>
-			<ConnectionEndpointPreview
-				connection={modelConnection}
-				protocol={modelEdit.protocol_override || modelConnection?.protocol}
-				model={modelEdit.upstream_id}
-			/>
-			<div class="grid gap-4 sm:grid-cols-2">
-				<label class="space-y-1.5 text-xs text-gray-500"
-					>输入窗口<input
-						class={inputClass}
-						type="number"
-						min="1"
-						bind:value={modelEdit.capabilities.input_limit}
-						placeholder="未知"
-					/></label
-				><label class="space-y-1.5 text-xs text-gray-500"
-					>最大输出<input
-						class={inputClass}
-						type="number"
-						min="1"
-						bind:value={modelEdit.capabilities.output_limit}
-						placeholder="未知"
-					/></label
-				>
-			</div>
-			<details class="text-xs text-gray-500">
-				<summary class="cursor-pointer">模型能力</summary>
-				<div class="mt-3 grid grid-cols-2 gap-x-6 gap-y-3">
-					{#each capabilities as capability}<div class="flex items-center justify-between gap-4">
-							<span>{capability}</span><Switch
-								state={modelEdit.capabilities[capability] === true}
-								ariaLabel={capability}
-								on:change={(e) => (modelEdit.capabilities[capability] = e.detail)}
-							/>
-						</div>{/each}
-				</div>
-				<p class="mt-3 text-[0.6875rem] text-gray-400">仅开启已确认支持的能力。</p>
-			</details>
-			<details class="text-xs text-gray-500">
-				<summary class="cursor-pointer">推理控件</summary>
-				<div class="mt-3 space-y-3">
-					<label class="block space-y-1.5"
-						>控件类型<SettingsSelect className="w-full" bind:value={reasoningMode}>
-							<option value="levels">推理强度档位</option><option value="budget"
-								>推理 token 预算</option
-							>
-						</SettingsSelect></label
-					>
-					<label class="block space-y-1.5"
-						>参数路径<input
-							class={inputClass}
-							bind:value={reasoningParameter}
-							required={Boolean(
-								levels.trim() ||
-								budgetMin !== undefined ||
-								budgetMax !== undefined ||
-								budgetStep !== undefined
-							)}
-							placeholder={reasoningMode === 'budget'
-								? 'thinking.budget_tokens'
-								: 'reasoning.effort'}
+			<div
+				class="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 pb-4"
+				style="scrollbar-gutter: stable;"
+				data-testid="model-editor-body"
+			>
+				<p class="text-xs text-gray-400 dark:text-gray-500">
+					{connections.find((c) => c.id === modelEdit.connection_id)?.name}
+				</p>
+				<div class="grid gap-3 sm:grid-cols-2">
+					<label class="space-y-1 text-xs text-gray-500"
+						>显示名称<input class={singleLineClass} required bind:value={modelEdit.name} /></label
+					><label class="space-y-1 text-xs text-gray-500"
+						>{connections.find((c) => c.id === modelEdit.connection_id)?.template === 'azure-openai'
+							? '部署名称'
+							: '上游模型 ID'}<input
+							class={singleLineClass}
+							required
+							bind:value={modelEdit.upstream_id}
 						/></label
 					>
-					{#if reasoningMode === 'budget'}
-						<div class="grid grid-cols-2 gap-3">
-							<label class="space-y-1.5"
-								>最小预算<input
-									class={inputClass}
-									type="number"
-									step="1"
-									bind:value={budgetMin}
-									required={Boolean(reasoningParameter)}
-									placeholder="未知"
-								/></label
-							>
-							<label class="space-y-1.5"
-								>最大预算<input
-									class={inputClass}
-									type="number"
-									step="1"
-									bind:value={budgetMax}
-									required={Boolean(reasoningParameter)}
-									placeholder="未知"
-								/></label
-							>
-							<label class="space-y-1.5"
-								>步长<input
-									class={inputClass}
-									type="number"
-									min="1"
-									step="1"
-									bind:value={budgetStep}
-									required={Boolean(reasoningParameter)}
-									placeholder="未知"
-								/></label
-							>
-							<label class="space-y-1.5"
-								>默认预算<input
-									class={inputClass}
-									type="number"
-									step="1"
-									bind:value={budgetDefault}
-									placeholder="沿用上游默认"
-								/></label
-							>
-						</div>
-					{:else}
-						<label class="block space-y-1.5"
-							>档位（按滑杆顺序，逗号分隔）<input
-								class={inputClass}
-								bind:value={levels}
-								placeholder="low, medium, high"
+				</div>
+				<label class="block space-y-1 text-xs text-gray-500"
+					>接口模式
+					<SettingsSelect
+						className="w-full"
+						bind:value={modelEdit.protocol_override}
+						ariaLabel="模型接口模式"
+					>
+						<option value=""
+							>继承连接 · {protocolLabels[modelConnection?.protocol] ||
+								modelConnection?.protocol}</option
+						>
+						<optgroup label="常用协议"
+							>{#each protocolDirectory.filter((p) => !p.extension) as protocol}<option
+									value={protocol.id}>{protocol.label}</option
+								>{/each}</optgroup
+						>
+						<optgroup label="扩展协议"
+							>{#each protocolDirectory.filter((p) => p.extension) as protocol}<option
+									value={protocol.id}
+									disabled={modelConnection?.transport === 'browser' && !protocol.browser_supported}
+									>{protocol.label}</option
+								>{/each}</optgroup
+						>
+					</SettingsSelect>
+				</label>
+				<p class="text-xs text-gray-500">
+					实际模式：{protocolLabels[modelEdit.protocol_override || modelConnection?.protocol]} ·
+					{modelEdit.protocol_override ? '模型单独设置' : '跟随连接'}
+				</p>
+				<ConnectionEndpointPreview
+					connection={modelConnection}
+					protocol={modelEdit.protocol_override || modelConnection?.protocol}
+					model={modelEdit.upstream_id}
+				/>
+				<div class="grid gap-3 sm:grid-cols-3">
+					<label class="space-y-1 text-xs text-gray-500"
+						>上下文总容量<input
+							class={singleLineClass}
+							type="number"
+							min="1"
+							bind:value={modelEdit.capabilities.context_window}
+							placeholder="未知"
+						/></label
+					>
+					<label class="space-y-1 text-xs text-gray-500"
+						>输入上限<input
+							class={singleLineClass}
+							type="number"
+							min="1"
+							bind:value={modelEdit.capabilities.input_limit}
+							placeholder="未知"
+						/></label
+					><label class="space-y-1 text-xs text-gray-500"
+						>最大输出<input
+							class={singleLineClass}
+							type="number"
+							min="1"
+							bind:value={modelEdit.capabilities.output_limit}
+							placeholder="未知"
+						/></label
+					>
+				</div>
+				<p class="text-[0.6875rem] leading-relaxed text-gray-400" data-testid="model-capacity-hint">
+					刷新模型时同步上游提供的容量，未提供则保持未知，可手动填写。总容量为输入与输出共用窗口，独立输入上限单独记录。
+				</p>
+				<details class="text-xs text-gray-500">
+					<summary class="cursor-pointer">模型能力</summary>
+					<div class="mt-3 grid grid-cols-2 gap-x-6 gap-y-3">
+						{#each capabilities as capability}<div class="flex items-center justify-between gap-4">
+								<span>{capability}</span><Switch
+									state={modelEdit.capabilities[capability] === true}
+									ariaLabel={capability}
+									on:change={(e) => (modelEdit.capabilities[capability] = e.detail)}
+								/>
+							</div>{/each}
+					</div>
+					<p class="mt-3 text-[0.6875rem] text-gray-400">仅开启已确认支持的能力。</p>
+				</details>
+				<details class="text-xs text-gray-500">
+					<summary class="cursor-pointer">推理控件</summary>
+					<div class="mt-3 space-y-3">
+						<label class="block space-y-1"
+							>控件类型<SettingsSelect className="w-full" bind:value={reasoningMode}>
+								<option value="levels">推理强度档位</option><option value="budget"
+									>推理 token 预算</option
+								>
+							</SettingsSelect></label
+						>
+						<label class="block space-y-1"
+							>参数路径<input
+								class={singleLineClass}
+								bind:value={reasoningParameter}
+								required={Boolean(
+									levels.trim() ||
+									budgetMin !== undefined ||
+									budgetMax !== undefined ||
+									budgetStep !== undefined
+								)}
+								placeholder={reasoningMode === 'budget'
+									? 'thinking.budget_tokens'
+									: 'reasoning.effort'}
 							/></label
 						>
-						<label class="block space-y-1.5"
-							>默认档位<input class={inputClass} bind:value={reasoningDefault} /></label
-						>
-					{/if}
-					<p class="text-[0.6875rem] text-gray-400">
-						仅填写已确认的模型能力，保存后自动生成原生控件。
-					</p>
-				</div>
-			</details>
-			<details class="text-xs text-gray-500">
-				<summary class="cursor-pointer">计价 · USD / 百万 token</summary>
-				<div class="mt-3 grid gap-3 sm:grid-cols-2">
-					{#each rates as rate}<label class="space-y-1.5"
-							>{rate}<input
-								class={inputClass}
-								inputmode="decimal"
-								bind:value={modelEdit.pricing.rates[rate]}
-								placeholder="未知"
-							/></label
-						>{/each}
-				</div>
-			</details>
-			<details class="text-xs text-gray-500">
-				<summary class="cursor-pointer">高级参数</summary>
-				<div class="mt-3 space-y-3">
-					<textarea
-						aria-label="模型参数 JSON"
-						rows="7"
-						class={inputClass + ' font-mono text-xs'}
-						bind:value={customParams}
-					></textarea>
-				</div>
-			</details>
-			<div class="flex justify-end gap-2 pt-1">
+						{#if reasoningMode === 'budget'}
+							<div class="grid grid-cols-2 gap-3">
+								<label class="space-y-1"
+									>最小预算<input
+										class={singleLineClass}
+										type="number"
+										step="1"
+										bind:value={budgetMin}
+										required={Boolean(reasoningParameter)}
+										placeholder="未知"
+									/></label
+								>
+								<label class="space-y-1"
+									>最大预算<input
+										class={singleLineClass}
+										type="number"
+										step="1"
+										bind:value={budgetMax}
+										required={Boolean(reasoningParameter)}
+										placeholder="未知"
+									/></label
+								>
+								<label class="space-y-1"
+									>步长<input
+										class={singleLineClass}
+										type="number"
+										min="1"
+										step="1"
+										bind:value={budgetStep}
+										required={Boolean(reasoningParameter)}
+										placeholder="未知"
+									/></label
+								>
+								<label class="space-y-1"
+									>默认预算<input
+										class={singleLineClass}
+										type="number"
+										step="1"
+										bind:value={budgetDefault}
+										placeholder="沿用上游默认"
+									/></label
+								>
+							</div>
+						{:else}
+							<label class="block space-y-1"
+								>档位（按滑杆顺序，逗号分隔）<input
+									class={singleLineClass}
+									bind:value={levels}
+									placeholder="low, medium, high"
+								/></label
+							>
+							<label class="block space-y-1"
+								>默认档位<input class={singleLineClass} bind:value={reasoningDefault} /></label
+							>
+						{/if}
+						<p class="text-[0.6875rem] text-gray-400">
+							仅填写已确认的模型能力，保存后自动生成原生控件。
+						</p>
+					</div>
+				</details>
+				<details class="text-xs text-gray-500">
+					<summary class="cursor-pointer">计价 · USD / 百万 token</summary>
+					<div class="mt-3 grid gap-3 sm:grid-cols-2">
+						{#each rates as rate}<label class="space-y-1"
+								>{rate}<input
+									class={singleLineClass}
+									inputmode="decimal"
+									bind:value={modelEdit.pricing.rates[rate]}
+									placeholder="未知"
+								/></label
+							>{/each}
+					</div>
+				</details>
+				<details class="text-xs text-gray-500">
+					<summary class="cursor-pointer">高级参数</summary>
+					<div class="mt-3 space-y-3">
+						<textarea
+							aria-label="模型参数 JSON"
+							rows="7"
+							class={textAreaClass}
+							bind:value={customParams}
+						></textarea>
+					</div>
+				</details>
+			</div>
+			<div
+				class="flex shrink-0 justify-end gap-2 border-t border-gray-100 px-5 py-3 dark:border-white/5"
+				data-testid="model-editor-footer"
+			>
 				<button
 					type="button"
 					class="rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-black/5 dark:hover:bg-white/5"
