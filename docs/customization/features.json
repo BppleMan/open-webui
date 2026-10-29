@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "protocol_decoupling_R53_in_progress",
+  "phase": "R53_verified_isolated_preview_user_tuning_R50_hold",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,12 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
+    "latest_code_commit": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "a198214b3d07d9a2ba5764c1c31000038b0db7f8",
-    "latest_documentation_revision": "R51/P36 and R52/P37"
+    "latest_commit": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+    "latest_documentation_revision": "R53/P38"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -98,11 +98,12 @@
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
       },
-      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol",
+      "protocol_guidance_R52": "Superseded by R53: enter the service root; Gemini routing appends /v1beta, legacy addresses remain compatible.",
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     },
     {
@@ -161,9 +162,10 @@
         "evidence": "preview-refinement-2026-10-29.json"
       },
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     },
     {
@@ -217,9 +219,10 @@
         "evidence": "preview-refinement-2026-10-29.json"
       },
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     },
     {
@@ -291,9 +294,10 @@
         "production": "unchanged"
       },
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     },
     {
@@ -350,9 +354,10 @@
         "production": "unchanged"
       },
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     },
     {
@@ -451,11 +456,12 @@
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
       },
-      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol",
+      "protocol_guidance_R52": "Superseded by R53: enter the service root; Gemini routing appends /v1beta, legacy addresses remain compatible.",
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     },
     {
@@ -785,9 +791,10 @@
         "evidence": "preview-refinement-2026-10-29.json"
       },
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     },
     {
@@ -867,11 +874,12 @@
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
       },
-      "protocol_guidance_R52": "CPA/AGY defaults to /v1beta; OpenAI/Responses/Anthropic keep /v1; gateway and upstream are distinct from request protocol",
+      "protocol_guidance_R52": "Superseded by R53: enter the service root; Gemini routing appends /v1beta, legacy addresses remain compatible.",
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     },
     {
@@ -1038,9 +1046,10 @@
         "evidence": "preview-refinement-2026-10-29.json"
       },
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     },
     {
@@ -1240,20 +1249,21 @@
         "evidence": "preview-refinement-2026-10-29.json"
       },
       "protocol_decoupling_R53": {
-        "implementation": "in_progress",
-        "verification": "pending",
-        "deployment": "not_deployed; R50 production hold"
+        "implementation": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+        "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "protocol-decoupling-acceptance.json"
       }
     }
   ],
   "latest_checks": {
-    "backend_tests": 209,
-    "frontend_tests": 50,
+    "backend_tests": 351,
+    "frontend_tests": 57,
     "type_gate": "no_new_diagnostics_5765_upstream_remain",
     "frontend_build": "passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
-    "postgres_archive_restore": "OI6_18_legacy_and_20_stage7_table_hashes_match",
-    "production_deployment": "not_performed",
+    "postgres_archive_restore": "OI7_populated_migration_restore_and_63_preview_tables_verified",
+    "production_deployment": "not_performed_R50",
     "stage2_HTTP": "specialized_chat422_no_provider_call_saved_B_and_unavailable_draft_preservation_passed",
     "stage3_HTTP": "owner_only_no_store_same_model_A_B_server_reorder_remove_draft_429_partial_usage_passed",
     "stage4A_local": {
@@ -1310,7 +1320,7 @@
       "tag": "sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
       "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
     },
-    "actual_CI": "https://github.com/BppleMan/open-webui/actions/runs/40694372379",
+    "actual_CI": "https://github.com/BppleMan/open-webui/actions/runs/40814642568",
     "stage8A": {
       "status": "verified_with_documented_methods",
       "source": "61ff81c61e2c9fee90d2237679c64833196978bb",
@@ -1377,6 +1387,17 @@
         "No accounting migration or invented pricing/capacity",
         "Earlier supplier/device/legacy-alias limitations remain in their stage records"
       ]
+    },
+    "protocol_decoupling_R53": {
+      "backend_tests": 351,
+      "frontend_tests": 57,
+      "new_type_a11y_diagnostics": 0,
+      "existing_upstream_diagnostics": 5765,
+      "production_build": "passed",
+      "git_diff_check": "passed",
+      "ci": "https://github.com/BppleMan/open-webui/actions/runs/40814642568",
+      "source_commit": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+      "evidence": "protocol-decoupling-acceptance.json"
     }
   },
   "review_remediation": {

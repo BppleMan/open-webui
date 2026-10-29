@@ -137,3 +137,5 @@ The CPA/AGY template uses native Gemini; use a /v1beta API base for new connecti
 
 ## R53 — Protocol decoupling and compact connection management
 Implement the approved protocol-decoupling plan: unrestricted common protocol selection, connection defaults with model overrides, one shared service root/key/auth, automatic protocol paths, server and browser parity, stable identities and native-history compatibility. Compact enabled-first model lists and right-aligned switches. This supersedes R52's manual /v1beta entry: service addresses no longer require protocol prefixes. R50 production hold remains. Corresponds to P38.
+
+R53 实施与验收收口：协议目录、服务地址解析、模型继承/覆盖、直连原生流、紧凑列表已实现，源码 97b7936939f4c5e7937feecc2ea8c60a24ccfb3b；351 后端/57 前端、类型无新增、构建及 CI 40814642568 通过。隔离预发已验证；OpenRouter Messages/CPA Gemini 各一次合成请求成功。真实 OpenRouter 浏览器 Messages 的专用头未获 CORS 预检放行，明确保留服务方限制，未标为通过。正式环境仍受 R50 保护。

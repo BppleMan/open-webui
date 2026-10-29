@@ -18,3 +18,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - Latest preview refinement R51/R52 is verified; read docs/customization/preview-refinement-2026-10-29.json. CPA/AGY uses /v1beta; do not generalize this to other CPA protocols. R50 production hold remains in force.
 
 - R53 supersedes R52 address entry: enter a service root; protocol registry generates versioned endpoints. Read docs/customization/protocol-decoupling.md. Template defaults do not restrict protocol choices. Preserve migrated effective routes, model identity, browser ownership and R50.
+
+- R53 is verified on isolated preview; read docs/customization/protocol-decoupling-acceptance.json. OI7 needs a compatible image; preserved legacy routes can require explicit review. Real OpenRouter browser Messages CORS remains a documented provider limitation. R50 remains unchanged.

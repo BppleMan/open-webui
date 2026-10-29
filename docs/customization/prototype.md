@@ -248,3 +248,5 @@ Show /v1beta for CPA/AGY native Gemini. Preserve the /v1 family for OpenAI Chat/
 
 ## P38 — Protocol-first configuration and compact lists
 Primary fields: connection name, execution transport, service address, default interface mode and readonly resolved URL, followed by shared credentials. Models show inherited/effective mode and can override. Four common modes are not template-filtered; legacy extensions remain. Provider compatibility is independent from wire format. Enabled-first ordering is stable while toggling; five-row scrolling uses 2rem/2.5rem rows; connection separators removed; form toggles use a fixed right column. Validation and preview must use the same resolver as generation.
+
+P38 落地验收：连接与模型主表单直接展示接口模式/继承来源和只读实际地址；四种常用协议不再被模板裁剪。启用模型优先，开关操作期间位置稳定；桌面2rem、手机2.5rem，最多五行内部滚动，控件靠右。内置浏览器实测390/430/1280/2560及1.1倍缩放，通过深色本地夹具和浅色隔离预发验证。R50 不变。

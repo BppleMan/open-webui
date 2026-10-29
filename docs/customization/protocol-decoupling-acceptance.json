@@ -1,0 +1,139 @@
+{
+  "requirement": "R53",
+  "prototype": "P38",
+  "date": "2026-10-29",
+  "status": "verified_with_documented_provider_boundaries",
+  "source_commit": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+  "commits": [
+    "c36b37f51c742ccff9464dc11498448174b7511c",
+    "1d6880b96bc78e01d3ba397d794c95760b281b53",
+    "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b"
+  ],
+  "ci": {
+    "url": "https://github.com/BppleMan/open-webui/actions/runs/40814642568",
+    "conclusion": "success",
+    "jobs": [
+      "frontend",
+      "backend",
+      "image"
+    ],
+    "includes": [
+      "populated PostgreSQL OI6 to OI7 migration and restore",
+      "stage4 HTTP/realtime/pgvector",
+      "stage5 PostgreSQL/Redis sessions/drafts",
+      "stage6 native protocols/controls",
+      "stage7 accounting/archive/restore"
+    ]
+  },
+  "checks": {
+    "backend_tests": 351,
+    "frontend_tests": 57,
+    "new_type_a11y_diagnostics": 0,
+    "existing_upstream_diagnostics": 5765,
+    "production_build": "passed",
+    "git_diff_check": "passed"
+  },
+  "migration": {
+    "revision": "oi0000000007",
+    "restored_preview_tables": 63,
+    "preserved_binding_ids_and_routes": 513,
+    "preserved_business_tables_in_clone": 60,
+    "opaque_legacy_routes_flagged": 1,
+    "encrypted_backup_and_restore": "verified",
+    "existing_records_merged": false,
+    "history_and_ledger_rewritten": false
+  },
+  "browser": {
+    "engine": "Codex in-app browser",
+    "synthetic_live_calls": 8,
+    "transports": [
+      "server",
+      "browser"
+    ],
+    "protocols": [
+      "openai-chat",
+      "openai-responses",
+      "anthropic",
+      "gemini"
+    ],
+    "each_call_usage": {
+      "input_tokens": 100,
+      "output_tokens": 5,
+      "actual_usd": null
+    },
+    "cors_denial": {
+      "visible_error": true,
+      "provider_posts": 0,
+      "server_fallback": false,
+      "ledger": "one failed call; unknown cost"
+    },
+    "viewports": [
+      390,
+      430,
+      1280,
+      2560
+    ],
+    "application_scales": [
+      1,
+      1.1
+    ],
+    "desktop_row_rem": 2,
+    "mobile_row_rem": 2.5,
+    "max_visible_rows": 5,
+    "horizontal_overflow": false,
+    "enabled_first": true,
+    "toggle_order_frozen": true,
+    "model_override_saved_and_reopened": true,
+    "keyboard_selection": true,
+    "switches_right_aligned": true,
+    "themes": [
+      "dark local fixture",
+      "light staging"
+    ]
+  },
+  "real_providers": {
+    "openrouter_messages": {
+      "status": "completed",
+      "path": "/api/v1/messages",
+      "auth": "bearer",
+      "calls": 1,
+      "actual_usd": "0.000861"
+    },
+    "cpa_gemini": {
+      "status": "completed",
+      "protocol": "gemini",
+      "calls": 1,
+      "rp_identity": "preserved",
+      "actual_usd": null,
+      "cost_status": "unknown"
+    },
+    "browser_supplier_scope": "Actual browser calls use the controlled CORS-enabled provider. Real OpenRouter was checked through server transport and a separate unauthenticated CORS preflight."
+  },
+  "provider_boundaries": {
+    "openrouter_browser_messages": {
+      "status": "not_verified_provider_cors_restriction",
+      "preflight_status": 204,
+      "missing_allowed_headers": [
+        "anthropic-dangerous-direct-browser-access",
+        "anthropic-version"
+      ]
+    },
+    "other_supplier_protocol_combinations": "Not claimed as live verified; protocol choice does not guarantee provider support. Official-provider/Azure/Ollama constraints from previous stages remain."
+  },
+  "deployment": {
+    "scope": "isolated preview only",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-97b7936939f4c5e7937feecc2ea8c60a24ccfb3b@sha256:a304eccf46e5b76cc61b9ce1648ce592b224d110adf95eb4bf95b1fcaa71a2da",
+    "gitops_commit": "62265b40a8fb5ae96440ce03a57c8dbcc1e2db2e",
+    "status": "Synced/Healthy",
+    "schema": "oi0000000007",
+    "pvc_preserved": true,
+    "restart_count": 0,
+    "production_OI_and_CPA": "unchanged",
+    "production_schema": "0bd252b206fb",
+    "R50": "stage8B requires new explicit authorization"
+  },
+  "handoff": {
+    "next": "Continue user tuning in isolated preview. Do not deploy production. Existing ambiguous legacy aliases are unresolved by design.",
+    "rollback": "Use a compatible OI7 image; never point the old OI6/upstream image at new override data. The encrypted pre-migration preview backup and independent restore database are retained."
+  }
+}
