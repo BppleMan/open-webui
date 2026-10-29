@@ -2571,7 +2571,7 @@
 	"settings.admin.connections.addConnection.label": "新增連線",
 	"settings.admin.connections.cacheBaseModelList.description": "基礎模型清單快取只會在啟動或儲存設定時才取得基礎模型，以加快存取速度，但可能不會顯示最近的基礎模型變更。",
 	"settings.admin.connections.cacheBaseModelList.label": "快取基礎模型清單",
-	"settings.admin.connections.directConnections.description": "直接連線允許使用者連線至自有或其他與 OpenAI API 相容的端點。",
+	"settings.admin.connections.directConnections.description": "允許使用者透過瀏覽器直連自己的模型服務，支援 OpenAI、Claude 和 Gemini 原生介面。",
 	"settings.admin.connections.directConnections.label": "直接連線",
 	"settings.admin.connections.directIntegrations.description": "為有權管理自身工具與終端機連線的使用者（包括管理員）顯示「整合」分頁。隱藏後不會停用現有連線。",
 	"settings.admin.connections.directIntegrations.label": "直接整合",

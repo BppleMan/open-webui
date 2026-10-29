@@ -835,6 +835,40 @@
 					/></label
 				>
 			</div>
+			<label class="block space-y-1.5 text-xs text-gray-500"
+				>接口模式
+				<SettingsSelect
+					className="w-full"
+					bind:value={modelEdit.protocol_override}
+					ariaLabel="模型接口模式"
+				>
+					<option value=""
+						>继承连接 · {protocolLabels[modelConnection?.protocol] ||
+							modelConnection?.protocol}</option
+					>
+					<optgroup label="常用协议"
+						>{#each protocolDirectory.filter((p) => !p.extension) as protocol}<option
+								value={protocol.id}>{protocol.label}</option
+							>{/each}</optgroup
+					>
+					<optgroup label="扩展协议"
+						>{#each protocolDirectory.filter((p) => p.extension) as protocol}<option
+								value={protocol.id}
+								disabled={modelConnection?.transport === 'browser' && !protocol.browser_supported}
+								>{protocol.label}</option
+							>{/each}</optgroup
+					>
+				</SettingsSelect>
+			</label>
+			<p class="text-xs text-gray-500">
+				实际模式：{protocolLabels[modelEdit.protocol_override || modelConnection?.protocol]} ·
+				{modelEdit.protocol_override ? '模型单独设置' : '跟随连接'}
+			</p>
+			<ConnectionEndpointPreview
+				connection={modelConnection}
+				protocol={modelEdit.protocol_override || modelConnection?.protocol}
+				model={modelEdit.upstream_id}
+			/>
 			<div class="grid gap-4 sm:grid-cols-2">
 				<label class="space-y-1.5 text-xs text-gray-500"
 					>输入窗口<input
@@ -893,40 +927,6 @@
 						/></label
 					>
 					{#if reasoningMode === 'budget'}
-						<label class="block space-y-1.5 text-xs text-gray-500"
-							>接口模式
-							<SettingsSelect
-								className="w-full"
-								bind:value={modelEdit.protocol_override}
-								ariaLabel="模型接口模式"
-							>
-								<option value=""
-									>继承连接 · {protocolLabels[modelConnection?.protocol] ||
-										modelConnection?.protocol}</option
-								>
-								<optgroup label="常用协议"
-									>{#each protocolDirectory.filter((p) => !p.extension) as protocol}<option
-											value={protocol.id}>{protocol.label}</option
-										>{/each}</optgroup
-								>
-								<optgroup label="扩展协议"
-									>{#each protocolDirectory.filter((p) => p.extension) as protocol}<option
-											value={protocol.id}
-											disabled={modelConnection?.transport === 'browser' &&
-												!protocol.browser_supported}>{protocol.label}</option
-										>{/each}</optgroup
-								>
-							</SettingsSelect>
-						</label>
-						<p class="text-xs text-gray-500">
-							实际模式：{protocolLabels[modelEdit.protocol_override || modelConnection?.protocol]} ·
-							{modelEdit.protocol_override ? '模型单独设置' : '跟随连接'}
-						</p>
-						<ConnectionEndpointPreview
-							connection={modelConnection}
-							protocol={modelEdit.protocol_override || modelConnection?.protocol}
-							model={modelEdit.upstream_id}
-						/>
 						<div class="grid grid-cols-2 gap-3">
 							<label class="space-y-1.5"
 								>最小预算<input

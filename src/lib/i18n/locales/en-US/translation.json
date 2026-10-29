@@ -2588,7 +2588,7 @@
 	"settings.admin.connections.addConnection.label": "Add Connection",
 	"settings.admin.connections.cacheBaseModelList.description": "Base Model List Cache speeds up access by fetching base models only at startup or on settings save—faster, but may not show recent base model changes.",
 	"settings.admin.connections.cacheBaseModelList.label": "Cache Base Model List",
-	"settings.admin.connections.directConnections.description": "Direct Connections allow users to connect to their own OpenAI compatible API endpoints.",
+	"settings.admin.connections.directConnections.description": "Allow users to connect their own model providers directly from the browser.",
 	"settings.admin.connections.directConnections.label": "Direct Connections",
 	"settings.admin.connections.directIntegrations.description": "Show the Integrations tab for users with permission to manage their own tool and terminal connections, including admins. Hiding it does not disable existing connections.",
 	"settings.admin.connections.directIntegrations.label": "Direct Integrations",
