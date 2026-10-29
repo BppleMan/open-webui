@@ -290,3 +290,6 @@ Gemini GenerateContent and CPA-AGY deep-merge includeThoughts=true by default; n
 
 ## P45 — Bounded session recovery
 A 30rem-wide frame, height bounded by 34rem and the viewport, embeds the existing login/MFA flow with compact spacing and clear invalid-session wording. Retain the original page and local input; stop repeated renewals of an already-rejected credential. New credentials resume normally; expiry/revocation/security policies are unchanged. Local browser recovery, mobile layout and CI session checks passed.
+
+## P46 — Responsive metric grid and shared icons
+At ≤639px use three fixed metric columns: input/output/reasoning, cache-read/cache-write/total, cost plus timing, then cumulative cost plus exceptional status. At ≤359px use two columns with full-width cumulative/status rows. Long monetary values remain readable inside their assigned field. Desktop retains the compact metadata row. Overview and Calls use shared semantic-colored icons with neutral numbers; connection headers gain 0.5rem horizontal inset.

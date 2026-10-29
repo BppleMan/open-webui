@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-30",
-  "phase": "R59_OI_deployed_CPA_summary_pending; R60_verified; stage8B_not_authorized",
+  "phase": "R61_responsive_usage_in_progress; R59_CPA_summary_pending; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -225,7 +225,8 @@
         "R56",
         "R57",
         "R58",
-        "R59"
+        "R59",
+        "R61"
       ],
       "prototypes": [
         "P03",
@@ -236,7 +237,8 @@
         "P41",
         "P42",
         "P43",
-        "P44"
+        "P44",
+        "P46"
       ],
       "priority": "P1",
       "status": "verified",
@@ -323,6 +325,19 @@
           "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
         ],
         "evidence": "thoughts-session-acceptance.json"
+      },
+      "responsive_usage_R61": {
+        "status": "implemented",
+        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "verification": {
+          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
+          "frontend_tests": 64,
+          "new_type_a11y_diagnostics": 0,
+          "upstream_diagnostics": 5756,
+          "production_build": "passed",
+          "CI": "pending"
+        },
+        "deployment": "pending_isolated_preview; R50"
       }
     },
     {
@@ -443,12 +458,14 @@
         "R06",
         "R07",
         "R47",
-        "R53"
+        "R53",
+        "R61"
       ],
       "prototypes": [
         "P06",
         "P32",
-        "P38"
+        "P38",
+        "P46"
       ],
       "priority": "P1",
       "status": "verified",
@@ -494,6 +511,19 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "responsive_usage_R61": {
+        "status": "implemented",
+        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "verification": {
+          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
+          "frontend_tests": 64,
+          "new_type_a11y_diagnostics": 0,
+          "upstream_diagnostics": 5756,
+          "production_build": "passed",
+          "CI": "pending"
+        },
+        "deployment": "pending_isolated_preview; R50"
       }
     },
     {
@@ -774,7 +804,8 @@
         "R56",
         "R57",
         "R58",
-        "R59"
+        "R59",
+        "R61"
       ],
       "prototypes": [
         "P12",
@@ -783,7 +814,8 @@
         "P41",
         "P42",
         "P43",
-        "P44"
+        "P44",
+        "P46"
       ],
       "priority": "P0",
       "status": "verified",
@@ -877,6 +909,19 @@
           "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
         ],
         "evidence": "thoughts-session-acceptance.json"
+      },
+      "responsive_usage_R61": {
+        "status": "implemented",
+        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "verification": {
+          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
+          "frontend_tests": 64,
+          "new_type_a11y_diagnostics": 0,
+          "upstream_diagnostics": 5756,
+          "production_build": "passed",
+          "CI": "pending"
+        },
+        "deployment": "pending_isolated_preview; R50"
       }
     },
     {
@@ -891,7 +936,8 @@
         "R51",
         "R53",
         "R55",
-        "R56"
+        "R56",
+        "R61"
       ],
       "prototypes": [
         "P13",
@@ -900,7 +946,8 @@
         "P36",
         "P38",
         "P40",
-        "P41"
+        "P41",
+        "P46"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1039,6 +1086,19 @@
         "verification": "native_info_legacy_failed_call_responsive_scroll_edit_undo_and_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "message-info-acceptance.json"
+      },
+      "responsive_usage_R61": {
+        "status": "implemented",
+        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "verification": {
+          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
+          "frontend_tests": 64,
+          "new_type_a11y_diagnostics": 0,
+          "upstream_diagnostics": 5756,
+          "production_build": "passed",
+          "CI": "pending"
+        },
+        "deployment": "pending_isolated_preview; R50"
       }
     },
     {
@@ -1255,7 +1315,8 @@
         "R55",
         "R56",
         "R57",
-        "R58"
+        "R58",
+        "R61"
       ],
       "prototypes": [
         "P16",
@@ -1265,7 +1326,8 @@
         "P40",
         "P41",
         "P42",
-        "P43"
+        "P43",
+        "P46"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1340,6 +1402,19 @@
         "verification": "local_responsive_and_actual_preview; 63_frontend_351_backend_and_integration_CI",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-density-acceptance.json"
+      },
+      "responsive_usage_R61": {
+        "status": "implemented",
+        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "verification": {
+          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
+          "frontend_tests": 64,
+          "new_type_a11y_diagnostics": 0,
+          "upstream_diagnostics": 5756,
+          "production_build": "passed",
+          "CI": "pending"
+        },
+        "deployment": "pending_isolated_preview; R50"
       }
     },
     {
@@ -1426,7 +1501,8 @@
         "R57",
         "R58",
         "R59",
-        "R60"
+        "R60",
+        "R61"
       ],
       "prototypes": [
         "P18",
@@ -1439,7 +1515,8 @@
         "P42",
         "P43",
         "P44",
-        "P45"
+        "P45",
+        "P46"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1615,6 +1692,19 @@
         "implementation": "invalid_credential_refresh_stopped; compact_embedded_recovery",
         "verification": "expired_token_and_server_401_confirmed; unit_and_browser_relogin_passed; CI_session_matrix_passed",
         "deployment": "isolated_preview_deployed"
+      },
+      "responsive_usage_R61": {
+        "status": "implemented",
+        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "verification": {
+          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
+          "frontend_tests": 64,
+          "new_type_a11y_diagnostics": 0,
+          "upstream_diagnostics": 5756,
+          "production_build": "passed",
+          "CI": "pending"
+        },
+        "deployment": "pending_isolated_preview; R50"
       }
     }
   ],

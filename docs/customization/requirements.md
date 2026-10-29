@@ -180,3 +180,6 @@ OI implementation and synthetic/HTTP/browser/CI acceptance pass and are deployed
 
 ## R60 — Clear session recovery
 Keep page/draft state during reauthentication. Stop repeat renewal of a credential after a current 401, allow a new login to resume, and retain the network-failure/expiry/revocation distinction. Use a compact viewport-bounded embedded form with clear invalid-session wording. Verified and deployed to isolated preview; authentication duration and security rules are unchanged. R50/U49 remain.
+
+## R61 — Deliberate mobile usage layout and consistent metric styling
+Replace natural wrapping on small screens with media-query-driven metric rows; preserve complete amounts, unknown values and all fields. Use consistent colored icons in usage details, and add horizontal padding inside the connection header hover target. UI only; no request, accounting or context changes. R50/U49 remain.

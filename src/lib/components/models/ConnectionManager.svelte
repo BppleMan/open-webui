@@ -394,7 +394,7 @@
 				<div class="flex min-w-0 items-center gap-2">
 					<button
 						type="button"
-						class="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-lg py-1.5 text-left hover:bg-black/[0.025] dark:hover:bg-white/[0.025]"
+						class="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-black/[0.025] dark:hover:bg-white/[0.025]"
 						aria-expanded={expanded.has(connection.id)}
 						on:click={() => toggle(connection.id)}
 					>

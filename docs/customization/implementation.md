@@ -73,3 +73,10 @@ GenerateContent and CPA-AGY now request readable summaries by default, preservin
 ### R58/P43 wrapping usage metadata
 
 The reply-leading card is replaced with a compact, wrapping metadata row. Input/output, grouped cache reads/writes, reasoning, total tokens, per-response cost, elapsed time and the cumulative snapshot retain their data semantics. Existing line icons plus a small currency outline use restrained theme colors. Info restores full statistics in sibling Overview/Calls/Raw tabs; the raw source is keyed by immutable call ID and survives refresh. Calls are deduplicated before presentation, missing values stay unknown, and monetary strings retain precision. A passive note distinguishes recorded reasoning usage from absent readable thought content; no provider summary request is enabled. Local browser acceptance and 63 frontend tests passed, with zero new type diagnostics (5756 upstream remain). Production build and exact-source CI40860984784 passed; isolated preview is verified at 1db8c067c403d0829f006c65efd02390cec26979. See usage-density-acceptance.json. R50/U49 apply.
+
+
+### R61 / P46 — Responsive usage layout and shared metric icons
+
+The reply-leading metadata uses explicit three-column grid areas below 640px and a two-column fallback below 360px. Cost, timing, cumulative cost and exceptional status keep dedicated positions; exact decimals and unknown values retain existing semantics. The info overview and calls use the same decorative icon palette. Connection headings add horizontal inset without changing their model region or five-row scrolling.
+
+The batch is locally verified at 320/390/430/1280px, 1.1 application scale, light/dark themes; 64 frontend tests pass, zero new type/a11y diagnostics (5756 upstream diagnostics remain), and the build passes. CI and isolated preview evidence are tracked in `usage-responsive-acceptance.json`. R50 and the separate R59 supplier gap remain in force.

@@ -44,3 +44,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - U58 authorizes R59/P44 Gemini streaming thought-summary requests: default on, explicit off preserved, native controls for both transports. R60/P45 addresses expired-session recovery and repeated rejected refreshes. Work is in progress; validate as one batch and publish only isolated preview under R50/U49. Never renew expired or revoked sessions by weakening authentication rules.
 
 - R59/R60 code is deployed to isolated preview; read docs/customization/thoughts-session-acceptance.json. Synthetic server/browser summary, persistence, controls and CI pass; one actual CPA stream still returned only reasoning usage/signature, with no readable summary. Keep that supplier acceptance gap open and do not repeat the guarded paid probe. R60 recovery is verified. R50 production hold remains.
+
+- R61/P46 supersedes natural wrapping on narrow screens: use explicit responsive grid groups, shared usage icons in info, and padded connection headings. Read docs/customization/usage-responsive-acceptance.json for current checks/deployment; retain R50, U49 and the separate R59 supplier gap.
