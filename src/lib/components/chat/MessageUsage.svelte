@@ -4,11 +4,15 @@
 	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
 	import InfoCircle from '$lib/components/icons/InfoCircle.svelte';
 	import { usageFor, dollars, addMoney } from '$lib/stores/oiUsage';
+	import type { UsageOverview } from './MessageUsageOverview.svelte';
 
 	export let chatId = '',
 		messageId = '';
 	export let nativeUsage: unknown = undefined;
 	export let triggerClass = '';
+	export let overview: UsageOverview | null = null;
+	let nativeOpen = false;
+	let disclosureInitialized = false;
 	let open = false;
 	let store = usageFor(chatId),
 		disconnect: (() => void) | undefined,
@@ -53,6 +57,22 @@
 			? items.reduce((n, c) => n + c.usage[key], 0).toLocaleString()
 			: '未知';
 	const raw = (value: unknown) => JSON.stringify(value, null, 2);
+	$: overview = calls.length
+		? {
+				messageId,
+				status:
+					calls.length === 1
+						? `${statuses[calls[0].status] || calls[0].status} · ${duration(calls[0].usage?.duration_ms)}`
+						: `${calls.length} 次调用`,
+				metrics: fields.map(([label, key]) => ({ label, value: tokens(calls, key) })),
+				actual,
+				estimated,
+				hasActual,
+				hasEstimate,
+				unknown,
+				snapshot
+			}
+		: null;
 	const disclosureClass =
 		'focus-ring flex w-full cursor-pointer list-none items-center gap-1 rounded-sm py-1 text-left [&::-webkit-details-marker]:hidden';
 </script>
@@ -61,7 +81,13 @@
 	<Popover.Root
 		bind:open
 		onOpenChange={(value) => {
-			if (value) void store.refresh();
+			if (value) {
+				if (!disclosureInitialized) {
+					nativeOpen = calls.length === 0;
+					disclosureInitialized = true;
+				}
+				void store.refresh();
+			}
 		}}
 	>
 		<Popover.Trigger
@@ -86,7 +112,7 @@
 				style="max-height: min(30rem, var(--bits-popover-content-available-height));"
 			>
 				<div class="flex items-center justify-between gap-3 pb-1.5">
-					<span class="font-medium text-gray-800 dark:text-gray-100">用量与费用</span>
+					<span class="font-medium text-gray-800 dark:text-gray-100">调用明细与原始用量</span>
 					{#if calls.length === 1}<span class="text-[0.6875rem] tabular-nums"
 							>{statuses[calls[0].status] || calls[0].status} · {duration(
 								calls[0].usage?.duration_ms
@@ -101,40 +127,6 @@
 						账本暂时无法更新，已获取的数据保留。
 					</p>{/if}
 				{#if calls.length}
-					<dl
-						class="grid grid-cols-2 gap-x-4 gap-y-1 text-[0.6875rem] sm:grid-cols-3"
-						data-testid="message-info-tokens"
-					>
-						{#each fields as [label, key]}<div class="flex justify-between gap-2">
-								<dt>{label}</dt>
-								<dd class="tabular-nums text-gray-900 dark:text-gray-100">{tokens(calls, key)}</dd>
-							</div>{/each}
-					</dl>
-					<div
-						class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-100 pt-1.5 text-[0.6875rem] dark:border-white/5"
-					>
-						<span class="font-medium">本条回复</span>
-						{#if hasActual}<span
-								>实际 <strong class="font-medium tabular-nums">{dollars(actual)}</strong></span
-							>{/if}
-						{#if hasEstimate}<span
-								>估算 <strong class="font-medium tabular-nums">{dollars(estimated)}</strong></span
-							>{/if}
-						{#if unknown}<span class="text-amber-700 dark:text-amber-400"
-								>{unknown} 次费用待确认</span
-							>{/if}
-					</div>
-					{#if snapshot}<div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[0.6875rem]">
-							<span>截至本轮会话</span><span
-								>实际 <span class="tabular-nums">{dollars(snapshot.actual_usd)}</span></span
-							><span>估算 <span class="tabular-nums">{dollars(snapshot.estimated_usd)}</span></span>
-							{#if snapshot.unknown_calls}<span class="text-amber-700 dark:text-amber-400"
-									>{snapshot.unknown_calls} 次待确认</span
-								>{/if}
-						</div>{/if}
-					{#if unknown}<p class="mt-1 text-[0.6875rem] text-gray-400">
-							待确认费用不按免费计入。
-						</p>{/if}
 					<details class="group/calls mt-1.5 border-t border-gray-100 pt-1 dark:border-white/5">
 						<summary class={disclosureClass}
 							><span class="-rotate-90 transition-transform group-open/calls:rotate-0"
@@ -185,7 +177,7 @@
 					</p>{/if}
 				{#if nativeUsage}<details
 						class="group/raw-message border-t border-gray-100 pt-1 dark:border-white/5"
-						open={!calls.length}
+						bind:open={nativeOpen}
 						data-testid="message-native-usage"
 					>
 						<summary class={disclosureClass}

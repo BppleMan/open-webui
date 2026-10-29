@@ -1,0 +1,71 @@
+{
+  "requirement": "R57",
+  "prototype": "P42",
+  "date": "2026-10-29",
+  "status": "locally_verified; CI_preview_pending",
+  "implementation": {
+    "usage": "Shared ledger-derived overview before reply content, responsive two/three-column metrics; info retains call/raw details",
+    "disclosure": "User-owned bound state, independent of 5-second ledger polling",
+    "context": "Fixed 28rem clamped to available viewport; one scroll container; symmetric disclosure rows without collapsed-content margins",
+    "editor": "42rem bounded width; one-row compact mobile toolbar; body/reasoning/tools/JSON tabs; no body/reasoning type titles",
+    "structured_content": "Text edits preserve other items, media and metadata; invalid JSON blocks save/copy; undo replaces JSON draft",
+    "backend": "No schema, accounting, protocol or supplier changes"
+  },
+  "local_validation": {
+    "frontend_tests": 59,
+    "new_type_a11y_diagnostics": 0,
+    "existing_upstream_diagnostics": 5756,
+    "build": "passed",
+    "responsive_editor_viewports": [
+      [
+        430,
+        932
+      ],
+      [
+        390,
+        667
+      ],
+      [
+        1280,
+        900
+      ],
+      [
+        2560,
+        1440
+      ]
+    ],
+    "app_scale": 1.1,
+    "toolbar_one_row": true,
+    "editor_footer_visible": true,
+    "desktop_width_px": 737.1875,
+    "context_height_before_after_px": 492.796875,
+    "context_native_wheel_both_ends": true,
+    "context_mobile_expansion_preserves_height": true,
+    "context_Escape_focus_return": true,
+    "raw_usage_open_after_refresh_and_wheel_ms": 25584,
+    "body_reasoning_edits_retained": true,
+    "opaque_fields_preserved": true,
+    "invalid_JSON_save_and_copy_disabled": true,
+    "JSON_undo_recovers_invalid_draft": true,
+    "keyboard_tab_navigation": true,
+    "long_text_internal_scroll_footer_visible": true,
+    "long_undo_restores_text_height": true,
+    "legacy_raw_zero_custom_fields_escaped": true,
+    "legacy_plain_editor_retained": true,
+    "provider_generations": 0,
+    "original_test_chats_modified": false,
+    "method": "Built-in browser native input and rendered DOM; physical device not claimed"
+  },
+  "ci": {
+    "status": "pending"
+  },
+  "deployment": {
+    "status": "pending_isolated_preview",
+    "production": "unchanged_R50"
+  },
+  "boundaries": [
+    "R50 production hold",
+    "U49 single validation/publication batch",
+    "Existing provider and model alias limits remain"
+  ]
+}

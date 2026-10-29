@@ -2,6 +2,10 @@
 	import { modelIdentity, modelLabel } from '$lib/utils/modelDirectory';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import MessageUsage from '$lib/components/chat/MessageUsage.svelte';
+	import MessageUsageOverview, {
+		type UsageOverview
+	} from '$lib/components/chat/MessageUsageOverview.svelte';
+	let usageOverview: UsageOverview | null = null;
 	import ReplyRevisionTools from './ReplyRevisionTools.svelte';
 	import EditPencilIcon from '$lib/components/layout/Sidebar/icons/EditPencil.svelte';
 	import CopyIcon from '$lib/components/layout/Sidebar/icons/Copy.svelte';
@@ -218,6 +222,7 @@
 	let edit = false;
 	let editedContent = '';
 	let editedOutput: any[] | null = null;
+	let editOutputValid = true;
 	let editOriginal: any = null;
 	let editTextAreaElement: HTMLTextAreaElement;
 
@@ -457,6 +462,7 @@
 	};
 
 	const editMessageConfirmHandler = async () => {
+		if (editedOutput && !editOutputValid) return;
 		if (editedOutput) {
 			await editMessage(message.id, { output: editedOutput }, false);
 		} else {
@@ -473,6 +479,7 @@
 	};
 
 	const saveAsCopyHandler = async () => {
+		if (editedOutput && !editOutputValid) return;
 		if (editedOutput) {
 			await editMessage(message.id, { output: editedOutput });
 		} else {
@@ -735,6 +742,11 @@
 				</Name>
 			{/if}
 
+			{#if !compactPreview && !edit && message.done}
+				<MessageUsageOverview
+					data={usageOverview?.messageId === message.id ? usageOverview : null}
+				/>
+			{/if}
 			<div>
 				<div class="chat-{message.role} w-full min-w-full">
 					<div>
@@ -786,7 +798,13 @@
 						{/if}
 
 						{#if edit === true}
-							<Modal show={true} size="xl" ariaLabel="编辑回复" onRequestClose={cancelEditMessage}>
+							<Modal
+								show={true}
+								size="md"
+								ariaLabel="编辑回复"
+								className="bg-white dark:bg-gray-900 rounded-3xl min-w-[min(24rem,calc(100vw-3.5rem))]"
+								onRequestClose={cancelEditMessage}
+							>
 								<div class="flex max-h-[calc(100dvh-3rem)] flex-col p-3" data-testid="reply-editor">
 									<h2 class="mb-2 shrink-0 text-sm font-semibold">编辑回复</h2>
 									<ReplyRevisionTools
@@ -823,6 +841,7 @@
 											<OutputEditView
 												compact
 												output={editedOutput}
+												bind:valid={editOutputValid}
 												onChange={(updated) => {
 													editedOutput = updated;
 												}}
@@ -871,6 +890,7 @@
 										<div>
 											<button
 												id="save-new-message-button"
+												disabled={Boolean(editedOutput) && !editOutputValid}
 												class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-2.5 text-xs font-normal text-gray-800 transition hover:bg-gray-100/70 disabled:opacity-60 dark:bg-gray-850 dark:text-white dark:hover:bg-gray-850/60"
 												on:click={() => {
 													saveAsCopyHandler();
@@ -894,6 +914,7 @@
 											{#if !message.user_id || message.user_id === $user?.id}
 												<button
 													id="confirm-edit-message-button"
+													disabled={Boolean(editedOutput) && !editOutputValid}
 													class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-2.5 text-xs font-normal text-white transition hover:bg-black disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
 													on:click={() => {
 														editMessageConfirmHandler();
@@ -1271,6 +1292,7 @@
 									{chatId}
 									messageId={message.id}
 									nativeUsage={message.usage}
+									bind:overview={usageOverview}
 									triggerClass={isLastMessage || ($settings?.highContrastMode ?? false)
 										? 'visible'
 										: 'hover-reveal'}

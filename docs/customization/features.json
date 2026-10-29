@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "R56_unified_message_info_verified_user_tuning",
+  "phase": "R57_usage_context_editor_validation",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -19,7 +19,7 @@
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
     "latest_commit": "341d26f304d8418570743198658ec9cf2edf8d8b",
-    "latest_documentation_revision": "R56/P41/U51-U52"
+    "latest_documentation_revision": "R57/P42/U53"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -116,7 +116,8 @@
         "R51",
         "R53",
         "R54",
-        "R55"
+        "R55",
+        "R57"
       ],
       "prototypes": [
         "P02",
@@ -124,7 +125,8 @@
         "P36",
         "P38",
         "P39",
-        "P40"
+        "P40",
+        "P42"
       ],
       "priority": "P1",
       "status": "verified",
@@ -184,6 +186,12 @@
         "verification": "responsive_UI_native_scroll_fixed_frame_and_CI_passed; CPA_capacity_absence_verified",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "model-editor-acceptance.json"
+      },
+      "usage_editor_R57": {
+        "implementation": "implemented",
+        "verification": "local_browser_passed; automated_checks_running",
+        "deployment": "pending_isolated_preview; R50 hold",
+        "evidence": "usage-editor-acceptance.json"
       }
     },
     {
@@ -195,7 +203,8 @@
         "R51",
         "R53",
         "R54",
-        "R56"
+        "R56",
+        "R57"
       ],
       "prototypes": [
         "P03",
@@ -203,7 +212,8 @@
         "P36",
         "P38",
         "P39",
-        "P41"
+        "P41",
+        "P42"
       ],
       "priority": "P1",
       "status": "verified",
@@ -259,6 +269,12 @@
         "verification": "native_info_legacy_failed_call_responsive_scroll_edit_undo_and_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "message-info-acceptance.json"
+      },
+      "usage_editor_R57": {
+        "implementation": "implemented",
+        "verification": "local_browser_passed; automated_checks_running",
+        "deployment": "pending_isolated_preview; R50 hold",
+        "evidence": "usage-editor-acceptance.json"
       }
     },
     {
@@ -266,11 +282,13 @@
       "title": "助手回复编辑弹窗",
       "requirements": [
         "R04",
-        "R56"
+        "R56",
+        "R57"
       ],
       "prototypes": [
         "P04",
-        "P41"
+        "P41",
+        "P42"
       ],
       "priority": "P1",
       "status": "verified",
@@ -295,6 +313,12 @@
         "verification": "native_info_legacy_failed_call_responsive_scroll_edit_undo_and_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "message-info-acceptance.json"
+      },
+      "usage_editor_R57": {
+        "implementation": "implemented",
+        "verification": "local_browser_passed; automated_checks_running",
+        "deployment": "pending_isolated_preview; R50 hold",
+        "evidence": "usage-editor-acceptance.json"
       }
     },
     {
@@ -654,13 +678,15 @@
         "R15",
         "R54",
         "R55",
-        "R56"
+        "R56",
+        "R57"
       ],
       "prototypes": [
         "P12",
         "P39",
         "P40",
-        "P41"
+        "P41",
+        "P42"
       ],
       "priority": "P0",
       "status": "verified",
@@ -723,6 +749,12 @@
         "verification": "native_info_legacy_failed_call_responsive_scroll_edit_undo_and_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "message-info-acceptance.json"
+      },
+      "usage_editor_R57": {
+        "implementation": "implemented",
+        "verification": "local_browser_passed; automated_checks_running",
+        "deployment": "pending_isolated_preview; R50 hold",
+        "evidence": "usage-editor-acceptance.json"
       }
     },
     {
@@ -1099,7 +1131,8 @@
         "R51",
         "R53",
         "R55",
-        "R56"
+        "R56",
+        "R57"
       ],
       "prototypes": [
         "P16",
@@ -1107,7 +1140,8 @@
         "P36",
         "P38",
         "P40",
-        "P41"
+        "P41",
+        "P42"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1167,6 +1201,12 @@
         "verification": "native_info_legacy_failed_call_responsive_scroll_edit_undo_and_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "message-info-acceptance.json"
+      },
+      "usage_editor_R57": {
+        "implementation": "implemented",
+        "verification": "local_browser_passed; automated_checks_running",
+        "deployment": "pending_isolated_preview; R50 hold",
+        "evidence": "usage-editor-acceptance.json"
       }
     },
     {
@@ -1249,7 +1289,8 @@
         "R53",
         "R54",
         "R55",
-        "R56"
+        "R56",
+        "R57"
       ],
       "prototypes": [
         "P18",
@@ -1258,7 +1299,8 @@
         "P38",
         "P39",
         "P40",
-        "P41"
+        "P41",
+        "P42"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1397,6 +1439,12 @@
         "verification": "native_info_legacy_failed_call_responsive_scroll_edit_undo_and_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "message-info-acceptance.json"
+      },
+      "usage_editor_R57": {
+        "implementation": "implemented",
+        "verification": "local_browser_passed; automated_checks_running",
+        "deployment": "pending_isolated_preview; R50 hold",
+        "evidence": "usage-editor-acceptance.json"
       }
     }
   ],

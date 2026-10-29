@@ -59,3 +59,8 @@ Connection model regions now align with their parent row. Both editors use fixed
 ### R56/P41 unified message info
 
 The original info toolbar position now opens one existing-library Popover for ledger usage, costs, the round snapshot and preserved native raw data. Independent inline usage cards are removed. Reply editing uses compact spacing and a scrollable body; programmatic undo/revision changes resize both structured and plain textareas. Composer triggers hide the connection subtitle without changing identity or menu grouping. Source 341d26f304d8418570743198658ec9cf2edf8d8b and CI40836739314 passed; the isolated preview is verified. See message-info-acceptance.json, including the pinned-dependency fallback after remote Helm index refresh timed out. No accounting/backend/schema changes or new provider generations. R50/U49 remain.
+
+
+### R57/P42 reply-leading usage and stable editors
+
+Essential usage/cost/snapshot metrics now precede each response; native info retains technical and raw details. User-owned disclosure state survives ledger polling. Context Popover uses a fixed viewport-bounded 28rem frame, one scroll container and symmetric disclosure rows. Reply editing is bounded to 42rem, with one-row mobile actions and Bits UI body/reasoning/tool/JSON tabs. Text changes retain non-text structured fields; invalid JSON disables saving and external undo restores the editor. Local browser acceptance, 59 frontend tests, type delta (0 new; 5756 upstream diagnostics) and production build passed. CI and isolated preview publication are pending. R50/U49 remain.

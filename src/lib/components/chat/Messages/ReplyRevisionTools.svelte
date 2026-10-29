@@ -42,27 +42,51 @@
 		? 'mb-2 border-b border-gray-100 pb-1 dark:border-gray-800'
 		: 'mb-3 rounded-2xl border border-gray-100 p-3 dark:border-gray-800'}"
 >
-	<div class="flex flex-wrap items-center {compact ? 'gap-1' : 'gap-2'}">
+	<div
+		class="flex items-center {compact ? 'gap-1' : 'flex-wrap gap-2'}"
+		data-testid="reply-revision-toolbar"
+	>
 		<button
 			type="button"
 			class="rounded-lg px-2 py-1 font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
-			on:click={() => compare(original, draft, '对照本次修改')}>对照修改</button
+			aria-label="对照修改"
+			title="对照修改"
+			on:click={() => compare(original, draft, '对照本次修改')}
+			>{#if compact}<span class="sm:hidden">对照</span><span class="hidden sm:inline">对照修改</span
+				>{:else}对照修改{/if}</button
 		>
 		<button
 			type="button"
 			class="rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-			on:click={() => onLoad(structuredClone(original))}>撤销本次修改</button
+			aria-label="撤销本次修改"
+			title="撤销本次修改"
+			on:click={() => onLoad(structuredClone(original))}
+			>{#if compact}<span class="sm:hidden">撤销</span><span class="hidden sm:inline"
+					>撤销本次修改</span
+				>{:else}撤销本次修改{/if}</button
 		>
 		{#if !temporary}
 			<button
 				type="button"
 				aria-expanded={expanded}
 				class="rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
-				on:click={showHistory}>修订历史</button
+				aria-label="修订历史"
+				title="修订历史"
+				on:click={showHistory}
+				>{#if compact}<span class="sm:hidden">历史</span><span class="hidden sm:inline"
+						>修订历史</span
+					>{:else}修订历史{/if}</button
 			>
 		{/if}
-		<label class="ms-auto flex items-center gap-2 text-gray-500 dark:text-gray-400"
-			><input type="checkbox" bind:checked={includeStructure} />对照完整内容</label
+		<label
+			class="ms-auto flex shrink-0 items-center gap-1 whitespace-nowrap text-gray-500 dark:text-gray-400"
+			><input
+				type="checkbox"
+				aria-label="对照完整内容"
+				bind:checked={includeStructure}
+			/>{#if compact}<span class="sm:hidden">完整内容</span><span class="hidden sm:inline"
+					>对照完整内容</span
+				>{:else}对照完整内容{/if}</label
 		>
 	</div>
 	{#if expanded}

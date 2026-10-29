@@ -30,3 +30,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R55/P40 is verified on isolated preview; read docs/customization/model-editor-acceptance.json. Preserve parent-aligned model regions, fixed editor frames/footers, one scrolling body and equal single-line/select heights. Do not invent provider capacity when discovery omits it.
 
 - R56/P41 is verified; read docs/customization/message-info-acceptance.json. Keep one native info entry for usage/cost/raw metadata, right/down disclosures, compact reply editing with undo-aware textarea sizing, and one-line composer model triggers with connection identity retained in menus/title/ARIA.
+
+- R57/P42 supersedes R56 summary placement: essential usage belongs before the reply body, while info keeps technical/raw details. Keep disclosure state independent of ledger polling, fixed-height context popovers, and bounded tabbed reply editing.
