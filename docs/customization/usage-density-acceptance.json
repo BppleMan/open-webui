@@ -3,7 +3,7 @@
   "prototype": "P43",
   "approval": "U56",
   "date": "2026-10-29",
-  "status": "locally_verified; CI_preview_pending",
+  "status": "verified_on_isolated_preview",
   "implementation": {
     "summary": "separate wrapping metadata row without card/title/background/border",
     "mandatory_fields": [
@@ -104,15 +104,62 @@
     "physical_device_claim": false
   },
   "ci": {
-    "status": "pending"
+    "status": "success",
+    "run_id": 40860984784,
+    "url": "https://github.com/BppleMan/open-webui/actions/runs/40860984784",
+    "source_commit": "1db8c067c403d0829f006c65efd02390cec26979",
+    "jobs": {
+      "backend": "success",
+      "frontend": "success",
+      "image": "success"
+    },
+    "backend_tests": 351,
+    "frontend_tests": 63,
+    "new_type_diagnostics": 0,
+    "upstream_diagnostics": 5756
   },
   "deployment": {
-    "status": "pending_isolated_preview",
-    "production": "unchanged_R50"
+    "status": "Synced/Healthy_and_browser_verified",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-1db8c067c403d0829f006c65efd02390cec26979@sha256:705bff22285a2214b2c6108e51eefe6dd6cf0570675d5ff2d4aaf6f9229b9f42",
+    "image_id": "ghcr.io/bppleman/open-webui-oi@sha256:705bff22285a2214b2c6108e51eefe6dd6cf0570675d5ff2d4aaf6f9229b9f42",
+    "gitops_commit": "334a6282f0d25d2e9eb856fe5062c53a1ec67e8d",
+    "restarts": 0,
+    "schema": "oi0000000007",
+    "schema_migration": "none",
+    "production": "unchanged_R50",
+    "helm": {
+      "dependency_refresh": "timed_out_45s",
+      "refresh_options": "skip unrelated repository index refresh; dependencies are version-pinned",
+      "locked_dependencies": "byte_identical_to_previous_deployed_revision",
+      "hashes": {
+        "charts/open-webui-staging/Chart.yaml": "300a9cac0e0accfe81431ecb03e72a5500b40d61bdbc834450091e47e78dcff7",
+        "charts/open-webui-staging/Chart.lock": "4b5238797ba0ad38ef28dffbb8910a428598ea390e4f609c3e51a73b90eb4b48",
+        "charts/open-webui-staging/charts/app-wrapper-0.0.4.tgz": "a471e66c0ab46a04f07f777a747f1df2b60c2a36052f7775c6e1728f1d97192a",
+        "charts/open-webui-staging/charts/open-webui-16.6.0.tgz": "ca96e875d059a115c55620a75013e72690dc0e703a023ee8c8c7dae6b903d637"
+      },
+      "lint": "passed",
+      "render": "passed",
+      "scope": "staging_image_only"
+    },
+    "sync": "directed_refresh_sync_success"
   },
   "boundaries": [
     "R59 thought-summary request settings remain proposed",
     "No supplier calls or runtime parameter changes",
     "R50 production hold"
-  ]
+  ],
+  "source_commit": "1db8c067c403d0829f006c65efd02390cec26979",
+  "preview_validation": {
+    "required_fields_visible": true,
+    "no_horizontal_overflow": true,
+    "narrow_wrapping": true,
+    "full_overview": true,
+    "no_nested_disclosures": true,
+    "flat_call_details": true,
+    "raw_selection_retained": true,
+    "raw_scroll_both_ends": true,
+    "reopen_explicit_refresh_preserves_source": true,
+    "exact_cost_preserved": true,
+    "zero_distinct_from_unknown": true
+  }
 }

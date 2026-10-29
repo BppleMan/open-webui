@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "R58_local_validation; CI_preview_pending; R59_request_controls_proposed",
+  "phase": "R58_wrapping_usage_verified; R59_request_controls_proposed; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,12 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+    "latest_code_commit": "1db8c067c403d0829f006c65efd02390cec26979",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
-    "latest_documentation_revision": "R58/P43/U56 implementation; R59/P44 diagnosis"
+    "latest_commit": "1db8c067c403d0829f006c65efd02390cec26979",
+    "latest_documentation_revision": "R58/P43/U56 verified; R59 request controls proposed"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -113,7 +113,8 @@
         "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50"
+        "deployment": "unchanged_R57; CPA_unchanged_R50",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
       }
     },
     {
@@ -293,11 +294,12 @@
         "evidence": "usage-editor-acceptance.json"
       },
       "usage_density_R58": {
-        "status": "implemented",
-        "implementation": "wrapping_independent_row_complete_flat_info",
-        "verification": "local_browser_63_frontend_zero_new_type_diagnostics; build_pending",
-        "deployment": "pending_isolated_preview; R50",
-        "decision": "U56 approved separate row with mandatory cache read/write and cost"
+        "status": "verified",
+        "implementation": "wrapping_metadata_and_complete_flat_info",
+        "source_commit": "1db8c067c403d0829f006c65efd02390cec26979",
+        "verification": "local_responsive_and_actual_preview; 63_frontend_351_backend_and_integration_CI",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "usage-density-acceptance.json"
       },
       "thought_visibility_R59": {
         "status": "diagnosed; solution_proposed",
@@ -305,7 +307,8 @@
         "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50"
+        "deployment": "unchanged_R57; CPA_unchanged_R50",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
       }
     },
     {
@@ -408,7 +411,8 @@
         "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50"
+        "deployment": "unchanged_R57; CPA_unchanged_R50",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
       }
     },
     {
@@ -582,7 +586,8 @@
         "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50"
+        "deployment": "unchanged_R57; CPA_unchanged_R50",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
       }
     },
     {
@@ -814,11 +819,12 @@
         "evidence": "usage-editor-acceptance.json"
       },
       "usage_density_R58": {
-        "status": "implemented",
-        "implementation": "wrapping_independent_row_complete_flat_info",
-        "verification": "local_browser_63_frontend_zero_new_type_diagnostics; build_pending",
-        "deployment": "pending_isolated_preview; R50",
-        "decision": "U56 approved separate row with mandatory cache read/write and cost"
+        "status": "verified",
+        "implementation": "wrapping_metadata_and_complete_flat_info",
+        "source_commit": "1db8c067c403d0829f006c65efd02390cec26979",
+        "verification": "local_responsive_and_actual_preview; 63_frontend_351_backend_and_integration_CI",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "usage-density-acceptance.json"
       },
       "thought_visibility_R59": {
         "status": "diagnosed; solution_proposed",
@@ -826,7 +832,8 @@
         "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50"
+        "deployment": "unchanged_R57; CPA_unchanged_R50",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
       }
     },
     {
@@ -1284,11 +1291,12 @@
         "evidence": "usage-editor-acceptance.json"
       },
       "usage_density_R58": {
-        "status": "implemented",
-        "implementation": "wrapping_independent_row_complete_flat_info",
-        "verification": "local_browser_63_frontend_zero_new_type_diagnostics; build_pending",
-        "deployment": "pending_isolated_preview; R50",
-        "decision": "U56 approved separate row with mandatory cache read/write and cost"
+        "status": "verified",
+        "implementation": "wrapping_metadata_and_complete_flat_info",
+        "source_commit": "1db8c067c403d0829f006c65efd02390cec26979",
+        "verification": "local_responsive_and_actual_preview; 63_frontend_351_backend_and_integration_CI",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "usage-density-acceptance.json"
       }
     },
     {
@@ -1534,11 +1542,12 @@
         "evidence": "usage-editor-acceptance.json"
       },
       "usage_density_R58": {
-        "status": "implemented",
-        "implementation": "wrapping_independent_row_complete_flat_info",
-        "verification": "local_browser_63_frontend_zero_new_type_diagnostics; build_pending",
-        "deployment": "pending_isolated_preview; R50",
-        "decision": "U56 approved separate row with mandatory cache read/write and cost"
+        "status": "verified",
+        "implementation": "wrapping_metadata_and_complete_flat_info",
+        "source_commit": "1db8c067c403d0829f006c65efd02390cec26979",
+        "verification": "local_responsive_and_actual_preview; 63_frontend_351_backend_and_integration_CI",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "usage-density-acceptance.json"
       },
       "thought_visibility_R59": {
         "status": "diagnosed; solution_proposed",
@@ -1546,7 +1555,8 @@
         "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50"
+        "deployment": "unchanged_R57; CPA_unchanged_R50",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
       }
     }
   ],
@@ -1736,6 +1746,17 @@
       "browser": "local_and_preview_verified",
       "ci": "https://github.com/BppleMan/open-webui/actions/runs/40845461704",
       "evidence": "usage-editor-acceptance.json"
+    },
+    "usage_density_R58": {
+      "source_commit": "1db8c067c403d0829f006c65efd02390cec26979",
+      "frontend_tests": 63,
+      "backend_tests_CI": 351,
+      "new_type_diagnostics": 0,
+      "upstream_diagnostics": 5756,
+      "build": "passed_local_and_CI",
+      "browser": "local_responsive_and_deployed_preview_passed",
+      "ci": "https://github.com/BppleMan/open-webui/actions/runs/40860984784",
+      "evidence": "usage-density-acceptance.json"
     }
   },
   "review_remediation": {

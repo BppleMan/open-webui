@@ -178,3 +178,5 @@ Replace the visually dominant reply-leading statistics card with a minimal metad
 Reasoning-token usage does not imply a readable thought block was returned. Inspect saved native parts and configured summary visibility without new supplier calls. Keep output-inclusive-reasoning accounting accurate. Propose an independent summary-visibility control; preserve explicit upstream availability and evidence limits.
 
 R58 approved refinement: implement a separate wrapping metadata row with input, output, cache reads, cache writes and per-response cost always visible; include reasoning, totals, elapsed time and cumulative costs where available. Use restrained icons/colors and preserve complete flat info details. R59 request visibility controls remain proposed; no provider request behavior change.
+
+R58/U56收口：独立可换行摘要、缓存读写和本次费用常显、克制彩色线框图标、完整info平级标签已在隔离预发验收。R59仅补当前回复无可读摘要说明，请求开关仍候选，未启用新供应商参数。R50保持。

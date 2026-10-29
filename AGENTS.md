@@ -38,3 +38,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R58/P43 and R59/P44 are discussion/diagnosis, not implemented: the user requested a design discussion first. Info must retain full usage/cost details alongside a minimal external summary, without nested disclosures. Reasoning usage does not guarantee returned readable thoughts; preserve this distinction and do not regenerate paid requests for diagnosis. Runtime remains R57 under R50.
 
 - U56 approves implementing R58/P43: a separate wrapping metadata row with input/output/cache read/cache write/current cost always visible, restrained icons/colors and complete flat info tabs. R59 request controls remain proposed; keep supplier requests unchanged. R50/U49 apply.
+
+- R58/P43/U56 is verified on isolated preview; read docs/customization/usage-density-acceptance.json. Keep the independent wrapping row and full flat info, unknown/zero distinctions, decimal amounts and stable source selection. R59 summary-request controls remain proposed.
