@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "R55_model_editor_refinement_in_progress",
+  "phase": "R55_model_editor_verified_user_tuning",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,12 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
+    "latest_code_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
-    "latest_documentation_revision": "R54/P39/U49"
+    "latest_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
+    "latest_documentation_revision": "R55/P40/U50"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -180,8 +180,10 @@
       },
       "model_editor_R55": {
         "implementation": "implemented",
-        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
+        "verification": "responsive_UI_native_scroll_fixed_frame_and_CI_passed; CPA_capacity_absence_verified",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "model-editor-acceptance.json"
       }
     },
     {
@@ -690,8 +692,10 @@
       },
       "model_editor_R55": {
         "implementation": "implemented",
-        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
+        "verification": "responsive_UI_native_scroll_fixed_frame_and_CI_passed; CPA_capacity_absence_verified",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "model-editor-acceptance.json"
       }
     },
     {
@@ -841,8 +845,10 @@
       },
       "model_editor_R55": {
         "implementation": "implemented",
-        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
+        "verification": "responsive_UI_native_scroll_fixed_frame_and_CI_passed; CPA_capacity_absence_verified",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "model-editor-acceptance.json"
       }
     },
     {
@@ -933,8 +939,10 @@
       },
       "model_editor_R55": {
         "implementation": "implemented",
-        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
+        "verification": "responsive_UI_native_scroll_fixed_frame_and_CI_passed; CPA_capacity_absence_verified",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "model-editor-acceptance.json"
       }
     },
     {
@@ -1110,8 +1118,10 @@
       },
       "model_editor_R55": {
         "implementation": "implemented",
-        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
+        "verification": "responsive_UI_native_scroll_fixed_frame_and_CI_passed; CPA_capacity_absence_verified",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "model-editor-acceptance.json"
       }
     },
     {
@@ -1329,8 +1339,10 @@
       },
       "model_editor_R55": {
         "implementation": "implemented",
-        "verification": "local_browser_and_frontend_type_build_passed; final_CI_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
+        "verification": "responsive_UI_native_scroll_fixed_frame_and_CI_passed; CPA_capacity_absence_verified",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "model-editor-acceptance.json"
       }
     }
   ],
@@ -1398,7 +1410,7 @@
       "tag": "sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
       "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
     },
-    "actual_CI": "https://github.com/BppleMan/open-webui/actions/runs/40819793483",
+    "actual_CI": "https://github.com/BppleMan/open-webui/actions/runs/40822743633",
     "stage8A": {
       "status": "verified_with_documented_methods",
       "source": "61ff81c61e2c9fee90d2237679c64833196978bb",
@@ -1487,6 +1499,17 @@
       "ci": "https://github.com/BppleMan/open-webui/actions/runs/40819793483",
       "browser": "local responsive matrix and deployed preview native input passed",
       "evidence": "context-popover-acceptance.json"
+    },
+    "model_editor_R55": {
+      "source_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
+      "backend_tests_CI": 351,
+      "frontend_tests": 57,
+      "new_type_a11y_diagnostics": 0,
+      "existing_upstream_diagnostics": 5765,
+      "production_build": "passed_in_exact_source_CI",
+      "browser": "local_responsive_and_deployed_preview_passed",
+      "ci": "https://github.com/BppleMan/open-webui/actions/runs/40822743633",
+      "evidence": "model-editor-acceptance.json"
     }
   },
   "review_remediation": {

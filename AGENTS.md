@@ -26,3 +26,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - User U49: finish the related edits as a batch before running browser acceptance, tests, type checks and build. Publish one validated preview update per batch; avoid full checks and image builds for every small edit.
 
 - R54 is verified on the isolated preview. Read docs/customization/context-popover-acceptance.json; keep the existing Bits UI Popover and single vertical scroll container. Continue user tuning under R50.
+
+- R55/P40 is verified on isolated preview; read docs/customization/model-editor-acceptance.json. Preserve parent-aligned model regions, fixed editor frames/footers, one scrolling body and equal single-line/select heights. Do not invent provider capacity when discovery omits it.

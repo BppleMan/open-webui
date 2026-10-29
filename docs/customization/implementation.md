@@ -49,3 +49,8 @@ Protocol registry, persisted service routing and OI7 model inheritance are imple
 ### R54/P39 context Popover acceptance
 
 The context popup now uses the installed Bits UI Popover primitive and one vertical scroll container. Source 3ea4c2b4a1a3c2501d592d51e56b075e471870b1 passed the final browser matrix, frontend tests, type delta, production build and CI. Only the isolated preview was updated. See context-popover-acceptance.json for the scroll measurements, CI and immutable image. U49 requires completing related edits before the batch of checks and preview publication. R50 remains in force.
+
+
+### R55/P40 model editor refinement
+
+Connection model regions now align with their parent row. Both editors use fixed viewport-bounded frames, independent body scrolling and fixed action footers. Single-line controls match the existing settings select height, with separate multiline JSON styling. Capacity displays shared context, independent input and output limits separately. Existing CPA discovery did not advertise the sampled limits; no values were invented or backend behavior changed. Source 98e09d6fd4de602f5b89aa1077710b63331b51c2 and CI40822743633 passed; isolated preview is verified. See model-editor-acceptance.json, including the pinned-dependency verification used after remote Helm refresh stalled. R50/U49 remain.

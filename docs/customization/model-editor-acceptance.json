@@ -1,0 +1,99 @@
+{
+  "requirement": "R55",
+  "prototype": "P40",
+  "date": "2026-10-29",
+  "source_commit": "98e09d6fd4de602f5b89aa1077710b63331b51c2",
+  "status": "verified_on_isolated_preview",
+  "implementation": {
+    "model_region": "Same left/right bounds as the parent connection row; compact nested surface with five-row scroll",
+    "editors": "Fixed viewport-bounded frame, fixed header/footer and one scrolling form body; disclosures do not resize the frame",
+    "controls": "All single-line text/number/password fields use the existing 1.75rem select height; multiline JSON remains multiline",
+    "capacity": "Separate shared context capacity, independent input limit and max output; unknown stays unknown and manual entry remains available",
+    "business_logic": "Model save, identity, discovery and credential logic unchanged; no backend or schema changes"
+  },
+  "capacity_investigation": {
+    "source": "Existing CPA read-only model-list endpoints",
+    "sample_count": 3,
+    "gemini_directory": "No inputTokenLimit or outputTokenLimit returned",
+    "openai_directory": "No context_length or max_completion_tokens returned for the same samples",
+    "OI_mapping": "Existing parser supports the native Gemini limit fields; there was no limit value to map",
+    "interpretation": "The CPA gateway does not advertise these limits. This does not establish whether its underlying provider has the metadata. Do not infer capacity from model names.",
+    "provider_generations": 0
+  },
+  "local_validation": {
+    "frontend_tests": 57,
+    "new_type_a11y_diagnostics": 0,
+    "upstream_diagnostics": 5765,
+    "build": "passed; final search-field class included in exact-source CI build",
+    "viewport_widths": [
+      390,
+      430,
+      894,
+      1280
+    ],
+    "short_viewport": [
+      390,
+      667
+    ],
+    "app_scale": 1.1,
+    "model_frame_height_before_after": [
+      774.390625,
+      774.390625
+    ],
+    "connection_frame_unchanged": true,
+    "inputs_selects_height_px": 30.796875,
+    "footer_stable": true,
+    "five_rows_preserved": true,
+    "model_region_edges_match_parent": true,
+    "native_wheel_reaches_both_ends": true,
+    "select_Escape_preserves_editor": true,
+    "evidence_method": "Built-in browser native wheel/keyboard and measured DOM rectangles; no physical device claim"
+  },
+  "ci": {
+    "run_id": 40822743633,
+    "url": "https://github.com/BppleMan/open-webui/actions/runs/40822743633",
+    "status": "success",
+    "jobs": {
+      "backend": "success",
+      "frontend": "success",
+      "image": "success"
+    },
+    "backend_tests": 351,
+    "frontend_tests": 57
+  },
+  "deployment": {
+    "status": "Synced/Healthy_and_browser_verified",
+    "production": "unchanged_R50",
+    "database_migration": "none",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-98e09d6fd4de602f5b89aa1077710b63331b51c2@sha256:ff511f4e956f30c8623a37031968090d7343a16d141b0816a2d5741267b1e4d6",
+    "gitops_commit": "267630cc7aac6e0bb4ba2ddf764eeda5e699e090",
+    "helm": {
+      "dependency_refresh": "Two attempts were stopped after hanging in the remote index/download step; not marked as passed",
+      "fallback": "Existing Chart.yaml, Chart.lock and both committed tgz archives exactly match the previous deployed Git revision",
+      "dependencies_changed": false,
+      "lint": "passed",
+      "render": "passed",
+      "diff_check": "passed",
+      "mutation": "one image reference in charts/open-webui-staging/values.yaml",
+      "argocd_sync": "Automatic sync started after hard refresh; explicit sync returned operation-already-in-progress, so it was not forced"
+    },
+    "image_id": "ghcr.io/bppleman/open-webui-oi@sha256:ff511f4e956f30c8623a37031968090d7343a16d141b0816a2d5741267b1e4d6",
+    "pod_restarts": 0,
+    "schema": "oi0000000007"
+  },
+  "remaining_boundaries": [
+    "Stage8B requires new explicit authorization",
+    "Existing provider/CORS and ambiguous legacy-alias boundaries remain",
+    "No invented limits, prices or extra model calls"
+  ],
+  "preview_validation": {
+    "model_region_edges_match_parent": true,
+    "collapsed_expanded_frame_unchanged": true,
+    "footer_unchanged": true,
+    "search_inputs_selects_height_px": 30.796875,
+    "scroll_top": 0,
+    "scroll_bottom": 904,
+    "max_scroll_rounded": 905,
+    "browser_method": "Built-in browser native wheel, DOM geometry and screenshot; no settings saved during UI acceptance"
+  }
+}
