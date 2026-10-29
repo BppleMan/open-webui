@@ -34,3 +34,7 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R57/P42 supersedes R56 summary placement: essential usage belongs before the reply body, while info keeps technical/raw details. Keep disclosure state independent of ledger polling, fixed-height context popovers, and bounded tabbed reply editing.
 
 - R57/P42 is verified on isolated preview; read docs/customization/usage-editor-acceptance.json. Keep reply-leading metrics, polling-independent disclosures, fixed context frames and compact tabbed editing. R50/U49 remain.
+
+- R58/P43 and R59/P44 are discussion/diagnosis, not implemented: the user requested a design discussion first. Info must retain full usage/cost details alongside a minimal external summary, without nested disclosures. Reasoning usage does not guarantee returned readable thoughts; preserve this distinction and do not regenerate paid requests for diagnosis. Runtime remains R57 under R50.
+
+- U56 approves implementing R58/P43: a separate wrapping metadata row with input/output/cache read/cache write/current cost always visible, restrained icons/colors and complete flat info tabs. R59 request controls remain proposed; keep supplier requests unchanged. R50/U49 apply.

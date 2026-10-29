@@ -1,0 +1,118 @@
+{
+  "requirement": "R58",
+  "prototype": "P43",
+  "approval": "U56",
+  "date": "2026-10-29",
+  "status": "locally_verified; CI_preview_pending",
+  "implementation": {
+    "summary": "separate wrapping metadata row without card/title/background/border",
+    "mandatory_fields": [
+      "cache_read_tokens",
+      "cache_write_tokens",
+      "cost",
+      "input_tokens",
+      "output_tokens"
+    ],
+    "additional_fields": [
+      "reasoning_tokens",
+      "total_tokens",
+      "duration",
+      "call_count_when_multiple",
+      "cumulative_actual_estimated_unknown"
+    ],
+    "icons": "existing line icons and new currency outline; restrained theme colors",
+    "info": "complete Overview/Calls/Raw sibling tabs; no nested disclosure; immutable call-ID source selection",
+    "reasoning_note": "only describes current readable content; no new summary-request controls",
+    "accounting": "no backend/schema/request changes; unique original call IDs; existing decimal string aggregation"
+  },
+  "local_validation": {
+    "frontend_tests": 63,
+    "new_type_a11y_diagnostics": 0,
+    "upstream_diagnostics": 5756,
+    "build": "passed",
+    "viewports": [
+      {
+        "size": [
+          430,
+          932
+        ],
+        "summary_height_px": 46.1875,
+        "overflow": false
+      },
+      {
+        "size": [
+          390,
+          844
+        ],
+        "summary_height_px": 70.375,
+        "overflow": false
+      },
+      {
+        "size": [
+          320,
+          700
+        ],
+        "summary_height_px": 70.375,
+        "overflow": false
+      },
+      {
+        "size": [
+          909,
+          953
+        ],
+        "summary_height_px": 22,
+        "overflow": false
+      },
+      {
+        "size": [
+          1280,
+          900
+        ],
+        "summary_height_px": 22,
+        "overflow": false
+      },
+      {
+        "size": [
+          2560,
+          1440
+        ],
+        "summary_height_px": 22,
+        "overflow": false
+      }
+    ],
+    "desktop_sidebar": {
+      "height": 46.1875,
+      "overflow": false,
+      "width": 589
+    },
+    "app_scale": 1.1,
+    "light_dark": "verified; original_light_restored",
+    "all_required_fields_visible": true,
+    "known_zero_vs_unknown_cache": true,
+    "exact_cost_visible": "0.000273",
+    "round_cost_visible": "0.00082575",
+    "raw_refresh_elapsed_ms": 106497,
+    "raw_call_id_retained": true,
+    "explicit_reopen_refresh_retains_tab_and_source": true,
+    "raw_scroll_both_ends": true,
+    "select_Escape_keeps_parent_popover": true,
+    "keyboard_tabs": true,
+    "legacy_zero_custom_and_escaped_fields": true,
+    "nested_disclosures": 0,
+    "provider_generations": 0,
+    "test_chat_edits_saved": false,
+    "physical_device_claim": false
+  },
+  "ci": {
+    "status": "pending"
+  },
+  "deployment": {
+    "status": "pending_isolated_preview",
+    "production": "unchanged_R50"
+  },
+  "boundaries": [
+    "R59 thought-summary request settings remain proposed",
+    "No supplier calls or runtime parameter changes",
+    "R50 production hold"
+  ]
+}

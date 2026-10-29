@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "R57_usage_context_editor_verified; user_tuning; stage8B_not_authorized",
+  "phase": "R58_local_validation; CI_preview_pending; R59_request_controls_proposed",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -19,7 +19,7 @@
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
     "latest_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
-    "latest_documentation_revision": "R57/P42/U53"
+    "latest_documentation_revision": "R58/P43/U56 implementation; R59/P44 diagnosis"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -42,14 +42,16 @@
         "R33",
         "R51",
         "R52",
-        "R53"
+        "R53",
+        "R59"
       ],
       "prototypes": [
         "P01",
         "P20",
         "P36",
         "P37",
-        "P38"
+        "P38",
+        "P44"
       ],
       "priority": "P1",
       "status": "verified",
@@ -104,6 +106,14 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "thought_visibility_R59": {
+        "status": "diagnosed; solution_proposed",
+        "implementation": "not_started",
+        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
+        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
+        "deployment": "unchanged_R57; CPA_unchanged_R50"
       }
     },
     {
@@ -205,7 +215,9 @@
         "R53",
         "R54",
         "R56",
-        "R57"
+        "R57",
+        "R58",
+        "R59"
       ],
       "prototypes": [
         "P03",
@@ -214,7 +226,9 @@
         "P38",
         "P39",
         "P41",
-        "P42"
+        "P42",
+        "P43",
+        "P44"
       ],
       "priority": "P1",
       "status": "verified",
@@ -277,6 +291,21 @@
         "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
+      },
+      "usage_density_R58": {
+        "status": "implemented",
+        "implementation": "wrapping_independent_row_complete_flat_info",
+        "verification": "local_browser_63_frontend_zero_new_type_diagnostics; build_pending",
+        "deployment": "pending_isolated_preview; R50",
+        "decision": "U56 approved separate row with mandatory cache read/write and cost"
+      },
+      "thought_visibility_R59": {
+        "status": "diagnosed; solution_proposed",
+        "implementation": "not_started",
+        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
+        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
+        "deployment": "unchanged_R57; CPA_unchanged_R50"
       }
     },
     {
@@ -329,11 +358,13 @@
       "title": "自动生成推理滑杆",
       "requirements": [
         "R05",
-        "R53"
+        "R53",
+        "R59"
       ],
       "prototypes": [
         "P05",
-        "P38"
+        "P38",
+        "P44"
       ],
       "priority": "P1",
       "status": "verified",
@@ -370,6 +401,14 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "thought_visibility_R59": {
+        "status": "diagnosed; solution_proposed",
+        "implementation": "not_started",
+        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
+        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
+        "deployment": "unchanged_R57; CPA_unchanged_R50"
       }
     },
     {
@@ -481,13 +520,15 @@
         "R10",
         "R51",
         "R52",
-        "R53"
+        "R53",
+        "R59"
       ],
       "prototypes": [
         "P08",
         "P36",
         "P37",
-        "P38"
+        "P38",
+        "P44"
       ],
       "priority": "P1",
       "status": "verified",
@@ -534,6 +575,14 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "thought_visibility_R59": {
+        "status": "diagnosed; solution_proposed",
+        "implementation": "not_started",
+        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
+        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
+        "deployment": "unchanged_R57; CPA_unchanged_R50"
       }
     },
     {
@@ -682,14 +731,18 @@
         "R54",
         "R55",
         "R56",
-        "R57"
+        "R57",
+        "R58",
+        "R59"
       ],
       "prototypes": [
         "P12",
         "P39",
         "P40",
         "P41",
-        "P42"
+        "P42",
+        "P43",
+        "P44"
       ],
       "priority": "P0",
       "status": "verified",
@@ -759,6 +812,21 @@
         "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
+      },
+      "usage_density_R58": {
+        "status": "implemented",
+        "implementation": "wrapping_independent_row_complete_flat_info",
+        "verification": "local_browser_63_frontend_zero_new_type_diagnostics; build_pending",
+        "deployment": "pending_isolated_preview; R50",
+        "decision": "U56 approved separate row with mandatory cache read/write and cost"
+      },
+      "thought_visibility_R59": {
+        "status": "diagnosed; solution_proposed",
+        "implementation": "not_started",
+        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
+        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
+        "deployment": "unchanged_R57; CPA_unchanged_R50"
       }
     },
     {
@@ -1136,7 +1204,8 @@
         "R53",
         "R55",
         "R56",
-        "R57"
+        "R57",
+        "R58"
       ],
       "prototypes": [
         "P16",
@@ -1145,7 +1214,8 @@
         "P38",
         "P40",
         "P41",
-        "P42"
+        "P42",
+        "P43"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1212,6 +1282,13 @@
         "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
+      },
+      "usage_density_R58": {
+        "status": "implemented",
+        "implementation": "wrapping_independent_row_complete_flat_info",
+        "verification": "local_browser_63_frontend_zero_new_type_diagnostics; build_pending",
+        "deployment": "pending_isolated_preview; R50",
+        "decision": "U56 approved separate row with mandatory cache read/write and cost"
       }
     },
     {
@@ -1295,7 +1372,9 @@
         "R54",
         "R55",
         "R56",
-        "R57"
+        "R57",
+        "R58",
+        "R59"
       ],
       "prototypes": [
         "P18",
@@ -1305,7 +1384,9 @@
         "P39",
         "P40",
         "P41",
-        "P42"
+        "P42",
+        "P43",
+        "P44"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1451,6 +1532,21 @@
         "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
+      },
+      "usage_density_R58": {
+        "status": "implemented",
+        "implementation": "wrapping_independent_row_complete_flat_info",
+        "verification": "local_browser_63_frontend_zero_new_type_diagnostics; build_pending",
+        "deployment": "pending_isolated_preview; R50",
+        "decision": "U56 approved separate row with mandatory cache read/write and cost"
+      },
+      "thought_visibility_R59": {
+        "status": "diagnosed; solution_proposed",
+        "implementation": "not_started",
+        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
+        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
+        "deployment": "unchanged_R57; CPA_unchanged_R50"
       }
     }
   ],

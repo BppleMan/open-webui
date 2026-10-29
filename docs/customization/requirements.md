@@ -169,3 +169,12 @@ R56收口：原info位置统一用量/费用入口，独立usage框移除；折�
 Show essential usage/cost metrics before the reply body, with technical/raw details in the native info entry. This supersedes R56's summary placement. Preserve disclosure state across ledger refresh. Use a fixed-height viewport-bounded context popover and consistent section spacing. Edit body/reasoning through tabs without internal type titles; bound desktop editor width and keep controls/actions within a 430×932 viewport. Batch validation (U49), isolated preview only (R50).
 
 R57落地：八项批注已在P42实现并完成内置浏览器及隔离预发验收，关联F02/F03/F04/F12/F16/F18。正式上线仍受R50限制。
+
+
+## R58 — Quiet inline usage and complete message information (discussion)
+Replace the visually dominant reply-leading statistics card with a minimal metadata treatment. Keep the complete usage, costs and cumulative snapshot in info even when an outside summary exists. Avoid nested disclosures. The user requests design discussion before implementation; R50/U49 remain.
+
+## R59 — Distinguish reasoning usage from returned summaries (diagnosis)
+Reasoning-token usage does not imply a readable thought block was returned. Inspect saved native parts and configured summary visibility without new supplier calls. Keep output-inclusive-reasoning accounting accurate. Propose an independent summary-visibility control; preserve explicit upstream availability and evidence limits.
+
+R58 approved refinement: implement a separate wrapping metadata row with input, output, cache reads, cache writes and per-response cost always visible; include reasoning, totals, elapsed time and cumulative costs where available. Use restrained icons/colors and preserve complete flat info details. R59 request visibility controls remain proposed; no provider request behavior change.

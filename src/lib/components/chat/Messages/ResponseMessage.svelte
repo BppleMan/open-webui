@@ -2,6 +2,7 @@
 	import { modelIdentity, modelLabel } from '$lib/utils/modelDirectory';
 	import Modal from '$lib/components/common/Modal.svelte';
 	import MessageUsage from '$lib/components/chat/MessageUsage.svelte';
+	import { hasReadableThoughts } from '$lib/utils/messageUsage';
 	import MessageUsageOverview, {
 		type UsageOverview
 	} from '$lib/components/chat/MessageUsageOverview.svelte';
@@ -1292,6 +1293,7 @@
 									{chatId}
 									messageId={message.id}
 									nativeUsage={message.usage}
+									readableThoughts={hasReadableThoughts(message.output)}
 									bind:overview={usageOverview}
 									triggerClass={isLastMessage || ($settings?.highContrastMode ?? false)
 										? 'visible'
