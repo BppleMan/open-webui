@@ -40,7 +40,6 @@
 		copyToClipboard as _copyToClipboard,
 		approximateToHumanReadable,
 		getMessageContentParts,
-		sanitizeResponseContent,
 		createMessagesList,
 		formatMessageTimestamp,
 		formatMessageTimestampFull,
@@ -81,7 +80,7 @@
 		id: string;
 		model: string;
 		modelName?: string;
-		oi_model_identity?: import("$lib/utils/modelDirectory").DirectoryModel;
+		oi_model_identity?: import('$lib/utils/modelDirectory').DirectoryModel;
 		content: string;
 		output?: OutputItem[];
 		finish_reason?: string;
@@ -788,9 +787,10 @@
 
 						{#if edit === true}
 							<Modal show={true} size="xl" ariaLabel="编辑回复" onRequestClose={cancelEditMessage}>
-								<div class="max-h-[88dvh] overflow-y-auto p-3">
-									<h2 class="mb-3 font-semibold">编辑回复</h2>
+								<div class="flex max-h-[calc(100dvh-3rem)] flex-col p-3" data-testid="reply-editor">
+									<h2 class="mb-2 shrink-0 text-sm font-semibold">编辑回复</h2>
 									<ReplyRevisionTools
+										compact
 										{chatId}
 										messageId={message.id}
 										temporary={$temporaryChatEnabled}
@@ -799,15 +799,21 @@
 											content: postprocessAfterEditing(editedContent),
 											output: editedOutput
 										}}
-										onLoad={(revision) => {
+										onLoad={async (revision) => {
 											editedOutput = revision.output?.length
 												? structuredClone(revision.output)
 												: null;
 											editedContent = preprocessForEditing(revision.content ?? '');
+											await tick();
+											if (!editedOutput && editTextAreaElement) {
+												editTextAreaElement.style.height = '';
+												editTextAreaElement.style.height = `${editTextAreaElement.scrollHeight}px`;
+											}
 										}}
 									/>
 									<div
-										class="w-full bg-gray-50 dark:bg-gray-800 rounded-3xl px-3 py-3 my-2 {($settings?.highContrastMode ??
+										data-testid="reply-editor-body"
+										class="min-h-0 w-full overflow-y-auto overscroll-contain bg-gray-50/60 dark:bg-gray-800 rounded-lg p-2 {($settings?.highContrastMode ??
 										false)
 											? 'focus-within:outline focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-blue-500'
 											: ''}"
@@ -815,6 +821,7 @@
 										{#if editedOutput}
 											<!-- Structured output editor (visual + JSON toggle) -->
 											<OutputEditView
+												compact
 												output={editedOutput}
 												onChange={(updated) => {
 													editedOutput = updated;
@@ -831,11 +838,16 @@
 													const messagesContainer = document.getElementById('messages-container');
 													const savedScrollTop = messagesContainer?.scrollTop ?? 0;
 													const textarea = e.currentTarget;
+													const editor = textarea.closest<HTMLElement>(
+														'[data-testid="reply-editor-body"]'
+													);
+													const editorScroll = editor?.scrollTop;
 
 													textarea.style.height = '';
 													textarea.style.height = `${textarea.scrollHeight}px`;
 
 													if (messagesContainer) messagesContainer.scrollTop = savedScrollTop;
+													if (editor && editorScroll !== undefined) editor.scrollTop = editorScroll;
 												}}
 												on:keydown={(e) => {
 													if (e.key === 'Escape') {
@@ -851,43 +863,45 @@
 												}}
 											></textarea>
 										{/if}
+									</div>
+									<div
+										class="mt-2 flex shrink-0 justify-between gap-2 text-sm font-normal"
+										data-testid="reply-editor-footer"
+									>
+										<div>
+											<button
+												id="save-new-message-button"
+												class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-2.5 text-xs font-normal text-gray-800 transition hover:bg-gray-100/70 disabled:opacity-60 dark:bg-gray-850 dark:text-white dark:hover:bg-gray-850/60"
+												on:click={() => {
+													saveAsCopyHandler();
+												}}
+											>
+												{$i18n.t('Save As Copy')}
+											</button>
+										</div>
 
-										<div class=" mt-2 flex justify-between text-sm font-normal">
-											<div>
+										<div class="flex space-x-1.5">
+											<button
+												id="close-edit-message-button"
+												class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-normal text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-60 dark:text-gray-400 dark:hover:bg-gray-850 dark:hover:text-white"
+												on:click={() => {
+													cancelEditMessage();
+												}}
+											>
+												{$i18n.t('Cancel')}
+											</button>
+
+											{#if !message.user_id || message.user_id === $user?.id}
 												<button
-													id="save-new-message-button"
-													class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-100 px-2.5 text-xs font-normal text-gray-800 transition hover:bg-gray-100/70 disabled:opacity-60 dark:bg-gray-850 dark:text-white dark:hover:bg-gray-850/60"
+													id="confirm-edit-message-button"
+													class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-2.5 text-xs font-normal text-white transition hover:bg-black disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
 													on:click={() => {
-														saveAsCopyHandler();
+														editMessageConfirmHandler();
 													}}
 												>
-													{$i18n.t('Save As Copy')}
+													{$i18n.t('Save')}
 												</button>
-											</div>
-
-											<div class="flex space-x-1.5">
-												<button
-													id="close-edit-message-button"
-													class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-normal text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-60 dark:text-gray-400 dark:hover:bg-gray-850 dark:hover:text-white"
-													on:click={() => {
-														cancelEditMessage();
-													}}
-												>
-													{$i18n.t('Cancel')}
-												</button>
-
-												{#if !message.user_id || message.user_id === $user?.id}
-													<button
-														id="confirm-edit-message-button"
-														class="flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-2.5 text-xs font-normal text-white transition hover:bg-black disabled:opacity-60 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
-														on:click={() => {
-															editMessageConfirmHandler();
-														}}
-													>
-														{$i18n.t('Save')}
-													</button>
-												{/if}
-											</div>
+											{/if}
 										</div>
 									</div>
 								</div></Modal
@@ -1005,7 +1019,6 @@
 										: '这次回复未正常完成，请检查内容与调用明细。'}
 						</p>
 					{/if}
-					<MessageUsage {chatId} messageId={message.id} />
 				{/if}
 				{#if compactPreview && message.timestamp}
 					<div class="mt-0.5 flex justify-start whitespace-nowrap text-gray-600 dark:text-gray-500">
@@ -1254,61 +1267,14 @@
 									</Tooltip>
 								{/if}
 
-								{#if message.usage}
-									<Tooltip
-										content={message.usage
-											? `<pre>${sanitizeResponseContent(
-													JSON.stringify(message.usage, null, 2)
-														.replace(/"([^(")"]+)":/g, '$1:')
-														.slice(1, -1)
-														.split('\n')
-														.map((line) => line.slice(2))
-														.map((line) => (line.endsWith(',') ? line.slice(0, -1) : line))
-														.join('\n')
-												)}</pre>`
-											: ''}
-										placement="bottom"
-									>
-										<button
-											aria-hidden="true"
-											class=" {isLastMessage || ($settings?.highContrastMode ?? false)
-												? 'visible'
-												: 'hover-reveal'} inline-flex size-7 shrink-0 items-center justify-center p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-gray-400 hover:text-gray-600 transition whitespace-pre-wrap"
-											on:click={() => {
-												console.log(message);
-											}}
-											id="info-{message.id}"
-										>
-											<svg
-												class="size-4"
-												aria-hidden="true"
-												stroke-width="1.5"
-												viewBox="0 0 24 24"
-												fill="none"
-												xmlns="http://www.w3.org/2000/svg"
-											>
-												<path
-													d="M12 11.5V16.5"
-													stroke="currentColor"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												/>
-												<path
-													d="M12 7.51L12.01 7.49889"
-													stroke="currentColor"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												/>
-												<path
-													d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-													stroke="currentColor"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												/>
-											</svg>
-										</button>
-									</Tooltip>
-								{/if}
+								<MessageUsage
+									{chatId}
+									messageId={message.id}
+									nativeUsage={message.usage}
+									triggerClass={isLastMessage || ($settings?.highContrastMode ?? false)
+										? 'visible'
+										: 'hover-reveal'}
+								/>
 
 								{#if $user && message.done && forkHandler && ($user?.role === 'admin' || ($user?.permissions?.chat?.import ?? true))}
 									<Tooltip content={$i18n.t('Fork chat')} placement="bottom">

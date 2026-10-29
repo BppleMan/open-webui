@@ -3,6 +3,7 @@
 	import DiffEditorModal from '$lib/components/common/DiffEditorModal.svelte';
 	import { getOutputText } from './structuredOutput';
 	export let chatId = '';
+	export let compact = false;
 	export let messageId = '';
 	export let temporary = false;
 	export let original: any;
@@ -36,23 +37,27 @@
 	}
 </script>
 
-<div class="mb-3 rounded-2xl border border-gray-100 p-3 text-xs dark:border-gray-800">
-	<div class="flex flex-wrap items-center gap-2">
+<div
+	class="shrink-0 text-xs {compact
+		? 'mb-2 border-b border-gray-100 pb-1 dark:border-gray-800'
+		: 'mb-3 rounded-2xl border border-gray-100 p-3 dark:border-gray-800'}"
+>
+	<div class="flex flex-wrap items-center {compact ? 'gap-1' : 'gap-2'}">
 		<button
 			type="button"
-			class="rounded-lg px-2.5 py-1.5 font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
+			class="rounded-lg px-2 py-1 font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
 			on:click={() => compare(original, draft, '对照本次修改')}>对照修改</button
 		>
 		<button
 			type="button"
-			class="rounded-lg px-2.5 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
+			class="rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
 			on:click={() => onLoad(structuredClone(original))}>撤销本次修改</button
 		>
 		{#if !temporary}
 			<button
 				type="button"
 				aria-expanded={expanded}
-				class="rounded-lg px-2.5 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
+				class="rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
 				on:click={showHistory}>修订历史</button
 			>
 		{/if}
@@ -61,7 +66,7 @@
 		>
 	</div>
 	{#if expanded}
-		<div class="mt-3 border-t border-gray-100 pt-3 dark:border-gray-800">
+		<div class="mt-2 border-t border-gray-100 pt-2 dark:border-gray-800">
 			<p class="mb-2 text-gray-500 dark:text-gray-400">
 				载入旧版本后仍需保存。保存会保留当前版本，费用记录不变。
 			</p>

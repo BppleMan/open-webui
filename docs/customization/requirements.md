@@ -157,3 +157,7 @@ Align each expanded model region with its parent connection row. Keep connection
 R55容量核验：CPA当前Gemini与OpenAI两个模型目录均未返回所查模型的token容量字段，OI解析无可用数值；缺失不表示模型无限制或免费。保留未知和手动填写，未改CPA。
 
 R55收口：五项批注已整批实施，原生UI滚动和几何实测、57前端/351后端及集成CI通过。模型区左右对齐，编辑框固定尺寸/底栏，单行输入与下拉均1.75rem。仅更新隔离预发，CPA与正式OI保持。
+
+
+## R56 — Unified message information and compact editing
+Unify native message info with per-message usage/cost details, preserving raw provider usage and cumulative snapshot semantics. Use compact detail spacing and right/down disclosure arrows. Reduce reply editor padding without changing structured edit, revision, undo or fork behavior. Composer model triggers show one line; connection identity remains in menus and accessible labels. Batch validation (U49), isolated preview only (R50).

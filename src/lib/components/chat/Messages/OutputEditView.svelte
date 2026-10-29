@@ -16,6 +16,7 @@
 	const i18n = getContext('i18n');
 
 	export let output: any[] = [];
+	export let compact = false;
 	export let onChange: (output: any[]) => void = () => {};
 
 	let viewMode: 'visual' | 'json' = 'visual';
@@ -190,18 +191,28 @@
 	function resizeEl(el: HTMLTextAreaElement) {
 		const c = document.getElementById('messages-container');
 		const s = c?.scrollTop;
+		const editor = el.closest<HTMLElement>('[data-testid="reply-editor-body"]');
+		const editorScroll = editor?.scrollTop;
 		el.style.height = '';
 		el.style.height = `${el.scrollHeight}px`;
 		if (c && s !== undefined) c.scrollTop = s;
+		if (editor && editorScroll !== undefined) editor.scrollTop = editorScroll;
 	}
 
 	function autoResize(e: Event) {
 		resizeEl(e.target as HTMLTextAreaElement);
 	}
 
-	/** Svelte action: auto-expand textarea to fit content on mount */
-	function fitContent(el: HTMLTextAreaElement) {
+	/** Resize after programmatic revision/undo changes as well as user input. */
+	function fitContent(el: HTMLTextAreaElement, _text: string) {
 		resizeEl(el);
+		return {
+			update() {
+				void tick().then(() => {
+					if (el.isConnected) resizeEl(el);
+				});
+			}
+		};
 	}
 
 	function getItemLabel(di: DisplayItem): string {
@@ -230,7 +241,7 @@
 
 <div class="w-full relative">
 	<!-- Mode toggle -->
-	<div class="absolute -top-0.5 right-0.5 z-10">
+	<div class={compact ? 'flex h-5 justify-end' : 'absolute -top-0.5 right-0.5 z-10'}>
 		<Tooltip
 			content={viewMode === 'visual'
 				? $i18n.t('Switch to JSON editor')
@@ -255,24 +266,27 @@
 		{/if}
 	{:else}
 		<!-- Visual editor: playground-style rows -->
-		<div class="space-y-2 p-2 pt-3">
+		<div class={compact ? 'space-y-1' : 'space-y-2 p-2 pt-3'}>
 			{#each displayItems as di, idx}
-				<div class="flex gap-2 group">
+				<div class="group flex {compact ? 'relative flex-col gap-0.5 pr-7' : 'gap-2'}">
 					<!-- Role label -->
-					<div class="flex items-start pt-1.5">
-						<div
-							class="text-[0.6875rem] font-normal uppercase tracking-wide min-w-[4.5rem] text-gray-400 dark:text-gray-500"
-						>
-							{getItemLabel(di)}
+					{#if !compact || displayItems.length > 1 || di.type !== 'message'}
+						<div class="flex items-start {compact ? '' : 'pt-1.5'}">
+							<div
+								class="text-[0.6875rem] font-normal uppercase tracking-wide min-w-[4.5rem] text-gray-400 dark:text-gray-500"
+							>
+								{getItemLabel(di)}
+							</div>
 						</div>
-					</div>
-
+					{/if}
 					<!-- Content -->
 					<div class="flex-1 min-w-0">
 						{#if di.type === 'message'}
 							<textarea
-								use:fitContent
-								class="w-full bg-transparent outline-hidden focus-visible:outline-none! resize-none overflow-hidden text-[0.9375rem] p-1.5 rounded-lg"
+								use:fitContent={getMessageText(di.item)}
+								class="w-full bg-transparent outline-hidden focus-visible:outline-none! resize-none overflow-hidden text-[0.9375rem] {compact
+									? 'p-0.5'
+									: 'p-1.5'} rounded-lg"
 								value={getMessageText(di.item)}
 								on:input={(e) => {
 									updateMessageText(di.indices[0], e.target.value);
@@ -283,8 +297,10 @@
 							/>
 						{:else if di.type === 'reasoning'}
 							<textarea
-								use:fitContent
-								class="w-full bg-transparent outline-hidden focus-visible:outline-none! resize-none overflow-hidden text-[0.9375rem] text-gray-500 dark:text-gray-400 p-1.5 rounded-lg"
+								use:fitContent={getReasoningText(di.item)}
+								class="w-full bg-transparent outline-hidden focus-visible:outline-none! resize-none overflow-hidden text-[0.9375rem] text-gray-500 dark:text-gray-400 {compact
+									? 'p-0.5'
+									: 'p-1.5'} rounded-lg"
 								value={getReasoningText(di.item)}
 								on:input={(e) => {
 									updateReasoningText(di.indices[0], e.target.value);
@@ -335,7 +351,7 @@
 					</div>
 
 					<!-- Delete -->
-					<div class="pt-1.5">
+					<div class={compact ? 'absolute right-0 top-0' : 'pt-1.5'}>
 						<button
 							class="hover-reveal p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition rounded-lg"
 							aria-label={$i18n.t('Delete')}

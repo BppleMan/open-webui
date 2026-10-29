@@ -14,6 +14,7 @@
 
 	export let showSetDefault = true;
 	export let triggerClassName = 'text-lg';
+	export let showConnectionLabel = true;
 	export let className = undefined;
 	export let placement: 'top' | 'bottom' | 'auto' = 'bottom';
 	export let align: 'start' | 'end' = 'start';
@@ -66,6 +67,7 @@
 					{pinModelHandler}
 					{className}
 					{triggerClassName}
+					{showConnectionLabel}
 					{placement}
 					{align}
 					{showSetDefault}

@@ -80,6 +80,7 @@
 
 	export let className = 'w-[22rem]';
 	export let triggerClassName = 'text-lg';
+	export let showConnectionLabel = true;
 	export let placement: 'top' | 'bottom' | 'auto' = 'bottom';
 	export let align: 'start' | 'end' = 'start';
 	export let showSetDefault = false;
@@ -897,7 +898,7 @@
 					: triggerLabel}
 			>
 				<span class="block truncate">{triggerLabel}</span>
-				{#if selectedConnectionLabel}<span
+				{#if showConnectionLabel && selectedConnectionLabel}<span
 						class="mt-0.5 block truncate text-[0.6875rem] font-normal text-gray-500 dark:text-gray-400"
 						>{selectedConnectionLabel}</span
 					>{/if}
