@@ -20,3 +20,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R53 supersedes R52 address entry: enter a service root; protocol registry generates versioned endpoints. Read docs/customization/protocol-decoupling.md. Template defaults do not restrict protocol choices. Preserve migrated effective routes, model identity, browser ownership and R50.
 
 - R53 is verified on isolated preview; read docs/customization/protocol-decoupling-acceptance.json. OI7 needs a compatible image; preserved legacy routes can require explicit review. Real OpenRouter browser Messages CORS remains a documented provider limitation. R50 remains unchanged.
+
+- R54/P39: use existing Bits UI overlay primitives for context popovers. Verify real scrolling to both ends, collision placement, outside dismissal and keyboard focus; geometry or visible scrollbars alone are insufficient.

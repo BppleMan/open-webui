@@ -91,7 +91,7 @@
 				<p>
 					累计包含重新生成和工具调用；切换、编辑或删除回复不会删账。实际金额确认后会替换对应估算。
 				</p>
-				<div class="max-h-56 overflow-auto">
+				<div class={compact ? 'overflow-x-auto' : 'max-h-56 overflow-auto'}>
 					<table class="w-full text-left">
 						<thead><tr><th>调用</th><th>实际</th><th>估算</th><th>状态</th></tr></thead><tbody
 							>{#each $store.calls as call (call.id)}<tr

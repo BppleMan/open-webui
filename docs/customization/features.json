@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "R53_verified_isolated_preview_user_tuning_R50_hold",
+  "phase": "R54_context_scroll_fix_in_progress",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -114,16 +114,18 @@
         "R09",
         "R31",
         "R51",
-        "R53"
+        "R53",
+        "R54"
       ],
       "prototypes": [
         "P02",
         "P19",
         "P36",
-        "P38"
+        "P38",
+        "P39"
       ],
       "priority": "P1",
-      "status": "verified",
+      "status": "in_progress",
       "implementation": "composer_ring_popup_context_cache_budget_warnings_and_explicit_compaction",
       "verification": "stage6 complete context/compaction matrix; stage8 discovered capacity and responsive popup",
       "deployment": "staging_verified; production_not_deployed",
@@ -166,6 +168,11 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "scroll_fix_R54": {
+        "implementation": "Bits_UI_Popover_implemented",
+        "verification": "local_browser_passed; CI_and_preview_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     },
     {
@@ -175,13 +182,15 @@
         "R03",
         "R47",
         "R51",
-        "R53"
+        "R53",
+        "R54"
       ],
       "prototypes": [
         "P03",
         "P32",
         "P36",
-        "P38"
+        "P38",
+        "P39"
       ],
       "priority": "P1",
       "status": "verified",
@@ -223,6 +232,11 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "scroll_fix_R54": {
+        "implementation": "Bits_UI_Popover_implemented",
+        "verification": "local_browser_passed; CI_and_preview_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     },
     {
@@ -606,10 +620,12 @@
       "id": "F12",
       "title": "需求原型 Feature 三层记录",
       "requirements": [
-        "R15"
+        "R15",
+        "R54"
       ],
       "prototypes": [
-        "P12"
+        "P12",
+        "P39"
       ],
       "priority": "P0",
       "status": "verified",
@@ -651,6 +667,11 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "scroll_fix_R54": {
+        "implementation": "Bits_UI_Popover_implemented",
+        "verification": "local_browser_passed; CI_and_preview_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     },
     {
@@ -1129,13 +1150,15 @@
         "R30",
         "R50",
         "R51",
-        "R53"
+        "R53",
+        "R54"
       ],
       "prototypes": [
         "P18",
         "P35",
         "P36",
-        "P38"
+        "P38",
+        "P39"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1253,6 +1276,11 @@
         "verification": "verified_with_documented_provider_boundaries; 351 backend, 57 frontend, zero new diagnostics, build, CI, populated migration and IAB user paths",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "protocol-decoupling-acceptance.json"
+      },
+      "scroll_fix_R54": {
+        "implementation": "Bits_UI_Popover_implemented",
+        "verification": "local_browser_passed; CI_and_preview_pending",
+        "deployment": "pending_isolated_preview; R50 hold"
       }
     }
   ],

@@ -250,3 +250,7 @@ Show /v1beta for CPA/AGY native Gemini. Preserve the /v1 family for OpenAI Chat/
 Primary fields: connection name, execution transport, service address, default interface mode and readonly resolved URL, followed by shared credentials. Models show inherited/effective mode and can override. Four common modes are not template-filtered; legacy extensions remain. Provider compatibility is independent from wire format. Enabled-first ordering is stable while toggling; five-row scrolling uses 2rem/2.5rem rows; connection separators removed; form toggles use a fixed right column. Validation and preview must use the same resolver as generation.
 
 P38 落地验收：连接与模型主表单直接展示接口模式/继承来源和只读实际地址；四种常用协议不再被模板裁剪。启用模型优先，开关操作期间位置稳定；桌面2rem、手机2.5rem，最多五行内部滚动，控件靠右。内置浏览器实测390/430/1280/2560及1.1倍缩放，通过深色本地夹具和浅色隔离预发验证。R50 不变。
+
+## P39 — 复用成熟 Popover
+上下文环形按钮使用 Bits UI Popover.Trigger，内容通过 Portal/Content 呈现。定位、碰撞避让、焦点与键盘由现有库处理；Content本身是唯一滚动容器，高度由库提供的可用空间CSS变量限制。真实验证顶部/底部、展开明细、窗口变化、Escape关闭和焦点返回。
+P39补充验收：不同锚点位置自动选择方向，左右/上下均不越界；只滚动弹层内容；点击空白关闭；Escape关闭并恢复触发按钮焦点。使用项目既有Popover，不新增定位算法。

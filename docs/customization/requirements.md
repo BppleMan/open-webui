@@ -139,3 +139,8 @@ The CPA/AGY template uses native Gemini; use a /v1beta API base for new connecti
 Implement the approved protocol-decoupling plan: unrestricted common protocol selection, connection defaults with model overrides, one shared service root/key/auth, automatic protocol paths, server and browser parity, stable identities and native-history compatibility. Compact enabled-first model lists and right-aligned switches. This supersedes R52's manual /v1beta entry: service addresses no longer require protocol prefixes. R50 production hold remains. Corresponds to P38.
 
 R53 实施与验收收口：协议目录、服务地址解析、模型继承/覆盖、直连原生流、紧凑列表已实现，源码 97b7936939f4c5e7937feecc2ea8c60a24ccfb3b；351 后端/57 前端、类型无新增、构建及 CI 40814642568 通过。隔离预发已验证；OpenRouter Messages/CPA Gemini 各一次合成请求成功。真实 OpenRouter 浏览器 Messages 的专用头未获 CORS 预检放行，明确保留服务方限制，未标为通过。正式环境仍受 R50 保护。
+
+## R54 — 上下文弹层可实际滚动
+修复滚轮/触控板无法滚动上下文弹层的问题。内部滚动不得重新测量并清零滚动位置，调整窗口或展开内容后应保持合理位置。验证上下滚动、到达底部、展开明细、键盘与窗口缩放；只更新隔离预发，R50不变。
+
+R54追加要求：用户指出overlay已有成熟方案；上下文入口应复用项目已有Bits UI Popover，由库管理定位、边界、焦点和键盘，避免继续叠加手写定位逻辑。
