@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "R57_usage_context_editor_validation",
+  "phase": "R57_usage_context_editor_verified; user_tuning; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,11 +14,11 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "341d26f304d8418570743198658ec9cf2edf8d8b",
+    "latest_code_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "341d26f304d8418570743198658ec9cf2edf8d8b",
+    "latest_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
     "latest_documentation_revision": "R57/P42/U53"
   },
   "status_definitions": {
@@ -189,8 +189,9 @@
       },
       "usage_editor_R57": {
         "implementation": "implemented",
-        "verification": "local_browser_passed; automated_checks_running",
-        "deployment": "pending_isolated_preview; R50 hold",
+        "source_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+        "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
       }
     },
@@ -272,8 +273,9 @@
       },
       "usage_editor_R57": {
         "implementation": "implemented",
-        "verification": "local_browser_passed; automated_checks_running",
-        "deployment": "pending_isolated_preview; R50 hold",
+        "source_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+        "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
       }
     },
@@ -316,8 +318,9 @@
       },
       "usage_editor_R57": {
         "implementation": "implemented",
-        "verification": "local_browser_passed; automated_checks_running",
-        "deployment": "pending_isolated_preview; R50 hold",
+        "source_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+        "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
       }
     },
@@ -752,8 +755,9 @@
       },
       "usage_editor_R57": {
         "implementation": "implemented",
-        "verification": "local_browser_passed; automated_checks_running",
-        "deployment": "pending_isolated_preview; R50 hold",
+        "source_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+        "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
       }
     },
@@ -1204,8 +1208,9 @@
       },
       "usage_editor_R57": {
         "implementation": "implemented",
-        "verification": "local_browser_passed; automated_checks_running",
-        "deployment": "pending_isolated_preview; R50 hold",
+        "source_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+        "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
       }
     },
@@ -1442,8 +1447,9 @@
       },
       "usage_editor_R57": {
         "implementation": "implemented",
-        "verification": "local_browser_passed; automated_checks_running",
-        "deployment": "pending_isolated_preview; R50 hold",
+        "source_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+        "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
       }
     }
@@ -1623,6 +1629,17 @@
       "browser": "local_and_preview_verified",
       "ci": "https://github.com/BppleMan/open-webui/actions/runs/40836739314",
       "evidence": "message-info-acceptance.json"
+    },
+    "usage_editor_R57": {
+      "source_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+      "frontend_tests": 59,
+      "backend_tests_CI": 351,
+      "new_type_a11y_diagnostics": 0,
+      "existing_upstream_diagnostics": 5756,
+      "build": "passed_local_and_exact_source_CI",
+      "browser": "local_and_preview_verified",
+      "ci": "https://github.com/BppleMan/open-webui/actions/runs/40845461704",
+      "evidence": "usage-editor-acceptance.json"
     }
   },
   "review_remediation": {

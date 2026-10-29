@@ -2,7 +2,7 @@
   "requirement": "R57",
   "prototype": "P42",
   "date": "2026-10-29",
-  "status": "locally_verified; CI_preview_pending",
+  "status": "verified_on_isolated_preview",
   "implementation": {
     "usage": "Shared ledger-derived overview before reply content, responsive two/three-column metrics; info retains call/raw details",
     "disclosure": "User-owned bound state, independent of 5-second ledger polling",
@@ -57,15 +57,71 @@
     "method": "Built-in browser native input and rendered DOM; physical device not claimed"
   },
   "ci": {
-    "status": "pending"
+    "status": "success",
+    "run_id": 40845461704,
+    "url": "https://github.com/BppleMan/open-webui/actions/runs/40845461704",
+    "source_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+    "jobs": {
+      "frontend": "success",
+      "backend": "success",
+      "image": "success"
+    },
+    "backend_tests": 351,
+    "frontend_tests": 59,
+    "type_delta": 0,
+    "upstream_diagnostics": 5756
   },
   "deployment": {
-    "status": "pending_isolated_preview",
-    "production": "unchanged_R50"
+    "status": "Synced/Healthy_and_browser_verified",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-bcfd7fa35f37afca9b54936c7cda4feee3222fc7@sha256:e51a1da899a34832b33f6f123f5fe4eaf9da7e0a0c6b60d97ed6fb8f191b9751",
+    "image_id": "ghcr.io/bppleman/open-webui-oi@sha256:e51a1da899a34832b33f6f123f5fe4eaf9da7e0a0c6b60d97ed6fb8f191b9751",
+    "gitops_commit": "c08d9c5ad1f0c9cb61c90e95a63ab9bd31f85ec6",
+    "pod_restarts": 0,
+    "schema": "oi0000000007",
+    "schema_migration": "none",
+    "production": "unchanged_R50",
+    "helm": {
+      "dependency_refresh": "passed",
+      "refresh_options": "skip unrelated repository index refresh; dependencies are version-pinned",
+      "locked_dependencies": "byte_identical_to_previous_deployed_revision",
+      "hashes": {
+        "charts/open-webui-staging/Chart.yaml": "300a9cac0e0accfe81431ecb03e72a5500b40d61bdbc834450091e47e78dcff7",
+        "charts/open-webui-staging/Chart.lock": "4b5238797ba0ad38ef28dffbb8910a428598ea390e4f609c3e51a73b90eb4b48",
+        "charts/open-webui-staging/charts/app-wrapper-0.0.4.tgz": "a471e66c0ab46a04f07f777a747f1df2b60c2a36052f7775c6e1728f1d97192a",
+        "charts/open-webui-staging/charts/open-webui-16.6.0.tgz": "ca96e875d059a115c55620a75013e72690dc0e703a023ee8c8c7dae6b903d637"
+      },
+      "lint": "passed",
+      "render": "passed",
+      "scope": "staging_image_only"
+    },
+    "sync_note": "Autosync was already running; explicit sync returned in-progress and was not forced. Actual rollout verified."
   },
   "boundaries": [
     "R50 production hold",
     "U49 single validation/publication batch",
     "Existing provider and model alias limits remain"
-  ]
+  ],
+  "source_commit": "bcfd7fa35f37afca9b54936c7cda4feee3222fc7",
+  "preview_validation": {
+    "reply_leading_summary": true,
+    "mobile_two_columns_no_overflow": true,
+    "raw_disclosure_persistence_ms": 71217,
+    "raw_wheel_both_ends": true,
+    "context_fixed_height_px": 492.796875,
+    "context_wheel_both_ends": true,
+    "context_disclosure_spacing_symmetric": true,
+    "outside_dismissal": true,
+    "mobile_viewport": [
+      430,
+      932
+    ],
+    "mobile_toolbar_one_row": true,
+    "editor_body_reasoning_tabs": true,
+    "internal_TEXT_THOUGHT_titles": 0,
+    "desktop_editor_width_px": 737.1875,
+    "invalid_JSON_save_and_copy_disabled": true,
+    "undo_restores_original": true,
+    "original_test_chat_edits_saved": false,
+    "provider_generations": 0
+  }
 }

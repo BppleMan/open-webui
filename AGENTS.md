@@ -32,3 +32,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R56/P41 is verified; read docs/customization/message-info-acceptance.json. Keep one native info entry for usage/cost/raw metadata, right/down disclosures, compact reply editing with undo-aware textarea sizing, and one-line composer model triggers with connection identity retained in menus/title/ARIA.
 
 - R57/P42 supersedes R56 summary placement: essential usage belongs before the reply body, while info keeps technical/raw details. Keep disclosure state independent of ledger polling, fixed-height context popovers, and bounded tabbed reply editing.
+
+- R57/P42 is verified on isolated preview; read docs/customization/usage-editor-acceptance.json. Keep reply-leading metrics, polling-independent disclosures, fixed context frames and compact tabbed editing. R50/U49 remain.
