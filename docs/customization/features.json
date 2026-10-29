@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-30",
-  "phase": "R61_responsive_usage_in_progress; R59_CPA_summary_pending; stage8B_not_authorized",
+  "phase": "R61_responsive_usage_verified; R59_CPA_summary_pending; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -327,17 +327,28 @@
         "evidence": "thoughts-session-acceptance.json"
       },
       "responsive_usage_R61": {
-        "status": "implemented",
-        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "status": "verified",
+        "implementation": {
+          "source_commit": "eefed22b63a3a4001e76ecf86aff795fe24b05fc",
+          "changes": "responsive_usage_grid_shared_icons_connection_inset"
+        },
         "verification": {
-          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
           "frontend_tests": 64,
+          "backend_tests_CI": 376,
           "new_type_a11y_diagnostics": 0,
           "upstream_diagnostics": 5756,
-          "production_build": "passed",
-          "CI": "pending"
+          "build": "passed_local_and_CI",
+          "local_and_preview_browser": "passed",
+          "ci": "https://github.com/BppleMan/open-webui/actions/runs/40920231140",
+          "evidence": "usage-responsive-acceptance.json"
         },
-        "deployment": "pending_isolated_preview; R50"
+        "deployment": {
+          "scope": "isolated_preview_only",
+          "image": "ghcr.io/bppleman/open-webui-oi:sha-eefed22b63a3a4001e76ecf86aff795fe24b05fc@sha256:fbeb5e214edd0473a747793f75885872234b844d7ccd590f37014a8dbaf6a2ba",
+          "gitops_revision": "a1a12e58bcb90cff2dcb61c04de5479429f53405",
+          "schema": "OI7 unchanged",
+          "production_unchanged": true
+        }
       }
     },
     {
@@ -513,17 +524,28 @@
         "evidence": "protocol-decoupling-acceptance.json"
       },
       "responsive_usage_R61": {
-        "status": "implemented",
-        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "status": "verified",
+        "implementation": {
+          "source_commit": "eefed22b63a3a4001e76ecf86aff795fe24b05fc",
+          "changes": "responsive_usage_grid_shared_icons_connection_inset"
+        },
         "verification": {
-          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
           "frontend_tests": 64,
+          "backend_tests_CI": 376,
           "new_type_a11y_diagnostics": 0,
           "upstream_diagnostics": 5756,
-          "production_build": "passed",
-          "CI": "pending"
+          "build": "passed_local_and_CI",
+          "local_and_preview_browser": "passed",
+          "ci": "https://github.com/BppleMan/open-webui/actions/runs/40920231140",
+          "evidence": "usage-responsive-acceptance.json"
         },
-        "deployment": "pending_isolated_preview; R50"
+        "deployment": {
+          "scope": "isolated_preview_only",
+          "image": "ghcr.io/bppleman/open-webui-oi:sha-eefed22b63a3a4001e76ecf86aff795fe24b05fc@sha256:fbeb5e214edd0473a747793f75885872234b844d7ccd590f37014a8dbaf6a2ba",
+          "gitops_revision": "a1a12e58bcb90cff2dcb61c04de5479429f53405",
+          "schema": "OI7 unchanged",
+          "production_unchanged": true
+        }
       }
     },
     {
@@ -911,17 +933,28 @@
         "evidence": "thoughts-session-acceptance.json"
       },
       "responsive_usage_R61": {
-        "status": "implemented",
-        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "status": "verified",
+        "implementation": {
+          "source_commit": "eefed22b63a3a4001e76ecf86aff795fe24b05fc",
+          "changes": "responsive_usage_grid_shared_icons_connection_inset"
+        },
         "verification": {
-          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
           "frontend_tests": 64,
+          "backend_tests_CI": 376,
           "new_type_a11y_diagnostics": 0,
           "upstream_diagnostics": 5756,
-          "production_build": "passed",
-          "CI": "pending"
+          "build": "passed_local_and_CI",
+          "local_and_preview_browser": "passed",
+          "ci": "https://github.com/BppleMan/open-webui/actions/runs/40920231140",
+          "evidence": "usage-responsive-acceptance.json"
         },
-        "deployment": "pending_isolated_preview; R50"
+        "deployment": {
+          "scope": "isolated_preview_only",
+          "image": "ghcr.io/bppleman/open-webui-oi:sha-eefed22b63a3a4001e76ecf86aff795fe24b05fc@sha256:fbeb5e214edd0473a747793f75885872234b844d7ccd590f37014a8dbaf6a2ba",
+          "gitops_revision": "a1a12e58bcb90cff2dcb61c04de5479429f53405",
+          "schema": "OI7 unchanged",
+          "production_unchanged": true
+        }
       }
     },
     {
@@ -1088,17 +1121,28 @@
         "evidence": "message-info-acceptance.json"
       },
       "responsive_usage_R61": {
-        "status": "implemented",
-        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "status": "verified",
+        "implementation": {
+          "source_commit": "eefed22b63a3a4001e76ecf86aff795fe24b05fc",
+          "changes": "responsive_usage_grid_shared_icons_connection_inset"
+        },
         "verification": {
-          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
           "frontend_tests": 64,
+          "backend_tests_CI": 376,
           "new_type_a11y_diagnostics": 0,
           "upstream_diagnostics": 5756,
-          "production_build": "passed",
-          "CI": "pending"
+          "build": "passed_local_and_CI",
+          "local_and_preview_browser": "passed",
+          "ci": "https://github.com/BppleMan/open-webui/actions/runs/40920231140",
+          "evidence": "usage-responsive-acceptance.json"
         },
-        "deployment": "pending_isolated_preview; R50"
+        "deployment": {
+          "scope": "isolated_preview_only",
+          "image": "ghcr.io/bppleman/open-webui-oi:sha-eefed22b63a3a4001e76ecf86aff795fe24b05fc@sha256:fbeb5e214edd0473a747793f75885872234b844d7ccd590f37014a8dbaf6a2ba",
+          "gitops_revision": "a1a12e58bcb90cff2dcb61c04de5479429f53405",
+          "schema": "OI7 unchanged",
+          "production_unchanged": true
+        }
       }
     },
     {
@@ -1404,17 +1448,28 @@
         "evidence": "usage-density-acceptance.json"
       },
       "responsive_usage_R61": {
-        "status": "implemented",
-        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "status": "verified",
+        "implementation": {
+          "source_commit": "eefed22b63a3a4001e76ecf86aff795fe24b05fc",
+          "changes": "responsive_usage_grid_shared_icons_connection_inset"
+        },
         "verification": {
-          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
           "frontend_tests": 64,
+          "backend_tests_CI": 376,
           "new_type_a11y_diagnostics": 0,
           "upstream_diagnostics": 5756,
-          "production_build": "passed",
-          "CI": "pending"
+          "build": "passed_local_and_CI",
+          "local_and_preview_browser": "passed",
+          "ci": "https://github.com/BppleMan/open-webui/actions/runs/40920231140",
+          "evidence": "usage-responsive-acceptance.json"
         },
-        "deployment": "pending_isolated_preview; R50"
+        "deployment": {
+          "scope": "isolated_preview_only",
+          "image": "ghcr.io/bppleman/open-webui-oi:sha-eefed22b63a3a4001e76ecf86aff795fe24b05fc@sha256:fbeb5e214edd0473a747793f75885872234b844d7ccd590f37014a8dbaf6a2ba",
+          "gitops_revision": "a1a12e58bcb90cff2dcb61c04de5479429f53405",
+          "schema": "OI7 unchanged",
+          "production_unchanged": true
+        }
       }
     },
     {
@@ -1694,17 +1749,28 @@
         "deployment": "isolated_preview_deployed"
       },
       "responsive_usage_R61": {
-        "status": "implemented",
-        "implementation": "responsive_grid_shared_metric_icons_connection_inset",
+        "status": "verified",
+        "implementation": {
+          "source_commit": "eefed22b63a3a4001e76ecf86aff795fe24b05fc",
+          "changes": "responsive_usage_grid_shared_icons_connection_inset"
+        },
         "verification": {
-          "local_browser": "passed_320_390_430_1280_light_dark_scale_1_1",
           "frontend_tests": 64,
+          "backend_tests_CI": 376,
           "new_type_a11y_diagnostics": 0,
           "upstream_diagnostics": 5756,
-          "production_build": "passed",
-          "CI": "pending"
+          "build": "passed_local_and_CI",
+          "local_and_preview_browser": "passed",
+          "ci": "https://github.com/BppleMan/open-webui/actions/runs/40920231140",
+          "evidence": "usage-responsive-acceptance.json"
         },
-        "deployment": "pending_isolated_preview; R50"
+        "deployment": {
+          "scope": "isolated_preview_only",
+          "image": "ghcr.io/bppleman/open-webui-oi:sha-eefed22b63a3a4001e76ecf86aff795fe24b05fc@sha256:fbeb5e214edd0473a747793f75885872234b844d7ccd590f37014a8dbaf6a2ba",
+          "gitops_revision": "a1a12e58bcb90cff2dcb61c04de5479429f53405",
+          "schema": "OI7 unchanged",
+          "production_unchanged": true
+        }
       }
     }
   ],
@@ -1905,6 +1971,21 @@
       "browser": "local_responsive_and_deployed_preview_passed",
       "ci": "https://github.com/BppleMan/open-webui/actions/runs/40860984784",
       "evidence": "usage-density-acceptance.json"
+    },
+    "responsive_usage_R61": {
+      "source_commit": "eefed22b63a3a4001e76ecf86aff795fe24b05fc",
+      "frontend_tests": 64,
+      "frontend_files": 10,
+      "type_a11y_new": 0,
+      "upstream_diagnostics": 5756,
+      "build": "passed",
+      "backend_local": "not_repeated_for_presentation_only_change; full_suite_in_CI",
+      "supplier_requests": 0,
+      "backend_tests_CI": 376,
+      "integration_CI": "PostgreSQL restore, pgvector, authenticated Realtime, session/drafts, native protocols and cost/archive passed",
+      "ci": "https://github.com/BppleMan/open-webui/actions/runs/40920231140",
+      "browser": "local_and_deployed_preview_passed",
+      "evidence": "usage-responsive-acceptance.json"
     }
   },
   "review_remediation": {
