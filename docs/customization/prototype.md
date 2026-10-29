@@ -282,20 +282,11 @@ P42编辑安全补充：正文/思考切换与修改保留其他结构块、非�
 P42验收：内置浏览器430×932、390×667及桌面1.1缩放通过；上下文展开前后约492.8px不变，折叠行上下8.8px对称，原始usage跨多轮轮询与滚轮仍展开。桌面编辑区约737.2px封顶，小屏工具栏一行；正文/思考/JSON切换、无效JSON阻止保存与撤销均通过。隔离预发证据见usage-editor-acceptance.json。
 
 
-## P43 — 单行元信息与完整平级详情（候选，待用户选择）
-推荐“短标签行”：模型名下、正文前一条约20px高的弱化元信息，无标题/卡片/背景/边框，不缩小正文。短标签为输入、输出（内含思考数）、本条费用和耗时；正常完成状态不额外占位。token较大时可用k/M，精确值留在info；实际/估算/未知语义明确（估算用≈、未知用费用待定），不能四舍五入成免费。手机在430px宽度优先一行，更窄时允许自然两行，不横向滚动、不截断费用状态。
-对照“并入模型栏”：输入/输出/费用用符号并入模型名同行，减少额外行；代价是长模型名可能省略、推理/耗时需进info，暂不推荐默认。
-info恢复完整统计，默认“概览”（输入、输出含推理、推理、总token、缓存读写、实际/估算/未知、本轮累计、状态耗时）；“调用”平铺每个调用及来源/ID；“原始数据”用来源选择器切换回复或调用JSON。三个标签平级，无嵌套折叠；继续复用既有Bits UI，滚动/关闭/状态稳定要求保留。
-仅制作对话内讨论稿，未修改应用组件、未构建或部署。具体布局、标记法与默认字段待用户选择。
+## P43 — Wrapping metadata and flat complete info
+The approved separate metadata row wraps whole metric groups on narrow screens. Input/output/cache-read/cache-write/current cost are always visible; reasoning, total, elapsed and cumulative costs remain available without card chrome. Full info uses sibling Overview/Calls/Raw tabs with stable call-ID source selection. See usage-density-acceptance.json for the verified layout.
 
-## P44 — 推理耗量与思考摘要分开（候选）
+## P44 — Independent summary visibility
+Gemini GenerateContent and CPA-AGY deep-merge includeThoughts=true by default; native model controls offer Default / Request summaries / Do not request. Explicit false, effort and budget are preserved. Reuse thought:true → reasoning_content → structured reasoning → existing renderer, including saved reload. No historical CPA thought text is added to RP inputs. OI behavior is verified with synthetic server/browser streams; one actual CPA request did not return readable thoughts, so live supplier acceptance remains open.
 
-Implementation proposal: deep-merge generationConfig.thinkingConfig.includeThoughts into GenerateContent requests while preserving effort/budget and explicit false. Reuse the existing thought:true → reasoning_content → structured reasoning → renderer path for incremental output. Preserve native parts and signatures separately; keep CPA historical thought exclusion from RP inputs. Use the same request rules for server and browser transport. Add offline coverage for mixed thought/text events, tools, interrupted streams, usage without readable thoughts, overrides and persistence before separately documenting live provider validation. Request controls and their default policy remain proposed.
-耗量依供应商计数展示；无可读thought文本时，info提示“有推理用量；本次未返回可展示的思考摘要”，不制造空思考块，也不把签名解读为思考文本。
-思考摘要可见性与推理强度独立：Gemini/CPA原生路径由generationConfig.thinkingConfig.includeThoughts表达请求；其他协议映射各自的摘要字段。应尊重显式关闭，并保留自动/请求/不请求的选择空间，默认值待讨论。请求摘要不保证上游每次提供，不能事后从token数或签名恢复原文；不增加提示词、补生成或后台收费调用。这里只读诊断，不改变当前参数和生产CPA。
-
-P43 approved by U56: choose the separate metadata row, wrapping whole metric groups on narrow screens. Always show input/output/cache-read/cache-write/current cost; retain reasoning, total, elapsed and cumulative costs without card chrome. Use project icons and restrained semantic colors, precise amounts and clear actual/estimated/unknown states. Full info uses sibling Overview/Calls/Raw tabs with stable call-ID source selection, no nested disclosure. R59 is limited to an honest missing-summary note; summary-request controls are not part of this implementation.
-
-P43实际验收：430px/1.1倍缩放约46.2px两行，320/390px自然三行，宽屏一到两行；字段组不横向溢出。缓存读写共享一个图标，已知0与未知—区分，实际/估算/待确认及累计保持。完整info无嵌套折叠，来源选择按call-ID保持，键盘/原生滚轮/自动与显式刷新均验证。浅深色通过且测试后恢复原浅色。见usage-density-acceptance.json。
-
-P44 approved: default Gemini summary requests with explicit false preserved; native model controls apply to both transports. P45: compact viewport-bounded recovery with clear invalid-session wording; stop renewal for a rejected credential, resume after a new login, retain draft/editor state.
+## P45 — Bounded session recovery
+A 30rem-wide frame, height bounded by 34rem and the viewport, embeds the existing login/MFA flow with compact spacing and clear invalid-session wording. Retain the original page and local input; stop repeated renewals of an already-rejected credential. New credentials resume normally; expiry/revocation/security policies are unchanged. Local browser recovery, mobile layout and CI session checks passed.

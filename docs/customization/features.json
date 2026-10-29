@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-30",
-  "phase": "R59_thoughts_R60_session_recovery_in_progress; stage8B_not_authorized",
+  "phase": "R59_OI_deployed_CPA_summary_pending; R60_verified; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,12 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "1db8c067c403d0829f006c65efd02390cec26979",
+    "latest_code_commit": "a01e9d219ed232338c7a9d451430846e8003411c",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "1db8c067c403d0829f006c65efd02390cec26979",
-    "latest_documentation_revision": "R59/P44 and R60/P45 implemented under U58; local checks passed; CI and preview pending"
+    "latest_commit": "a01e9d219ed232338c7a9d451430846e8003411c",
+    "latest_documentation_revision": "U58: OI Gemini summaries deployed; actual CPA summary still missing; R60 recovery verified"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -109,15 +109,19 @@
       },
       "thought_visibility_R59": {
         "status": "implemented",
-        "implementation": "implemented",
-        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
-        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
-        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "pending_isolated_preview",
+        "implementation": "default_request_with_explicit_override_and_both_transport_controls",
+        "verification": "376_backend_64_frontend_HTTP_browser_CI_passed; actual_CPA_readable_summary_acceptance_incomplete",
+        "finding": "new_CPA_stream_has_293_reasoning_tokens_and_signature_but_no_readable_summary",
+        "limits": "one_real_call_only; no_upstream_wire_capture; no_forced_summary_payload_rule_found",
+        "deployment": "isolated_preview_deployed; production_CPA_unchanged",
         "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
         "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
-        "proposal_status": "approved_U58; default_request_with_explicit_off",
-        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
+        "proposal_status": "implemented_U58",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls",
+        "remaining": [
+          "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
+        ],
+        "evidence": "thoughts-session-acceptance.json"
       }
     },
     {
@@ -306,15 +310,19 @@
       },
       "thought_visibility_R59": {
         "status": "implemented",
-        "implementation": "implemented",
-        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
-        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
-        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "pending_isolated_preview",
+        "implementation": "default_request_with_explicit_override_and_both_transport_controls",
+        "verification": "376_backend_64_frontend_HTTP_browser_CI_passed; actual_CPA_readable_summary_acceptance_incomplete",
+        "finding": "new_CPA_stream_has_293_reasoning_tokens_and_signature_but_no_readable_summary",
+        "limits": "one_real_call_only; no_upstream_wire_capture; no_forced_summary_payload_rule_found",
+        "deployment": "isolated_preview_deployed; production_CPA_unchanged",
         "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
         "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
-        "proposal_status": "approved_U58; default_request_with_explicit_off",
-        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
+        "proposal_status": "implemented_U58",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls",
+        "remaining": [
+          "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
+        ],
+        "evidence": "thoughts-session-acceptance.json"
       }
     },
     {
@@ -413,15 +421,19 @@
       },
       "thought_visibility_R59": {
         "status": "implemented",
-        "implementation": "implemented",
-        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
-        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
-        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "pending_isolated_preview",
+        "implementation": "default_request_with_explicit_override_and_both_transport_controls",
+        "verification": "376_backend_64_frontend_HTTP_browser_CI_passed; actual_CPA_readable_summary_acceptance_incomplete",
+        "finding": "new_CPA_stream_has_293_reasoning_tokens_and_signature_but_no_readable_summary",
+        "limits": "one_real_call_only; no_upstream_wire_capture; no_forced_summary_payload_rule_found",
+        "deployment": "isolated_preview_deployed; production_CPA_unchanged",
         "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
         "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
-        "proposal_status": "approved_U58; default_request_with_explicit_off",
-        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
+        "proposal_status": "implemented_U58",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls",
+        "remaining": [
+          "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
+        ],
+        "evidence": "thoughts-session-acceptance.json"
       }
     },
     {
@@ -591,15 +603,19 @@
       },
       "thought_visibility_R59": {
         "status": "implemented",
-        "implementation": "implemented",
-        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
-        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
-        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "pending_isolated_preview",
+        "implementation": "default_request_with_explicit_override_and_both_transport_controls",
+        "verification": "376_backend_64_frontend_HTTP_browser_CI_passed; actual_CPA_readable_summary_acceptance_incomplete",
+        "finding": "new_CPA_stream_has_293_reasoning_tokens_and_signature_but_no_readable_summary",
+        "limits": "one_real_call_only; no_upstream_wire_capture; no_forced_summary_payload_rule_found",
+        "deployment": "isolated_preview_deployed; production_CPA_unchanged",
         "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
         "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
-        "proposal_status": "approved_U58; default_request_with_explicit_off",
-        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
+        "proposal_status": "implemented_U58",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls",
+        "remaining": [
+          "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
+        ],
+        "evidence": "thoughts-session-acceptance.json"
       }
     },
     {
@@ -679,10 +695,10 @@
         "production": "unchanged"
       },
       "session_recovery_R60": {
-        "status": "implemented",
-        "implementation": "implemented",
-        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
-        "deployment": "pending_isolated_preview"
+        "status": "verified",
+        "implementation": "invalid_credential_refresh_stopped; compact_embedded_recovery",
+        "verification": "expired_token_and_server_401_confirmed; unit_and_browser_relogin_passed; CI_session_matrix_passed",
+        "deployment": "isolated_preview_deployed"
       }
     },
     {
@@ -848,15 +864,19 @@
       },
       "thought_visibility_R59": {
         "status": "implemented",
-        "implementation": "implemented",
-        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
-        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
-        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "pending_isolated_preview",
+        "implementation": "default_request_with_explicit_override_and_both_transport_controls",
+        "verification": "376_backend_64_frontend_HTTP_browser_CI_passed; actual_CPA_readable_summary_acceptance_incomplete",
+        "finding": "new_CPA_stream_has_293_reasoning_tokens_and_signature_but_no_readable_summary",
+        "limits": "one_real_call_only; no_upstream_wire_capture; no_forced_summary_payload_rule_found",
+        "deployment": "isolated_preview_deployed; production_CPA_unchanged",
         "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
         "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
-        "proposal_status": "approved_U58; default_request_with_explicit_off",
-        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
+        "proposal_status": "implemented_U58",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls",
+        "remaining": [
+          "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
+        ],
+        "evidence": "thoughts-session-acceptance.json"
       }
     },
     {
@@ -1576,21 +1596,25 @@
       },
       "thought_visibility_R59": {
         "status": "implemented",
-        "implementation": "implemented",
-        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
-        "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
-        "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "pending_isolated_preview",
+        "implementation": "default_request_with_explicit_override_and_both_transport_controls",
+        "verification": "376_backend_64_frontend_HTTP_browser_CI_passed; actual_CPA_readable_summary_acceptance_incomplete",
+        "finding": "new_CPA_stream_has_293_reasoning_tokens_and_signature_but_no_readable_summary",
+        "limits": "one_real_call_only; no_upstream_wire_capture; no_forced_summary_payload_rule_found",
+        "deployment": "isolated_preview_deployed; production_CPA_unchanged",
         "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
         "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
-        "proposal_status": "approved_U58; default_request_with_explicit_off",
-        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
+        "proposal_status": "implemented_U58",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls",
+        "remaining": [
+          "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
+        ],
+        "evidence": "thoughts-session-acceptance.json"
       },
       "session_recovery_R60": {
-        "status": "implemented",
-        "implementation": "implemented",
-        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
-        "deployment": "pending_isolated_preview"
+        "status": "verified",
+        "implementation": "invalid_credential_refresh_stopped; compact_embedded_recovery",
+        "verification": "expired_token_and_server_401_confirmed; unit_and_browser_relogin_passed; CI_session_matrix_passed",
+        "deployment": "isolated_preview_deployed"
       }
     }
   ],

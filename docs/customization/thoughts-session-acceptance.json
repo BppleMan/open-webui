@@ -9,7 +9,7 @@
   ],
   "approval": "U58",
   "date": "2026-10-30",
-  "status": "local_checks_and_browser_passed; CI_preview_pending",
+  "status": "OI_implemented_and_preview_deployed; CPA_live_summary_acceptance_incomplete",
   "implementation": {
     "gemini_summaries": "default_true; explicit_false_preserved; native_model_controls_for_server_and_browser",
     "effort_budget": "unchanged",
@@ -28,5 +28,37 @@
   },
   "production_changed": false,
   "database_migration": false,
-  "live_supplier_validation": "pending"
+  "live_supplier_validation": {
+    "status": "summary_not_returned; not_verified",
+    "scope": "one_existing_CPA_Gemini_server_stream",
+    "request_count": 1,
+    "input_tokens": 31,
+    "reasoning_tokens": 293,
+    "visible_output_tokens": 3,
+    "saved_summary_blocks": 0,
+    "signature_present": true,
+    "price": "unknown; not_zero",
+    "cause": "unresolved; no_forced_summary_rule_found; no_upstream_wire_capture",
+    "official_Gemini_and_live_browser_CORS": "not_tested"
+  },
+  "source_commit": "a01e9d219ed232338c7a9d451430846e8003411c",
+  "ci": {
+    "run_id": 40911377533,
+    "url": "https://github.com/BppleMan/open-webui/actions/runs/40911377533",
+    "status": "success",
+    "jobs": {
+      "frontend": "success",
+      "backend": "success",
+      "image": "success"
+    }
+  },
+  "deployment": {
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-a01e9d219ed232338c7a9d451430846e8003411c@sha256:9215b59b452ffda22be274c0c7c9950d2d67cd82eb049806a064f68bf80a6970",
+    "gitops_commit": "71db50df93366729e3d16c8801cbe1bb58671df4",
+    "state": "Synced/Healthy",
+    "schema": "oi0000000007",
+    "no_migration": true,
+    "production_unchanged": true,
+    "helm": "locked_dependencies_unchanged; refresh/lint/render_passed"
+  }
 }

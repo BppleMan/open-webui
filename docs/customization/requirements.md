@@ -171,16 +171,12 @@ Show essential usage/cost metrics before the reply body, with technical/raw deta
 R57落地：八项批注已在P42实现并完成内置浏览器及隔离预发验收，关联F02/F03/F04/F12/F16/F18。正式上线仍受R50限制。
 
 
-## R58 — Quiet inline usage and complete message information (discussion)
-Replace the visually dominant reply-leading statistics card with a minimal metadata treatment. Keep the complete usage, costs and cumulative snapshot in info even when an outside summary exists. Avoid nested disclosures. The user requests design discussion before implementation; R50/U49 remain.
+## R58 — Compact wrapping usage and complete info
+Keep a separate wrapping metadata row before the reply, with input/output/cache-read/cache-write/current cost always visible, restrained icons/colors, and precise actual/estimated/unknown semantics. Info retains complete Overview/Calls/Raw sibling tabs without nested disclosure. Implemented and verified under U56; see usage-density-acceptance.json.
 
-## R59 — Distinguish reasoning usage from returned summaries (diagnosis)
-Reasoning-token usage does not imply a readable thought block was returned. Inspect saved native parts and configured summary visibility without new supplier calls. Keep output-inclusive-reasoning accounting accurate. Propose an independent summary-visibility control; preserve explicit upstream availability and evidence limits.
+## R59 — Gemini streaming thought summaries
+Request GenerateContent summaries by default, preserving explicit false and existing reasoning effort/budget. Provide independent native model controls on both server and browser connections. Display only provider-returned readable thought text, retain signatures separately, and preserve CPA historical-thought exclusion from RP inputs. Do not add prompts or auxiliary summary-generation calls.
+OI implementation and synthetic/HTTP/browser/CI acceptance pass and are deployed to isolated preview. One actual CPA stream still returned only reasoning usage and a signature, without readable summary text; the existing CPA/AGY live path is therefore not fully verified. Do not claim complete live acceptance or fabricate missing text. See thoughts-session-acceptance.json.
 
-R58 approved refinement: implement a separate wrapping metadata row with input, output, cache reads, cache writes and per-response cost always visible; include reasoning, totals, elapsed time and cumulative costs where available. Use restrained icons/colors and preserve complete flat info details. R59 request visibility controls remain proposed; no provider request behavior change.
-
-R58/U56收口：独立可换行摘要、缓存读写和本次费用常显、克制彩色线框图标、完整info平级标签已在隔离预发验收。R59仅补当前回复无可读摘要说明，请求开关仍候选，未启用新供应商参数。R50保持。
-
-R59 implementation discussion: stream provider-returned Gemini thought summaries into the existing reasoning renderer. Request visibility is independent of reasoning effort. A model default with an explicit Model controls override is proposed; requesting summaries by default for models intended to show them remains a recommendation. No application, provider configuration or deployment changes are authorized by this discussion.
-
-R59 implementation approved: request Gemini GenerateContent summaries by default with an explicit native model-control override, for server and browser transports. R60: explain expired-session recovery, stop renewing the same confirmed-invalid credential, and use a bounded compact recovery frame. Authentication expiry/revocation rules and R50 remain unchanged.
+## R60 — Clear session recovery
+Keep page/draft state during reauthentication. Stop repeat renewal of a credential after a current 401, allow a new login to resume, and retain the network-failure/expiry/revocation distinction. Use a compact viewport-bounded embedded form with clear invalid-session wording. Verified and deployed to isolated preview; authentication duration and security rules are unchanged. R50/U49 remain.
