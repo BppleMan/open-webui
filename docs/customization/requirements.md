@@ -161,3 +161,5 @@ R55收口：五项批注已整批实施，原生UI滚动和几何实测、57前�
 
 ## R56 — Unified message information and compact editing
 Unify native message info with per-message usage/cost details, preserving raw provider usage and cumulative snapshot semantics. Use compact detail spacing and right/down disclosure arrows. Reduce reply editor padding without changing structured edit, revision, undo or fork behavior. Composer model triggers show one line; connection identity remains in menus and accessible labels. Batch validation (U49), isolated preview only (R50).
+
+R56收口：原info位置统一用量/费用入口，独立usage框移除；折叠箭头右/下、详情密度、回复编辑留白及composer单行均已验收。保留原始JSON与未知费用口径；57前端/351后端及集成CI通过，类型新增0（5763既有诊断）。只更新隔离预发。

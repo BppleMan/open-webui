@@ -54,3 +54,8 @@ The context popup now uses the installed Bits UI Popover primitive and one verti
 ### R55/P40 model editor refinement
 
 Connection model regions now align with their parent row. Both editors use fixed viewport-bounded frames, independent body scrolling and fixed action footers. Single-line controls match the existing settings select height, with separate multiline JSON styling. Capacity displays shared context, independent input and output limits separately. Existing CPA discovery did not advertise the sampled limits; no values were invented or backend behavior changed. Source 98e09d6fd4de602f5b89aa1077710b63331b51c2 and CI40822743633 passed; isolated preview is verified. See model-editor-acceptance.json, including the pinned-dependency verification used after remote Helm refresh stalled. R50/U49 remain.
+
+
+### R56/P41 unified message info
+
+The original info toolbar position now opens one existing-library Popover for ledger usage, costs, the round snapshot and preserved native raw data. Independent inline usage cards are removed. Reply editing uses compact spacing and a scrollable body; programmatic undo/revision changes resize both structured and plain textareas. Composer triggers hide the connection subtitle without changing identity or menu grouping. Source 341d26f304d8418570743198658ec9cf2edf8d8b and CI40836739314 passed; the isolated preview is verified. See message-info-acceptance.json, including the pinned-dependency fallback after remote Helm index refresh timed out. No accounting/backend/schema changes or new provider generations. R50/U49 remain.

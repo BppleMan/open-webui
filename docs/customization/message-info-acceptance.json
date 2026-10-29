@@ -1,0 +1,115 @@
+{
+  "requirement": "R56",
+  "prototype": "P41",
+  "date": "2026-10-29",
+  "status": "verified_on_isolated_preview",
+  "source_commit": "341d26f304d8418570743198658ec9cf2edf8d8b",
+  "implementation": {
+    "message_info": "Single native toolbar info trigger backed by existing Bits UI Popover; independent inline usage panel removed",
+    "density": "Compact token/cost/snapshot rows; call metadata and full raw usage in right/down disclosures",
+    "legacy": "Raw native fields retained without a ledger; missing costs remain unknown",
+    "reply_editor": "Reduced layered padding and type-label gutter; internally scrollable body and visible actions; undo/revision content changes resize textareas and retain scroll position",
+    "composer": "One-line model name; source retained in title, ARIA and grouped selector",
+    "accounting": "Existing call selection, decimal aggregation and cumulative snapshots preserved; no backend or schema changes"
+  },
+  "local_validation": {
+    "frontend_tests": 57,
+    "new_type_a11y_diagnostics": 0,
+    "upstream_diagnostics": 5763,
+    "production_build": "passed",
+    "new_provider_generations": 0,
+    "native_info": {
+      "input": 254,
+      "output_including_reasoning": 38,
+      "reasoning": 30,
+      "total": 292,
+      "raw_candidate_output": 8,
+      "unknown_cost_kept": true
+    },
+    "disclosure_rotation": {
+      "closed": "-90deg (right)",
+      "open": "0deg (down)"
+    },
+    "responsive_widths": [
+      390,
+      430,
+      894,
+      1280
+    ],
+    "app_scale": 1.1,
+    "popover_wheel_both_ends": true,
+    "outside_dismissal": true,
+    "Escape_focus_return": true,
+    "legacy_raw_equal_including_zero_and_custom_fields": true,
+    "raw_markup_escaped": true,
+    "failed_call_without_native_usage_still_visible": true,
+    "reply_long_characters": 8167,
+    "reply_undo_restores_text_and_height": true,
+    "legacy_undo_restores_text_and_height": true,
+    "short_viewport": [
+      390,
+      667
+    ],
+    "editor_footer_visible": true,
+    "structured_JSON_preserved_after_undo": true,
+    "composer_one_line_with_source_title": true,
+    "method": "Built-in browser native inputs and rendered DOM; no physical device claim"
+  },
+  "ci": {
+    "status": "success",
+    "run_id": 40836739314,
+    "url": "https://github.com/BppleMan/open-webui/actions/runs/40836739314",
+    "source_commit": "341d26f304d8418570743198658ec9cf2edf8d8b",
+    "jobs": {
+      "backend": "success",
+      "frontend": "success",
+      "image": "success"
+    },
+    "backend_tests": 351,
+    "frontend_tests": 57,
+    "type_delta": 0,
+    "upstream_diagnostics": 5763
+  },
+  "deployment": {
+    "status": "Synced/Healthy_and_browser_verified",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-341d26f304d8418570743198658ec9cf2edf8d8b@sha256:a7b7845e58880343213ecb28c96c4294df51017e9968b5bb9ba1ddc5412dc261",
+    "image_id": "ghcr.io/bppleman/open-webui-oi@sha256:a7b7845e58880343213ecb28c96c4294df51017e9968b5bb9ba1ddc5412dc261",
+    "gitops_commit": "1585f15da5a06b95f62f0989a975b0efb6f3257e",
+    "pod_restarts": 0,
+    "schema": "oi0000000007",
+    "schema_migration": "none",
+    "production": "unchanged_R50",
+    "helm": {
+      "dependency_refresh": "timed_out_remote_refresh_35s",
+      "locked_dependencies": "byte_identical_to_previous_deployed_revision",
+      "hashes": {
+        "charts/open-webui-staging/Chart.yaml": "300a9cac0e0accfe81431ecb03e72a5500b40d61bdbc834450091e47e78dcff7",
+        "charts/open-webui-staging/Chart.lock": "4b5238797ba0ad38ef28dffbb8910a428598ea390e4f609c3e51a73b90eb4b48",
+        "charts/open-webui-staging/charts/app-wrapper-0.0.4.tgz": "a471e66c0ab46a04f07f777a747f1df2b60c2a36052f7775c6e1728f1d97192a",
+        "charts/open-webui-staging/charts/open-webui-16.6.0.tgz": "ca96e875d059a115c55620a75013e72690dc0e703a023ee8c8c7dae6b903d637"
+      },
+      "lint": "passed",
+      "render": "passed",
+      "scope": "staging_image_only"
+    },
+    "sync_note": "Automatic sync had started; explicit sync returned operation-in-progress and was not forced. Actual rollout and Git revision verified."
+  },
+  "boundaries": [
+    "Stage8B production authorization is not granted",
+    "No real provider generations performed for this UI batch",
+    "A synthetic legacy message was imported into the isolated preview for compatibility verification",
+    "Previous supplier/CORS/model-alias boundaries remain"
+  ],
+  "preview_validation": {
+    "single_info_trigger": true,
+    "old_inline_usage_removed": true,
+    "raw_and_normalized_fields_preserved": true,
+    "unknown_cost_and_round_snapshot_visible": true,
+    "Enter_opens_Escape_closes_and_focus_returns": true,
+    "right_down_disclosures": true,
+    "short_reply_editor_height_px": 213.3125,
+    "undo_restores_same_text_and_height": true,
+    "composer_single_line_source_in_title": true,
+    "test_form_changes_saved": false
+  }
+}
