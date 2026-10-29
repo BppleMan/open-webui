@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "project": "OI Open WebUI customization",
-  "updated_on": "2026-10-29",
-  "phase": "R58_wrapping_usage_verified; R59_request_controls_proposed; stage8B_not_authorized",
+  "updated_on": "2026-10-30",
+  "phase": "R59_thoughts_R60_session_recovery_in_progress; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -19,7 +19,7 @@
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
     "latest_commit": "1db8c067c403d0829f006c65efd02390cec26979",
-    "latest_documentation_revision": "R58/P43/U56 verified; R59 request controls proposed"
+    "latest_documentation_revision": "R59/P44 and R60/P45 implemented under U58; local checks passed; CI and preview pending"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -108,13 +108,16 @@
         "evidence": "protocol-decoupling-acceptance.json"
       },
       "thought_visibility_R59": {
-        "status": "diagnosed; solution_proposed",
-        "implementation": "not_started",
-        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "status": "implemented",
+        "implementation": "implemented",
+        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50",
-        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
+        "deployment": "pending_isolated_preview",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
+        "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
+        "proposal_status": "approved_U58; default_request_with_explicit_off",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
       }
     },
     {
@@ -302,13 +305,16 @@
         "evidence": "usage-density-acceptance.json"
       },
       "thought_visibility_R59": {
-        "status": "diagnosed; solution_proposed",
-        "implementation": "not_started",
-        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "status": "implemented",
+        "implementation": "implemented",
+        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50",
-        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
+        "deployment": "pending_isolated_preview",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
+        "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
+        "proposal_status": "approved_U58; default_request_with_explicit_off",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
       }
     },
     {
@@ -406,13 +412,16 @@
         "evidence": "protocol-decoupling-acceptance.json"
       },
       "thought_visibility_R59": {
-        "status": "diagnosed; solution_proposed",
-        "implementation": "not_started",
-        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "status": "implemented",
+        "implementation": "implemented",
+        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50",
-        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
+        "deployment": "pending_isolated_preview",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
+        "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
+        "proposal_status": "approved_U58; default_request_with_explicit_off",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
       }
     },
     {
@@ -581,13 +590,16 @@
         "evidence": "protocol-decoupling-acceptance.json"
       },
       "thought_visibility_R59": {
-        "status": "diagnosed; solution_proposed",
-        "implementation": "not_started",
-        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "status": "implemented",
+        "implementation": "implemented",
+        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50",
-        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
+        "deployment": "pending_isolated_preview",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
+        "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
+        "proposal_status": "approved_U58; default_request_with_explicit_off",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
       }
     },
     {
@@ -629,10 +641,12 @@
       "id": "F10",
       "title": "登录连续性与恢复",
       "requirements": [
-        "R12"
+        "R12",
+        "R60"
       ],
       "prototypes": [
-        "P10"
+        "P10",
+        "P45"
       ],
       "priority": "P0",
       "status": "verified",
@@ -663,6 +677,12 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "session_recovery_R60": {
+        "status": "implemented",
+        "implementation": "implemented",
+        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
+        "deployment": "pending_isolated_preview"
       }
     },
     {
@@ -827,13 +847,16 @@
         "evidence": "usage-density-acceptance.json"
       },
       "thought_visibility_R59": {
-        "status": "diagnosed; solution_proposed",
-        "implementation": "not_started",
-        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "status": "implemented",
+        "implementation": "implemented",
+        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50",
-        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
+        "deployment": "pending_isolated_preview",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
+        "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
+        "proposal_status": "approved_U58; default_request_with_explicit_off",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
       }
     },
     {
@@ -1382,7 +1405,8 @@
         "R56",
         "R57",
         "R58",
-        "R59"
+        "R59",
+        "R60"
       ],
       "prototypes": [
         "P18",
@@ -1394,7 +1418,8 @@
         "P41",
         "P42",
         "P43",
-        "P44"
+        "P44",
+        "P45"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1550,13 +1575,22 @@
         "evidence": "usage-density-acceptance.json"
       },
       "thought_visibility_R59": {
-        "status": "diagnosed; solution_proposed",
-        "implementation": "not_started",
-        "verification": "saved_native_response_and_current_settings_read_only; no_paid_regeneration",
+        "status": "implemented",
+        "implementation": "implemented",
+        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
         "finding": "reasoning_tokens_present_but_no_readable_native_thought_part; current_includeThoughts_not_requested",
         "limits": "no_historical_wire_capture_or_live_enabled_summary_test",
-        "deployment": "unchanged_R57; CPA_unchanged_R50",
-        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed"
+        "deployment": "pending_isolated_preview",
+        "display_note": "current_reply_missing_readable_summary_note_implemented_in_R58; request_controls_remain_proposed",
+        "proposal": "deep_merge_includeThoughts_with_explicit_false_preserved; reuse_native_thought_stream_and_existing_reasoning_UI; independent_Model_controls",
+        "proposal_status": "approved_U58; default_request_with_explicit_off",
+        "source_verification": "existing_protocols_thought_to_reasoning_content_and_middleware_structured_reasoning_confirmed; no_new_provider_calls"
+      },
+      "session_recovery_R60": {
+        "status": "implemented",
+        "implementation": "implemented",
+        "verification": "local_tests_and_HTTP_passed; browser_acceptance_in_progress; CI_pending",
+        "deployment": "pending_isolated_preview"
       }
     }
   ],

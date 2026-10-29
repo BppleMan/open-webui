@@ -1,8 +1,9 @@
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import { WEBUI_API_BASE_URL } from '$lib/constants';
 
 export const sessionRecoveryRequired = writable(false);
 let renewal: Promise<any> | null = null;
+let rejectedCredential: string | null = null;
 
 export function tokenExpiry(token: string): number | null {
 	try {
@@ -21,7 +22,7 @@ export function isStaleCredential(attempted: string, current: string | null): bo
 export async function renewSession() {
 	if (renewal) return renewal;
 	const attempted = localStorage.getItem('token');
-	if (!attempted) return null;
+	if (!attempted || (attempted === rejectedCredential && get(sessionRecoveryRequired))) return null;
 	renewal = (async () => {
 		const response = await fetch(`${WEBUI_API_BASE_URL}/auths/refresh`, {
 			method: 'POST',
@@ -31,6 +32,7 @@ export async function renewSession() {
 		// Another tab may have completed a new sign-in while this request was in flight.
 		if (isStaleCredential(attempted, localStorage.getItem('token'))) return null;
 		if (response.status === 401) {
+			rejectedCredential = attempted;
 			sessionRecoveryRequired.set(true);
 			return null;
 		}
@@ -38,6 +40,7 @@ export async function renewSession() {
 		const session = await response.json();
 		if (isStaleCredential(attempted, localStorage.getItem('token'))) return null;
 		localStorage.setItem('token', session.token);
+		rejectedCredential = null;
 		if (typeof window !== 'undefined') window.dispatchEvent(new Event('oi:session-updated'));
 		sessionRecoveryRequired.set(false);
 		return session;

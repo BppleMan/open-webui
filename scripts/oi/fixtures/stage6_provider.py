@@ -3,8 +3,11 @@
 import json
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+# This loopback-only synthetic fixture also exercises browser-native transport.
+app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 events = []
 
 
@@ -112,6 +115,22 @@ async def generate(protocol: str, path: str, request: Request):
             'modelVersion': 'fixture',
         }
         frames = [body]
+        if b.get('generationConfig', {}).get('thinkingConfig', {}).get('includeThoughts') is True:
+            part = {'thought': True, 'text': 'Synthetic streamed thought summary.'}
+            body['candidates'][0]['content']['parts'].insert(0, part)
+            # Separate the reasoning delta from the final answer, as a real provider does.
+            frames = [
+                {'candidates': [{'content': {'role': 'model', 'parts': [part]}}]},
+                {
+                    **body,
+                    'candidates': [
+                        {
+                            **body['candidates'][0],
+                            'content': {'role': 'model', 'parts': body['candidates'][0]['content']['parts'][1:]},
+                        }
+                    ],
+                },
+            ]
     elif protocol == 'gemini-interactions':
         step = {'type': 'model_output', 'content': [{'type': 'text', 'text': text}]}
         body = {

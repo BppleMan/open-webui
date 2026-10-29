@@ -58,6 +58,26 @@ it('opens recovery on a genuine unauthorized refresh without clearing the token'
 	expect(get(sessionRecoveryRequired)).toBe(true);
 });
 
+it('stops renewing a confirmed invalid credential, but accepts a new login', async () => {
+	vi.stubGlobal(
+		'fetch',
+		vi
+			.fn()
+			.mockResolvedValueOnce(new Response('', { status: 401 }))
+			.mockResolvedValueOnce(Response.json({ token: 'new-renewed' }))
+	);
+	await renewSession();
+	await renewSession();
+	await renewSession();
+	expect(fetch).toHaveBeenCalledTimes(1);
+	expect(token).toBe('original');
+	token = 'new-login';
+	await renewSession();
+	expect(fetch).toHaveBeenCalledTimes(2);
+	expect(token).toBe('new-renewed');
+	expect(get(sessionRecoveryRequired)).toBe(false);
+});
+
 it('uses the new login after an old bootstrap request returns unauthorized', async () => {
 	let reject!: (reason: any) => void;
 	const lookup = vi

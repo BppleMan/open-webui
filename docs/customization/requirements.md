@@ -180,3 +180,7 @@ Reasoning-token usage does not imply a readable thought block was returned. Insp
 R58 approved refinement: implement a separate wrapping metadata row with input, output, cache reads, cache writes and per-response cost always visible; include reasoning, totals, elapsed time and cumulative costs where available. Use restrained icons/colors and preserve complete flat info details. R59 request visibility controls remain proposed; no provider request behavior change.
 
 R58/U56收口：独立可换行摘要、缓存读写和本次费用常显、克制彩色线框图标、完整info平级标签已在隔离预发验收。R59仅补当前回复无可读摘要说明，请求开关仍候选，未启用新供应商参数。R50保持。
+
+R59 implementation discussion: stream provider-returned Gemini thought summaries into the existing reasoning renderer. Request visibility is independent of reasoning effort. A model default with an explicit Model controls override is proposed; requesting summaries by default for models intended to show them remains a recommendation. No application, provider configuration or deployment changes are authorized by this discussion.
+
+R59 implementation approved: request Gemini GenerateContent summaries by default with an explicit native model-control override, for server and browser transports. R60: explain expired-session recovery, stop renewing the same confirmed-invalid credential, and use a bounded compact recovery frame. Authentication expiry/revocation rules and R50 remain unchanged.

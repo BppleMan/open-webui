@@ -410,6 +410,16 @@ def build_request(form, binding, connection):
         if system:
             source['systemInstruction'] = {'parts': [media_part(p, 'gemini') for p in system]}
         config = source.pop('generationConfig', {})
+        if not isinstance(config, dict):
+            raise HTTPException(422, 'generationConfig must be an object')
+        thinking = config.setdefault('thinkingConfig', {})
+        if not isinstance(thinking, dict):
+            raise HTTPException(422, 'thinkingConfig must be an object')
+        # Preserve explicit model/session choices and all existing effort/budget fields.
+        # Summary text arrives in this same stream; no auxiliary generation is needed.
+        thinking.setdefault('includeThoughts', True)
+        if not isinstance(thinking['includeThoughts'], bool):
+            raise HTTPException(422, 'includeThoughts must be a boolean')
         for src, dst in {
             'temperature': 'temperature',
             'top_p': 'topP',

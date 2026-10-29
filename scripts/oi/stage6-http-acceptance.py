@@ -102,6 +102,8 @@ with httpx.Client(base_url=api, timeout=90, trust_env=False) as c:
             r.raise_for_status()
             observed = json.dumps(req('GET', f'/api/v1/chats/{chat_id}')) if stream else r.text
             assert 'Native stage6 fixture.' in observed, (protocol, stream, observed[:300])
+            if protocol in {'gemini', 'cpa-agy'}:
+                assert 'Synthetic streamed thought summary.' in observed, (protocol, stream, observed[:300])
             usage = req('GET', f'/api/v1/chats/{chat_id}/usage')
             assert len(usage['calls']) == 1
             call = usage['calls'][0]
@@ -175,7 +177,7 @@ with httpx.Client(base_url=api, timeout=90, trust_env=False) as c:
     # Default leaves reasoning to the provider instead of silently picking the first level.
     chat, aid = send(gemini, text='KEEP_ORIGINAL_STAGE6 ' * 100)
     captured = httpx.get(provider + '/events').json()[-1]['body']
-    assert not captured.get('generationConfig', {}).get('thinkingConfig')
+    assert captured['generationConfig']['thinkingConfig'] == {'includeThoughts': True}
     before = req('GET', f'/api/v1/chats/{chat}')['chat']['history']['messages']
     before_events = len(httpx.get(provider + '/events').json())
     assert not req('POST', f'/api/v1/chats/{chat}/compact', {'model': gemini['id']})['compacted']

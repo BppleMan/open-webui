@@ -4082,5 +4082,9 @@
 	"YouTube": "",
 	"YouTube video player": "",
 	"Zoom in": "",
-	"Zoom out": ""
+	"Zoom out": "",
+	"Thought summaries": "Thought summaries",
+	"Request summaries": "Request summaries",
+	"Do not request": "Do not request",
+	"Request summaries by default. Model settings may override this; reasoning effort is unchanged.": "Request summaries by default. Model settings may override this; reasoning effort is unchanged."
 }

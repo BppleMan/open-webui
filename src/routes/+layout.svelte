@@ -956,7 +956,12 @@
 	};
 
 	const checkTokenExpiry = async () => {
-		if (!$user || $page.url.pathname.startsWith('/auth') || document.visibilityState === 'hidden')
+		if (
+			!$user ||
+			$sessionRecoveryRequired ||
+			$page.url.pathname.startsWith('/auth') ||
+			document.visibilityState === 'hidden'
+		)
 			return;
 		const exp = tokenExpiry(localStorage.getItem('token') || '');
 		if (exp && Date.now() / 1000 >= exp - 15 * 60) {

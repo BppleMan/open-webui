@@ -4076,5 +4076,9 @@
 	"YouTube": "YouTube",
 	"YouTube video player": "YouTube 视频播放器",
 	"Zoom in": "放大",
-	"Zoom out": "缩小"
+	"Zoom out": "缩小",
+	"Thought summaries": "思考摘要",
+	"Request summaries": "请求摘要",
+	"Do not request": "不请求",
+	"Request summaries by default. Model settings may override this; reasoning effort is unchanged.": "默认请求摘要，模型设置可覆盖；此选项不改变推理强度。"
 }

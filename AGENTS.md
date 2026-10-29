@@ -40,3 +40,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - U56 approves implementing R58/P43: a separate wrapping metadata row with input/output/cache read/cache write/current cost always visible, restrained icons/colors and complete flat info tabs. R59 request controls remain proposed; keep supplier requests unchanged. R50/U49 apply.
 
 - R58/P43/U56 is verified on isolated preview; read docs/customization/usage-density-acceptance.json. Keep the independent wrapping row and full flat info, unknown/zero distinctions, decimal amounts and stable source selection. R59 summary-request controls remain proposed.
+
+- U58 authorizes R59/P44 Gemini streaming thought-summary requests: default on, explicit off preserved, native controls for both transports. R60/P45 addresses expired-session recovery and repeated rejected refreshes. Work is in progress; validate as one batch and publish only isolated preview under R50/U49. Never renew expired or revoked sessions by weakening authentication rules.

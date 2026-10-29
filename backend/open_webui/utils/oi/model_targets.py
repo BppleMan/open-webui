@@ -58,7 +58,11 @@ async def resolve_native_target(db, reference, user):
                 if not override.is_active:
                     raise HTTPException(404, 'Connection model unavailable')
                 params = merge_model_params(params, override.params.model_dump(exclude_unset=True))
-            controls = {**params.get('model_controls', {}), **catalog.reasoning_controls(binding)}
+            controls = {
+                **params.get('model_controls', {}),
+                **catalog.reasoning_controls(binding),
+                **catalog.thought_controls(binding),
+            }
             if controls:
                 params['model_controls'] = controls
             for preset in reversed(presets):

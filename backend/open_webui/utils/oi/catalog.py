@@ -231,6 +231,29 @@ def reasoning_controls(binding):
     return {}
 
 
+def thought_controls(binding):
+    """Summary visibility is independent of the provider's reasoning budget/level."""
+    if canonical_protocol(getattr(binding, 'protocol', '')) != 'gemini':
+        return {}
+    return {
+        'oi_thoughts': {
+            'label': 'Thought summaries',
+            'description': 'Request summaries by default. Model settings may override this; reasoning effort is unchanged.',
+            'default': None,
+            'display': 'menu',
+            'options': {
+                key: {
+                    'label': label,
+                    'params': {
+                        'provider_options': {'generationConfig': {'thinkingConfig': {'includeThoughts': enabled}}}
+                    },
+                }
+                for key, label, enabled in [('on', 'Request summaries', True), ('off', 'Do not request', False)]
+            },
+        }
+    }
+
+
 async def model_catalog(db, user, *, internal=False):
     pairs = (
         await db.execute(select(ModelBinding, Connection).join(Connection, ModelBinding.connection_id == Connection.id))
@@ -261,7 +284,11 @@ async def model_catalog(db, user, *, internal=False):
             continue
         binding, connection = snapshot_target(binding, connection)
         caps = capabilities(binding)
-        controls = {**(binding.params or {}).get('model_controls', {}), **reasoning_controls(binding)}
+        controls = {
+            **(binding.params or {}).get('model_controls', {}),
+            **reasoning_controls(binding),
+            **thought_controls(binding),
+        }
         result.append(
             {
                 'id': binding.id,

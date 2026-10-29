@@ -54,7 +54,7 @@ async def test_native_transport_outcomes(db, monkeypatch, protocol, kind, outcom
         },
         'anthropic': {'type': 'message_start', 'message': {'content': [], 'usage': {'input_tokens': 123}}},
         'gemini': {
-            'candidates': [{'content': {'parts': [{'text': 'partial'}]}}],
+            'candidates': [{'content': {'parts': [{'text': 'partial thought', 'thought': True}]}}],
             'usageMetadata': {'promptTokenCount': 123},
         },
     }
@@ -62,6 +62,8 @@ async def test_native_transport_outcomes(db, monkeypatch, protocol, kind, outcom
 
     async def serve(req):
         counts.append(str(req.url))
+        if protocol == 'gemini':
+            assert json.loads(req.content)['generationConfig']['thinkingConfig']['includeThoughts'] is True
         if outcome in {'404', '429'}:
             return httpx.Response(int(outcome), json={'error': {'message': 'synthetic'}}, headers={'retry-after': '7'})
         if outcome == 'json':

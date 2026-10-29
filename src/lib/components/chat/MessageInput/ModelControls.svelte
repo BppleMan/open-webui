@@ -38,7 +38,9 @@
 		.filter(
 			(model): model is Model =>
 				!!model &&
-				!('direct' in model && model.direct) &&
+				(!('direct' in model && model.direct) ||
+					('oi_binding' in model && !!model.oi_binding) ||
+					('oi_base_binding' in model && !!model.oi_base_binding)) &&
 				!('pipe' in model && model.pipe) &&
 				Object.keys(model.info?.params?.model_controls ?? {}).length > 0
 		);
@@ -76,10 +78,11 @@
 </script>
 
 {#snippet summary(model: Model, key: string, control: ModelControl)}
-	<span class="min-w-0 flex-1 truncate text-left">{control.label}</span>
+	<span class="min-w-0 flex-1 truncate text-left">{$i18n.t(control.label)}</span>
 	<span class="max-w-[55%] truncate text-gray-500 dark:text-gray-400">
-		{control.options[modelControls[model.id]?.[key] ?? control.default ?? '']?.label ??
-			$i18n.t('Default')}
+		{$i18n.t(
+			control.options[modelControls[model.id]?.[key] ?? control.default ?? '']?.label ?? 'Default'
+		)}
 	</span>
 	<ChevronRight className="size-3.5 shrink-0 text-gray-400" />
 {/snippet}
@@ -87,7 +90,7 @@
 {#snippet choices(model: Model, key: string, control: ModelControl)}
 	{#if control.description}
 		<p class="px-2 py-1.5 text-xs leading-4 text-gray-500 dark:text-gray-400">
-			{control.description}
+			{$i18n.t(control.description)}
 		</p>
 	{/if}
 	<button
@@ -113,7 +116,7 @@
 			class={`${rowClass} ${modelControls[model.id]?.[key] === value ? selectedClass : ''}`}
 			on:click={() => select(model.id, key, value)}
 		>
-			<span class="min-w-0 flex-1 truncate text-left">{option.label}</span>
+			<span class="min-w-0 flex-1 truncate text-left">{$i18n.t(option.label)}</span>
 			{#if modelControls[model.id]?.[key] === value}<Check className="size-3! shrink-0" />{/if}
 		</button>
 	{/each}
@@ -135,7 +138,7 @@
 				{#if $mobile && active}
 					<button type="button" aria-label={$i18n.t('Back')} on:click={back}>
 						<ChevronLeft className="size-3.5" />
-						<span>{active.control.label}</span>
+						<span>{$i18n.t(active.control.label)}</span>
 					</button>
 					{@render choices(active.model, active.key, active.control)}
 				{:else}
@@ -164,7 +167,7 @@
 							{:else if $mobile}
 								<button
 									type="button"
-									aria-label={control.label}
+									aria-label={$i18n.t(control.label)}
 									id={`model-control-${model.id}-${key}`}
 									class={rowClass}
 									on:click={(event) =>
@@ -180,7 +183,7 @@
 									<button
 										slot="trigger"
 										type="button"
-										aria-label={control.label}
+										aria-label={$i18n.t(control.label)}
 										aria-haspopup="menu"
 										class={rowClass}
 									>

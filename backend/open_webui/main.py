@@ -1732,7 +1732,7 @@ async def chat_completion(
             request.state.metadata = metadata
             form_data['metadata'] = metadata
             try:
-                if not metadata.get('direct'):
+                if not metadata.get('direct') or model.get('oi_binding') or model.get('oi_base_binding'):
                     target = (
                         model_info
                         if form_data['model'] == model_id

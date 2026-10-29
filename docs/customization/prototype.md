@@ -289,9 +289,13 @@ info恢复完整统计，默认“概览”（输入、输出含推理、推理�
 仅制作对话内讨论稿，未修改应用组件、未构建或部署。具体布局、标记法与默认字段待用户选择。
 
 ## P44 — 推理耗量与思考摘要分开（候选）
+
+Implementation proposal: deep-merge generationConfig.thinkingConfig.includeThoughts into GenerateContent requests while preserving effort/budget and explicit false. Reuse the existing thought:true → reasoning_content → structured reasoning → renderer path for incremental output. Preserve native parts and signatures separately; keep CPA historical thought exclusion from RP inputs. Use the same request rules for server and browser transport. Add offline coverage for mixed thought/text events, tools, interrupted streams, usage without readable thoughts, overrides and persistence before separately documenting live provider validation. Request controls and their default policy remain proposed.
 耗量依供应商计数展示；无可读thought文本时，info提示“有推理用量；本次未返回可展示的思考摘要”，不制造空思考块，也不把签名解读为思考文本。
 思考摘要可见性与推理强度独立：Gemini/CPA原生路径由generationConfig.thinkingConfig.includeThoughts表达请求；其他协议映射各自的摘要字段。应尊重显式关闭，并保留自动/请求/不请求的选择空间，默认值待讨论。请求摘要不保证上游每次提供，不能事后从token数或签名恢复原文；不增加提示词、补生成或后台收费调用。这里只读诊断，不改变当前参数和生产CPA。
 
 P43 approved by U56: choose the separate metadata row, wrapping whole metric groups on narrow screens. Always show input/output/cache-read/cache-write/current cost; retain reasoning, total, elapsed and cumulative costs without card chrome. Use project icons and restrained semantic colors, precise amounts and clear actual/estimated/unknown states. Full info uses sibling Overview/Calls/Raw tabs with stable call-ID source selection, no nested disclosure. R59 is limited to an honest missing-summary note; summary-request controls are not part of this implementation.
 
 P43实际验收：430px/1.1倍缩放约46.2px两行，320/390px自然三行，宽屏一到两行；字段组不横向溢出。缓存读写共享一个图标，已知0与未知—区分，实际/估算/待确认及累计保持。完整info无嵌套折叠，来源选择按call-ID保持，键盘/原生滚轮/自动与显式刷新均验证。浅深色通过且测试后恢复原浅色。见usage-density-acceptance.json。
+
+P44 approved: default Gemini summary requests with explicit false preserved; native model controls apply to both transports. P45: compact viewport-bounded recovery with clear invalid-session wording; stop renewal for a rejected credential, resume after a new login, retain draft/editor state.

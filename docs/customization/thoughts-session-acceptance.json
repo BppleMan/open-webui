@@ -1,0 +1,32 @@
+{
+  "requirements": [
+    "R59",
+    "R60"
+  ],
+  "prototypes": [
+    "P44",
+    "P45"
+  ],
+  "approval": "U58",
+  "date": "2026-10-30",
+  "status": "local_checks_and_browser_passed; CI_preview_pending",
+  "implementation": {
+    "gemini_summaries": "default_true; explicit_false_preserved; native_model_controls_for_server_and_browser",
+    "effort_budget": "unchanged",
+    "history": "opaque_signatures_preserved; CPA_historical_thoughts_not_injected",
+    "auth": "reject_repeat_refresh_for_confirmed_invalid_credential; new_login_can_resume; compact_embedded_form"
+  },
+  "local_validation": {
+    "backend_tests": 376,
+    "frontend_tests": 64,
+    "new_type_a11y_diagnostics": 0,
+    "upstream_diagnostics": 5756,
+    "build": "passed",
+    "http": "seven_protocols_stream_nonstream_reasoning_ledger_and_manual_compaction_passed",
+    "browser": "server_on; browser_off/on and captured outbound flags; saved reload; 430/1280 layouts; same-page recovery login",
+    "supplier_calls": 0
+  },
+  "production_changed": false,
+  "database_migration": false,
+  "live_supplier_validation": "pending"
+}
