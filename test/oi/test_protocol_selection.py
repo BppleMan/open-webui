@@ -178,6 +178,14 @@ def test_cpa_compatibility_is_independent_of_template_and_auth():
     assert resolve_endpoint(frozen, b.protocol, model='m').endswith('/v1beta/models/m:generateContent')
 
 
+def test_azure_responses_uses_service_profile_not_deployment_chat_path():
+    c = service('https://resource.invalid/proxy', 'openai-responses', 'azure-openai')
+    assert (
+        resolve_endpoint(c, 'openai-responses', model='deployment')
+        == 'https://resource.invalid/proxy/openai/v1/responses'
+    )
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize('mode', COMMON_PROTOCOLS)
 async def test_browser_config_uses_binding_override_and_preserves_auth(api, db, monkeypatch, mode):

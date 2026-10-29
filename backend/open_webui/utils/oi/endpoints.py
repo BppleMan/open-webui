@@ -78,6 +78,8 @@ def normalize_service_address(base, settings, protocol, template='openai-compati
     if profile == 'gemini':
         prefixes.setdefault('openai-chat', '/v1beta/openai')
         prefixes.setdefault('openai-responses', '/v1beta/openai')
+    if profile == 'azure-openai':
+        prefixes.setdefault('openai-responses', '/openai/v1')
     if profile == 'zai':
         prefixes.setdefault('openai-chat', '/api/paas/v4')
         prefixes.setdefault('openai-responses', '/api/paas/v4')
