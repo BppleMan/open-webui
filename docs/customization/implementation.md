@@ -44,3 +44,8 @@ R51/P36 preview refinement is verified at a198214b3. Context popovers use render
 ## R53 / P38 — protocol decoupling
 
 Protocol registry, persisted service routing and OI7 model inheritance are implemented. Browser RPC carries explicit streaming and validates the resolved endpoint. The compact connection editor uses common mode choices and readonly URL previews. Final checks: 351 backend and 57 frontend tests, no new type/a11y diagnostics (5765 existing upstream diagnostics), production build and CI 40814642568 passed. Populated PostgreSQL migration, restore, browser user paths and isolated preview are verified. Real supplier/CORS boundaries are recorded in protocol-decoupling-acceptance.json; R50 holds. See protocol-decoupling.md.
+
+
+### R54/P39 context Popover acceptance
+
+The context popup now uses the installed Bits UI Popover primitive and one vertical scroll container. Source 3ea4c2b4a1a3c2501d592d51e56b075e471870b1 passed the final browser matrix, frontend tests, type delta, production build and CI. Only the isolated preview was updated. See context-popover-acceptance.json for the scroll measurements, CI and immutable image. U49 requires completing related edits before the batch of checks and preview publication. R50 remains in force.

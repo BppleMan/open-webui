@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-29",
-  "phase": "R54_context_scroll_fix_in_progress",
+  "phase": "R54_context_popover_verified_user_tuning",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,12 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
+    "latest_code_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
-    "latest_documentation_revision": "R53/P38"
+    "latest_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
+    "latest_documentation_revision": "R54/P39/U49"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -125,9 +125,9 @@
         "P39"
       ],
       "priority": "P1",
-      "status": "in_progress",
+      "status": "verified",
       "implementation": "composer_ring_popup_context_cache_budget_warnings_and_explicit_compaction",
-      "verification": "stage6 complete context/compaction matrix; stage8 discovered capacity and responsive popup",
+      "verification": "stage6 context/compaction matrix; stage8 capacity; R54 real Popover scrolling, placement, keyboard and outside dismissal verified",
       "deployment": "staging_verified; production_not_deployed",
       "acceptance": [
         "完整上下文分类与窗口、压缩阈值分离",
@@ -171,8 +171,10 @@
       },
       "scroll_fix_R54": {
         "implementation": "Bits_UI_Popover_implemented",
-        "verification": "local_browser_passed; CI_and_preview_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
+        "verification": "native_wheel_both_ends_placement_resize_keyboard_outside_dismissal_and_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "context-popover-acceptance.json"
       }
     },
     {
@@ -235,8 +237,10 @@
       },
       "scroll_fix_R54": {
         "implementation": "Bits_UI_Popover_implemented",
-        "verification": "local_browser_passed; CI_and_preview_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
+        "verification": "native_wheel_both_ends_placement_resize_keyboard_outside_dismissal_and_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "context-popover-acceptance.json"
       }
     },
     {
@@ -670,8 +674,10 @@
       },
       "scroll_fix_R54": {
         "implementation": "Bits_UI_Popover_implemented",
-        "verification": "local_browser_passed; CI_and_preview_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
+        "verification": "native_wheel_both_ends_placement_resize_keyboard_outside_dismissal_and_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "context-popover-acceptance.json"
       }
     },
     {
@@ -1279,8 +1285,10 @@
       },
       "scroll_fix_R54": {
         "implementation": "Bits_UI_Popover_implemented",
-        "verification": "local_browser_passed; CI_and_preview_pending",
-        "deployment": "pending_isolated_preview; R50 hold"
+        "source_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
+        "verification": "native_wheel_both_ends_placement_resize_keyboard_outside_dismissal_and_CI_passed",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "context-popover-acceptance.json"
       }
     }
   ],
@@ -1348,7 +1356,7 @@
       "tag": "sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
       "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
     },
-    "actual_CI": "https://github.com/BppleMan/open-webui/actions/runs/40814642568",
+    "actual_CI": "https://github.com/BppleMan/open-webui/actions/runs/40819793483",
     "stage8A": {
       "status": "verified_with_documented_methods",
       "source": "61ff81c61e2c9fee90d2237679c64833196978bb",
@@ -1426,6 +1434,17 @@
       "ci": "https://github.com/BppleMan/open-webui/actions/runs/40814642568",
       "source_commit": "97b7936939f4c5e7937feecc2ea8c60a24ccfb3b",
       "evidence": "protocol-decoupling-acceptance.json"
+    },
+    "context_popover_R54": {
+      "source_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
+      "backend_tests_CI": 351,
+      "frontend_tests": 57,
+      "new_type_a11y_diagnostics": 0,
+      "existing_upstream_diagnostics": 5765,
+      "production_build": "passed",
+      "ci": "https://github.com/BppleMan/open-webui/actions/runs/40819793483",
+      "browser": "local responsive matrix and deployed preview native input passed",
+      "evidence": "context-popover-acceptance.json"
     }
   },
   "review_remediation": {
@@ -1448,5 +1467,10 @@
     "associated_fix": "normalized_message_native_state_and_finish_reason",
     "evidence": "validation.md#u22-review-fixes"
   },
-  "postgres_correction": "psycopg_async_insert_rowcount_minus_one_replaced_by_returning"
+  "postgres_correction": "psycopg_async_insert_rowcount_minus_one_replaced_by_returning",
+  "execution_policy": {
+    "source": "user_U49",
+    "validation": "complete_related_changes_as_one_batch_then_run_acceptance_tests_types_build",
+    "preview": "one_update_per_validated_batch"
+  }
 }

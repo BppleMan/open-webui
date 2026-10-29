@@ -1,0 +1,120 @@
+{
+  "requirement": "R54",
+  "prototype": "P39",
+  "date": "2026-10-29",
+  "status": "verified_on_isolated_preview",
+  "source_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
+  "execution": "Related changes completed as one batch, followed by browser acceptance, tests, type gate, build, CI and one preview update (U49).",
+  "cause": "The custom Dropdown captured internal scroll events and temporarily expanded max-height while measuring; the browser clamped scrollTop before the final constraint was restored. A visible scrollbar did not prove scrolling worked.",
+  "implementation": {
+    "overlay": "Existing Bits UI Popover.Root/Trigger/Portal/Content",
+    "positioning": "Automatic placement and collision avoidance with 12px padding and library available-height variable",
+    "scrolling": "Popover Content is the single vertical scroll container; compact usage table only scrolls horizontally",
+    "interaction": "Outside dismissal, Escape and focus return are managed by the existing library",
+    "shared_dropdown": "Unchanged; diagnostic custom positioning patch was discarded",
+    "data_logic": "Context calculation, provider dispatch, ledger and compression behavior unchanged; no new dependency"
+  },
+  "validation": {
+    "backend_tests_CI": 351,
+    "frontend_tests_local_and_CI": 57,
+    "type_gate": "zero new diagnostics; 5765 existing upstream diagnostics remain",
+    "production_frontend_build": "passed locally and in CI",
+    "integration_CI": "PostgreSQL migration/recovery, pgvector, HTTP/Realtime, auth/drafts, protocols and cost/archive passed",
+    "browser_method": "Built-in browser native wheel and keyboard; DOM scroll bounds measured after real input",
+    "viewport_widths": [
+      390,
+      430,
+      1280,
+      2560
+    ],
+    "app_scale": 1.1,
+    "local_scroll_bottoms": [
+      {
+        "width": 390,
+        "top": 0,
+        "bottom": 1186,
+        "max": 1186,
+        "placement": "top",
+        "font": "17.6px",
+        "nestedVerticalScrollers": 0,
+        "inside": true
+      },
+      {
+        "width": 430,
+        "top": 0,
+        "bottom": 1110,
+        "max": 1110,
+        "placement": "top",
+        "font": "17.6px",
+        "nestedVerticalScrollers": 0,
+        "inside": true
+      },
+      {
+        "width": 1280,
+        "top": 0,
+        "bottom": 1110,
+        "max": 1110,
+        "placement": "top",
+        "font": "17.6px",
+        "nestedVerticalScrollers": 0,
+        "inside": true
+      },
+      {
+        "width": 2560,
+        "top": 0,
+        "bottom": 1110,
+        "max": 1110,
+        "placement": "top",
+        "font": "17.6px",
+        "nestedVerticalScrollers": 0,
+        "inside": true
+      }
+    ],
+    "new_chat_opens_below": true,
+    "saved_chat_opens_above": true,
+    "within_viewport": true,
+    "no_nested_vertical_scrollers": true,
+    "resize_preserves_position": true,
+    "home_end_reach_both_ends": true,
+    "enter_opens": true,
+    "outside_click_closes": true,
+    "escape_and_focus_return": true,
+    "deployed_preview": {
+      "new_chat_scroll_top_before": 0,
+      "new_chat_scroll_top_after": 146,
+      "new_chat_max": 146,
+      "saved_chat_scroll_top": 0,
+      "saved_chat_scroll_bottom": 511,
+      "saved_chat_max": 511,
+      "outside_click_closes": true,
+      "escape_and_focus_return": true
+    }
+  },
+  "ci": {
+    "url": "https://github.com/BppleMan/open-webui/actions/runs/40819793483",
+    "run_id": 40819793483,
+    "source_commit": "3ea4c2b4a1a3c2501d592d51e56b075e471870b1",
+    "jobs": {
+      "frontend": "success",
+      "backend": "success",
+      "image": "success"
+    }
+  },
+  "deployment": {
+    "scope": "isolated preview only",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-3ea4c2b4a1a3c2501d592d51e56b075e471870b1@sha256:6a2a3831afe3a3d40b6d1c61766dfef4ff02ddbd3e3af22e7f0ceb79d0a937aa",
+    "image_id": "ghcr.io/bppleman/open-webui-oi@sha256:6a2a3831afe3a3d40b6d1c61766dfef4ff02ddbd3e3af22e7f0ceb79d0a937aa",
+    "gitops_commit": "935906780a53e9e7739ad7cd5c78fcff5fa2e586",
+    "status": "Synced/Healthy",
+    "pod_restarts": 0,
+    "schema": "oi0000000007",
+    "database_migration": "none",
+    "production_OI_CPA": "unchanged"
+  },
+  "boundaries": [
+    "R50 production hold remains; stage8B requires new authorization",
+    "No new model requests or charges for this UI verification",
+    "Physical touch/device PWA was not tested; built-in browser method recorded",
+    "Earlier supplier/CORS/legacy-alias limits remain in the stage records"
+  ]
+}

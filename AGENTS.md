@@ -22,3 +22,7 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R53 is verified on isolated preview; read docs/customization/protocol-decoupling-acceptance.json. OI7 needs a compatible image; preserved legacy routes can require explicit review. Real OpenRouter browser Messages CORS remains a documented provider limitation. R50 remains unchanged.
 
 - R54/P39: use existing Bits UI overlay primitives for context popovers. Verify real scrolling to both ends, collision placement, outside dismissal and keyboard focus; geometry or visible scrollbars alone are insufficient.
+
+- User U49: finish the related edits as a batch before running browser acceptance, tests, type checks and build. Publish one validated preview update per batch; avoid full checks and image builds for every small edit.
+
+- R54 is verified on the isolated preview. Read docs/customization/context-popover-acceptance.json; keep the existing Bits UI Popover and single vertical scroll container. Continue user tuning under R50.
