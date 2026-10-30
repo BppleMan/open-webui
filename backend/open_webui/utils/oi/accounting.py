@@ -52,7 +52,7 @@ def ollama_metering(raw):
 
 def gemini_modalities(raw, result, fields):
     missing = []
-    unknown = False
+    unknown = bool(raw.get('_oi_missing_modality_breakdown'))
     for prefix, details_key, total_key in (
         ('input', 'promptTokensDetails', 'promptTokenCount'),
         ('output', 'candidatesTokensDetails', 'candidatesTokenCount'),

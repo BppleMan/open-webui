@@ -373,3 +373,55 @@ def test_gemini_incompatible_control_is_rejected_before_dispatch():
     with pytest.raises(HTTPException) as error:
         build_request({'messages': [], 'repeat_penalty': 1.1}, binding('gemini'), connection('gemini'))
     assert error.value.status_code == 422
+
+
+@pytest.mark.parametrize('stream', [False, True])
+@pytest.mark.parametrize('mime', ['image/png', 'audio/wav'])
+def test_known_gemini_media_without_modality_counts_is_not_text_priced(stream, mime):
+    from open_webui.utils.oi.protocols import NativeStream
+
+    body = {
+        'candidates': [
+            {
+                'content': {'role': 'model', 'parts': [{'inlineData': {'mimeType': mime, 'data': 'c3ludGhldGlj'}}]},
+                'finishReason': 'STOP',
+            }
+        ],
+        'usageMetadata': {'promptTokenCount': 10, 'candidatesTokenCount': 100},
+    }
+    state = NativeStream('gemini')
+    event = state.feed(body)[-1] if stream else state.nonstream(body)
+    usage = accounting.normalize_usage(event['oi_usage'], 'gemini')
+    assert accounting.estimate(usage, {'rates': {'input': '1', 'output': '2'}}) is None
+    assert '_oi_missing_modality_breakdown' not in state.body['usageMetadata']
+
+
+@pytest.mark.asyncio
+async def test_gemini_input_media_missing_classification_remains_unknown(monkeypatch):
+    monkeypatch.setattr(Chats, 'upsert_message_to_chat_by_id_and_message_id', AsyncMock())
+    form = {
+        'model': 'oi:leaf',
+        'stream': False,
+        'messages': [
+            {
+                'role': 'user',
+                'content': [{'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,c3ludGhldGlj'}}],
+            }
+        ],
+    }
+    body = {
+        'candidates': [{'content': {'role': 'model', 'parts': [{'text': 'Visible'}]}, 'finishReason': 'STOP'}],
+        'usageMetadata': {'promptTokenCount': 10, 'candidatesTokenCount': 5},
+    }
+    response = await generate(
+        SimpleNamespace(state=SimpleNamespace()),
+        form,
+        SimpleNamespace(id='u'),
+        binding('gemini'),
+        connection('gemini'),
+        'call',
+        httpx.MockTransport(lambda req: httpx.Response(200, json=body)),
+    )
+    data = response if isinstance(response, dict) else json.loads(response.body)
+    usage = accounting.normalize_usage(data['oi_usage'], 'gemini')
+    assert accounting.estimate(usage, {'rates': {'input': '1', 'output': '2'}}) is None

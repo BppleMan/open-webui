@@ -595,12 +595,27 @@ class NativeStream:
         self.finished = False
         self.tool_index = 0
         self.generated_tool_ids = {}
+        self.input_media = False
+
+    def metering(self):
+        usage = copy.deepcopy(self.usage)
+        if self.protocol in {'gemini', 'cpa-agy'}:
+            output_media = any(
+                part.get('inlineData') or part.get('fileData') or part.get('inline_data') or part.get('file_data')
+                for candidate in (self.body.get('candidates') or [])
+                for part in candidate.get('content', {}).get('parts', [])
+            )
+            if (self.input_media and 'promptTokensDetails' not in usage) or (
+                output_media and 'candidatesTokensDetails' not in usage
+            ):
+                usage['_oi_missing_modality_breakdown'] = True
+        return usage
 
     def _usage(self):
-        return accounting.normalize_usage(self.usage, self.protocol)
+        return accounting.normalize_usage(self.metering(), self.protocol)
 
     def usage_event(self):
-        return chunk(usage=self._usage(), oi_usage=copy.deepcopy(self.usage), oi_usage_protocol=self.protocol)
+        return chunk(usage=self._usage(), oi_usage=self.metering(), oi_usage_protocol=self.protocol)
 
     def ending(self, tools):
         if self.protocol == 'anthropic':
@@ -692,7 +707,7 @@ class NativeStream:
             usage=self._usage(),
             finish=ending['normalized'],
             oi_finish=ending,
-            oi_usage=copy.deepcopy(self.usage),
+            oi_usage=self.metering(),
             oi_usage_protocol=self.protocol,
         )
 
@@ -935,7 +950,7 @@ class NativeStream:
             'choices': [{'index': 0, 'message': message, 'finish_reason': ending['normalized']}],
             'oi_finish': ending,
             'usage': self._usage(),
-            'oi_usage': self.usage,
+            'oi_usage': self.metering(),
             'oi_usage_protocol': self.protocol,
         }
 
@@ -1002,6 +1017,11 @@ async def generate(request, form, user, binding, connection, call_id, transport=
             headers={k: v for k, v in response.headers.items() if k.lower() in {'retry-after', 'x-request-id'}},
         )
     state = NativeStream(binding.protocol)
+    state.input_media = any(
+        part.get('inlineData') or part.get('fileData')
+        for content in payload.get('contents', [])
+        for part in content.get('parts', [])
+    )
 
     def remember():
         remember_native(
