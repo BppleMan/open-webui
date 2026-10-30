@@ -2,13 +2,13 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-30",
-  "phase": "R61_responsive_usage_verified; R59_CPA_summary_pending; stage8B_not_authorized",
+  "phase": "R62_upstream_v0125_in_progress; R59_CPA_summary_pending; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
     "upstream": "https://github.com/open-webui/open-webui",
-    "tag": "v0.12.3",
-    "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60",
+    "tag": "v0.12.5",
+    "commit": "f7ac7ee10962ddec0017f5c29b6740d9b9c5faca",
     "remote_fork_created": true,
     "application_code_modified": true,
     "customization_committed": true,
@@ -19,7 +19,11 @@
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
     "latest_commit": "a01e9d219ed232338c7a9d451430846e8003411c",
-    "latest_documentation_revision": "U58: OI Gemini summaries deployed; actual CPA summary still missing; R60 recovery verified"
+    "latest_documentation_revision": "U58: OI Gemini summaries deployed; actual CPA summary still missing; R60 recovery verified",
+    "original_base": {
+      "tag": "v0.12.3",
+      "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60"
+    }
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -43,7 +47,8 @@
         "R51",
         "R52",
         "R53",
-        "R59"
+        "R59",
+        "R62"
       ],
       "prototypes": [
         "P01",
@@ -51,7 +56,8 @@
         "P36",
         "P37",
         "P38",
-        "P44"
+        "P44",
+        "P47"
       ],
       "priority": "P1",
       "status": "verified",
@@ -122,6 +128,14 @@
           "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
         ],
         "evidence": "thoughts-session-acceptance.json"
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -135,7 +149,8 @@
         "R53",
         "R54",
         "R55",
-        "R57"
+        "R57",
+        "R62"
       ],
       "prototypes": [
         "P02",
@@ -144,7 +159,8 @@
         "P38",
         "P39",
         "P40",
-        "P42"
+        "P42",
+        "P47"
       ],
       "priority": "P1",
       "status": "verified",
@@ -211,6 +227,14 @@
         "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -226,7 +250,8 @@
         "R57",
         "R58",
         "R59",
-        "R61"
+        "R61",
+        "R62"
       ],
       "prototypes": [
         "P03",
@@ -238,7 +263,8 @@
         "P42",
         "P43",
         "P44",
-        "P46"
+        "P46",
+        "P47"
       ],
       "priority": "P1",
       "status": "verified",
@@ -349,6 +375,14 @@
           "schema": "OI7 unchanged",
           "production_unchanged": true
         }
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -357,12 +391,14 @@
       "requirements": [
         "R04",
         "R56",
-        "R57"
+        "R57",
+        "R62"
       ],
       "prototypes": [
         "P04",
         "P41",
-        "P42"
+        "P42",
+        "P47"
       ],
       "priority": "P1",
       "status": "verified",
@@ -394,6 +430,14 @@
         "verification": "local_and_deployed_browser_paths; 59_frontend_351_backend_and_integration_CI_passed",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "usage-editor-acceptance.json"
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -402,12 +446,14 @@
       "requirements": [
         "R05",
         "R53",
-        "R59"
+        "R59",
+        "R62"
       ],
       "prototypes": [
         "P05",
         "P38",
-        "P44"
+        "P44",
+        "P47"
       ],
       "priority": "P1",
       "status": "verified",
@@ -460,6 +506,14 @@
           "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
         ],
         "evidence": "thoughts-session-acceptance.json"
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -470,13 +524,15 @@
         "R07",
         "R47",
         "R53",
-        "R61"
+        "R61",
+        "R62"
       ],
       "prototypes": [
         "P06",
         "P32",
         "P38",
-        "P46"
+        "P46",
+        "P47"
       ],
       "priority": "P1",
       "status": "verified",
@@ -546,6 +602,14 @@
           "schema": "OI7 unchanged",
           "production_unchanged": true
         }
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -674,10 +738,12 @@
       "id": "F09",
       "title": "本地源码与 GitOps 分工",
       "requirements": [
-        "R11"
+        "R11",
+        "R62"
       ],
       "prototypes": [
-        "P09"
+        "P09",
+        "P47"
       ],
       "priority": "P1",
       "status": "verified",
@@ -703,6 +769,14 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -710,11 +784,13 @@
       "title": "登录连续性与恢复",
       "requirements": [
         "R12",
-        "R60"
+        "R60",
+        "R62"
       ],
       "prototypes": [
         "P10",
-        "P45"
+        "P45",
+        "P47"
       ],
       "priority": "P0",
       "status": "verified",
@@ -751,6 +827,14 @@
         "implementation": "invalid_credential_refresh_stopped; compact_embedded_recovery",
         "verification": "expired_token_and_server_401_confirmed; unit_and_browser_relogin_passed; CI_session_matrix_passed",
         "deployment": "isolated_preview_deployed"
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -760,11 +844,13 @@
         "R13",
         "R14",
         "R16",
-        "R51"
+        "R51",
+        "R62"
       ],
       "prototypes": [
         "P11",
-        "P36"
+        "P36",
+        "P47"
       ],
       "priority": "P0",
       "status": "verified",
@@ -814,6 +900,14 @@
         "verification": "verified; 220 backend, 50 frontend, no new type diagnostics, build, CI and browser evidence",
         "deployment": "isolated preview digest verified; production unchanged",
         "evidence": "preview-refinement-2026-10-29.json"
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -827,7 +921,8 @@
         "R57",
         "R58",
         "R59",
-        "R61"
+        "R61",
+        "R62"
       ],
       "prototypes": [
         "P12",
@@ -837,7 +932,8 @@
         "P42",
         "P43",
         "P44",
-        "P46"
+        "P46",
+        "P47"
       ],
       "priority": "P0",
       "status": "verified",
@@ -955,6 +1051,14 @@
           "schema": "OI7 unchanged",
           "production_unchanged": true
         }
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -970,7 +1074,8 @@
         "R53",
         "R55",
         "R56",
-        "R61"
+        "R61",
+        "R62"
       ],
       "prototypes": [
         "P13",
@@ -980,7 +1085,8 @@
         "P38",
         "P40",
         "P41",
-        "P46"
+        "P46",
+        "P47"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1143,6 +1249,14 @@
           "schema": "OI7 unchanged",
           "production_unchanged": true
         }
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -1360,7 +1474,8 @@
         "R56",
         "R57",
         "R58",
-        "R61"
+        "R61",
+        "R62"
       ],
       "prototypes": [
         "P16",
@@ -1371,7 +1486,8 @@
         "P41",
         "P42",
         "P43",
-        "P46"
+        "P46",
+        "P47"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1470,6 +1586,14 @@
           "schema": "OI7 unchanged",
           "production_unchanged": true
         }
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     },
     {
@@ -1557,7 +1681,8 @@
         "R58",
         "R59",
         "R60",
-        "R61"
+        "R61",
+        "R62"
       ],
       "prototypes": [
         "P18",
@@ -1571,7 +1696,8 @@
         "P43",
         "P44",
         "P45",
-        "P46"
+        "P46",
+        "P47"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1771,6 +1897,14 @@
           "schema": "OI7 unchanged",
           "production_unchanged": true
         }
+      },
+      "upstream_sync_R62": {
+        "status": "in_progress",
+        "upstream": "v0.12.5",
+        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
+        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
+        "deployment": "pending_isolated_preview",
+        "evidence": "upstream-v0125-acceptance.json"
       }
     }
   ],

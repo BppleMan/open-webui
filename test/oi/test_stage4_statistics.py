@@ -72,6 +72,15 @@ async def test_statistics_use_original_calls_not_fork_message_projections(db):
     for grouping in [ChatMessages.get_daily_message_counts_by_model, ChatMessages.get_hourly_message_counts_by_model]:
         values = await grouping(stamp - 1, stamp + 1, db=db)
         assert sum(row.get('oi:a', 0) for row in values.values()) == 4
+    # New v0.12.5 dashboard and interval endpoints must use the same canonical calls.
+    dashboard = await ChatMessages.get_analytics_summary(db=db)
+    assert dashboard == {'total_messages': 4, 'total_chats': 2, 'total_models': 1, 'total_users': 1}
+    assert (await ChatMessages.get_model_analytics(db=db))['oi:a']['count'] == 4
+    for granularity in ['10m', 'hourly', '3h', '6h', 'daily']:
+        values = await ChatMessages.get_usage_over_time_by_model(
+            stamp - 1, stamp + 1, db=db, granularity=granularity, metric='tokens', bucket_offset=86400
+        )
+        assert sum(row.get('oi:a', 0) for row in values.values()) == 2045
     await db.execute(delete(ChatMessage).where(ChatMessage.chat_id != 'legacy'))
     assert await ChatMessages.get_token_usage_by_model(db=db) == totals
 

@@ -1,0 +1,13 @@
+{
+  "upstream_tag": "v0.12.5",
+  "upstream_commit": "f7ac7ee10962ddec0017f5c29b6740d9b9c5faca",
+  "baseline_source": "pristine git archive of upstream tag; fork files excluded",
+  "package_lock_sha256": "a16007f1de06fe3ca6cbac2a0025055495501a26c9bf067562320dc2e5260c9d",
+  "baseline_diagnostics": 5819,
+  "baseline_errors": 5631,
+  "baseline_warnings": 188,
+  "merged_diagnostics_before_composer_order_fix": 5695,
+  "new_diagnostics": 0,
+  "local_node": "v24.18.0",
+  "ci_node_major": 22
+}

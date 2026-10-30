@@ -82,3 +82,12 @@ The reply-leading metadata uses explicit three-column grid areas below 640px and
 The batch is locally verified at 320/390/430/1280px, 1.1 application scale, light/dark themes; 64 frontend tests pass, zero new type/a11y diagnostics (5756 upstream diagnostics remain), and the build passes. CI and isolated preview evidence are tracked in `usage-responsive-acceptance.json`. R50 and the separate R59 supplier gap remain in force.
 
 R61 closure: source `eefed22b63a3a4001e76ecf86aff795fe24b05fc` passed [CI](https://github.com/BppleMan/open-webui/actions/runs/40920231140) and was verified on the isolated preview using its immutable image. Phone grid grouping, overview/call icons and connection header inset passed rendered checks. No schema migration, supplier generation or production update occurred. See `usage-responsive-acceptance.json`.
+
+
+### R62 / P47 — upstream v0.12.5 synchronization
+
+Merge the stable v0.12.5 tag into the existing integration branch, retaining the original v0.12.3 lineage and all OI persistence contracts. The upstream Sessions explorer uses the connection-grouped model directory. Global analytics continue to count canonical call records, including regeneration, without duplicating fork/import projections; the Sessions explorer describes saved message sessions separately. Keep upstream partial streaming usage snapshots and IME fixes alongside native protocol replay and ledger accounting.
+
+Mount the composer before applying durable draft content, and defer queued dispatch until draft restoration and model defaults finish. A restored pending terminal upload without its in-memory File is marked for reattachment rather than silently omitted. Current and cumulative fees share one deliberate mobile grid row; timing/status occupy the following row. Full decimals and unknown fees remain visible.
+
+The type baseline was regenerated from a pristine v0.12.5 archive using its locked dependencies, not from the merged fork. See upstream-v0125-acceptance.json for the separate implementation, validation and staging statuses. R50 production hold and the R59 actual-CPA-readable-summary gap remain.

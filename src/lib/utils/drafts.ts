@@ -695,7 +695,8 @@ export function restoreDraftUploads(
 ): DraftPayload {
 	const files = (items: any[] = []) =>
 		items.map((file) =>
-			file?.status === 'uploading' && !activeIds.has(file.itemId)
+			(file?.status === 'uploading' && !activeIds.has(file.itemId)) ||
+			(file?.status === 'pending' && (typeof File === 'undefined' || !(file.file instanceof File)))
 				? {
 						...file,
 						status: 'error',

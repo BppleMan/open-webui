@@ -55,6 +55,7 @@ async def test_native_hybrid_429_is_not_converted_to_legacy_retry(monkeypatch):
     from open_webui.retrieval import utils
 
     monkeypatch.setattr(utils, '_supports_native_hybrid_search', lambda: True)
+    monkeypatch.setattr(utils.Config, 'get', AsyncMock(return_value=''))
     embedding = AsyncMock(side_effect=HTTPException(429, 'synthetic limit'))
     with pytest.raises(HTTPException):
         await utils.query_doc_with_native_hybrid_search('documents', 'query', embedding, 1, None, 1, 0, 0.5)

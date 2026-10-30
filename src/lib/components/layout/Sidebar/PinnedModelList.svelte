@@ -69,7 +69,7 @@
 	});
 </script>
 
-<div class="mt-0.5 pb-1.5" id="pinned-models-list">
+<div class="mt-0.5 pb-1.5" id="pinned-models-list" role="list">
 	{#each pinnedItems as model, modelIdx (model.id)}
 		{@const modelId = model.id}
 		{#if modelIdx === 0 || modelConnection(pinnedItems[modelIdx - 1]).id !== modelConnection(model).id}

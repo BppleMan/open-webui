@@ -183,3 +183,7 @@ Keep page/draft state during reauthentication. Stop repeat renewal of a credenti
 
 ## R61 — Deliberate mobile usage layout and consistent metric styling
 Replace natural wrapping on small screens with media-query-driven metric rows; preserve complete amounts, unknown values and all fields. Use consistent colored icons in usage details, and add horizontal padding inside the connection header hover target. UI only; no request, accounting or context changes. R50/U49 remain.
+
+
+## R62 — Upstream stable synchronization and inline costs
+Merge upstream stable v0.12.5 while preserving customized identity, accounting, drafts, authentication, native history and UI contracts. On narrow screens, current and cumulative cost share one deliberate row. Keep full monetary precision, explicit unknowns and R50/U49 boundaries.

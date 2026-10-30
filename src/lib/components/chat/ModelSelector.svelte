@@ -10,6 +10,7 @@
 	const i18n = getContext('i18n');
 
 	export let selectedModels = [''];
+	export let onModelSelect: (models: string[]) => void = () => {};
 	export let disabled = false;
 
 	export let showSetDefault = true;
@@ -77,6 +78,7 @@
 					{disabled}
 					bind:compareEnabled={compareModels}
 					bind:values={selectedModels}
+					{onModelSelect}
 				/>
 			</div>
 		</div>

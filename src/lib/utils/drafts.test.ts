@@ -443,3 +443,24 @@ it('reconnect still exposes remote conflicts rather than overwriting them', asyn
 	await expect(h.manager.prepareSend()).rejects.toThrow('冲突');
 	h.manager.dispose();
 });
+
+describe('upstream deferred terminal uploads', () => {
+	it('keeps an untransferable pending attachment visible as an error after restoration', () => {
+		const payload = {
+			prompt: 'Keep my text',
+			files: [
+				{
+					itemId: 'pending-file',
+					name: 'draft.txt',
+					type: 'filesystem',
+					status: 'pending',
+					file: {}
+				}
+			]
+		};
+		const restored = restoreDraftUploads(payload);
+		expect(restored.prompt).toBe('Keep my text');
+		expect(restored.files[0].name).toBe('draft.txt');
+		expect(restored.files[0].status).toBe('error');
+	});
+});

@@ -257,7 +257,14 @@ async def test_two_tool_rounds_keep_native_history_and_charge_each_call_once(db,
             break
         output = []
         for tool in tools:
-            params, result, *_ = await execute_tool_call(form, metadata, None, tool)
+            # v0.12.5 executes the normalized saved item after approval preparation.
+            saved_call = {
+                'type': 'function_call',
+                'call_id': tool['id'],
+                'name': tool['function']['name'],
+                'arguments': tool['function']['arguments'],
+            }
+            params, result, *_ = await execute_tool_call(form, metadata, None, saved_call)
             assert result == 'result:' + params['q']
             output.extend(
                 [

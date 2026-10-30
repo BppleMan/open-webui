@@ -293,3 +293,7 @@ A 30rem-wide frame, height bounded by 34rem and the viewport, embeds the existin
 
 ## P46 — Responsive metric grid and shared icons
 At ≤639px use three fixed metric columns: input/output/reasoning, cache-read/cache-write/total, cost plus timing, then cumulative cost plus exceptional status. At ≤359px use two columns with full-width cumulative/status rows. Long monetary values remain readable inside their assigned field. Desktop retains the compact metadata row. Overview and Calls use shared semantic-colored icons with neutral numbers; connection headers gain 0.5rem horizontal inset.
+
+
+## P47 — Stable upstream merge and shared cost row
+Preserve a Git recovery point, merge the stable tag and review conflicting and automatically merged customization intersections. Retain explicit mobile token columns; place current/cumulative cost side by side, with timing/call count/status on a separate row. Very long amounts may wrap within their own field, never disappear. Verify against a pristine v0.12.5 type baseline and the full integration suite before staging-only publication.

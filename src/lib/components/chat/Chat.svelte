@@ -15,14 +15,14 @@
 	import { v4 as uuidv4 } from 'uuid';
 	import { toast } from 'svelte-sonner';
 
-	import { getContext, onDestroy, onMount, tick } from 'svelte';
+	import { getContext, setContext, onDestroy, onMount, tick } from 'svelte';
 	import { fade } from 'svelte/transition';
 	const i18n: Writable<i18nType> = getContext('i18n');
 
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 
-	import { get, type Unsubscriber, type Writable } from 'svelte/store';
+	import { get, writable, type Unsubscriber, type Writable } from 'svelte/store';
 	import type { i18n as i18nType } from 'i18next';
 	import { WEBUI_BASE_URL } from '$lib/constants';
 	import equal from 'fast-deep-equal';
@@ -105,6 +105,7 @@
 		importChats,
 		resolveChatMessageToolCall,
 		updateChatById,
+		updateChatParams,
 		updateChatFolderIdById
 	} from '$lib/apis/chats';
 	import type { FilesystemFile } from '$lib/apis/terminal';
@@ -162,6 +163,9 @@
 	export let embeddedDraftKey = '';
 	export let suggestedPrompts = [];
 	export let selectedText = '';
+	export let notePageId = '';
+	export let noteFiles = [];
+	export let onBeforeNoteSubmit: (() => Promise<void>) | null = null;
 	export let onInsertToNote: ((content: string) => void) | null = null;
 	export let onCloseEmbedded: (() => void) | null = null;
 	export let onNewEmbeddedChat: (() => void | Promise<void>) | null = null;
@@ -181,6 +185,7 @@
 	let messagesRef: Messages | undefined;
 
 	let autoScroll = true;
+	let lastScrollTop = 0;
 	let isNearTop = true;
 	let processing = '';
 	let messagesContainerElement: HTMLDivElement;
@@ -197,6 +202,7 @@
 	let eventConfirmationInputType = '';
 	let eventConfirmationInputOptions: ({ label?: string; value: string } | string)[] = [];
 	let eventCallback: (value: any) => void = () => {};
+	let eventInteractionId: string | null = null;
 	type BrowserInteraction = {
 		id: string;
 		messageId: string;
@@ -267,6 +273,7 @@
 			const fallbackModels = normalizeSelectedModels(selectedModels);
 			if (!equal(fallbackModels, selectedModels)) {
 				selectedModels = fallbackModels;
+				if (!loading && !modelDefaults) setDefaults();
 			}
 		}
 	}
@@ -301,14 +308,11 @@
 	$: contextCompactionEnabled = Boolean($config?.features?.enable_context_compaction);
 
 	const getContextThreshold = () => {
-		const chatThreshold = Number(params?.compact_token_threshold);
-		if (Number.isFinite(chatThreshold) && chatThreshold > 0) {
-			return chatThreshold;
-		}
-
 		const modelId = atSelectedModel?.id ?? selectedModels.find((id) => id);
 		const model = $models.find((item) => item.id === modelId);
-		const threshold = Number(model?.info?.params?.compact_token_threshold);
+		const threshold = Number(
+			model?.info?.params?.compact_token_threshold ?? params?.compact_token_threshold
+		);
 		return Number.isFinite(threshold) && threshold > 0 ? threshold : null;
 	};
 
@@ -369,7 +373,8 @@
 	let selectedToolIds: string[] = [];
 	let selectedSkillIds: string[] = [];
 	let selectedFilterIds: string[] = [];
-	let pendingOAuthTools = [];
+	let pendingOAuthTools: { id: string; name: string; serverId: string; authType: string | null }[] =
+		[];
 
 	let imageGenerationEnabled = false;
 	let webSearchEnabled = false;
@@ -378,6 +383,11 @@
 	let showWebSearchConfirm = false;
 	let pendingWebSearchPrompt: string | null = null;
 	let webSearchConfirmed = false;
+
+	// Before webSearchActive, so it sees the new defaults in the same update
+	$: if (!loading && modelDefaults && !equal(selectedModelIds, defaultsModelIds)) {
+		setDefaults(true);
+	}
 
 	$: {
 		const currentModels = atSelectedModel?.id ? [atSelectedModel.id] : selectedModels;
@@ -423,7 +433,13 @@
 	let generating = false;
 	let dragged = false;
 	let generationController = null;
-	let contextCompactionToastId = null;
+	const contextCompactions = writable<Record<string, 'in_progress' | { error: string }>>({});
+	setContext('contextCompactions', contextCompactions);
+	let compactionChatId = '';
+	$: if (compactionChatId !== $chatId) {
+		contextCompactions.set({});
+		compactionChatId = $chatId;
+	}
 
 	let chat: any = null;
 	let tags = [];
@@ -486,6 +502,19 @@
 	};
 
 	let taskIds = null;
+	let liveStatus = '';
+
+	$: if (loading || !history.currentId) {
+		liveStatus = '';
+	} else if (
+		Object.values(history.messages).some(
+			(message) => message.role === 'assistant' && message.done === false
+		)
+	) {
+		liveStatus = $i18n.t('Generating...');
+	} else if (liveStatus) {
+		liveStatus = $i18n.t('Response complete');
+	}
 
 	// Chat Input
 	let prompt = '';
@@ -527,19 +556,12 @@
 				tool_approval_mode
 			}
 		});
+		await saveParam('tool_approval_mode', tool_approval_mode);
 		await updateUserSettings(localStorage.token, { ui: { params: $settings.params } }).catch(
 			(err) => {
 				console.error('[tool permissions settings]', err);
 			}
 		);
-
-		if (!isShared && $chatId && !$temporaryChatEnabled && !isTemporaryChatId($chatId)) {
-			const res = await updateChatById(localStorage.token, $chatId, { params }).catch((err) => {
-				console.error('[tool permissions chat]', err);
-				return null;
-			});
-			if (res) chat = res;
-		}
 
 		if (tool_approval_mode === 'full') {
 			if (isTemporaryChatId($chatId)) {
@@ -818,16 +840,6 @@
 		}
 	};
 
-	let oldSelectedModelIds = [''];
-	$: if (!equal(selectedModelIds, oldSelectedModelIds)) {
-		onSelectedModelIdsChange();
-	}
-
-	const onSelectedModelIdsChange = () => {
-		resetInput();
-		oldSelectedModelIds = structuredClone(selectedModelIds);
-	};
-
 	const mergeFiles = (current, incoming) => {
 		const seen = new Set();
 		return [...(incoming ?? []), ...(current ?? [])].filter((file) => {
@@ -846,6 +858,7 @@
 	let draftRestore: Promise<void> | null = null;
 	let draftState: DraftState = { status: 'loading', revision: 0 };
 	let restoringDraft = false;
+	let initializingDraft: AbortSignal | null = null;
 	let clearingSubmittedInput = false;
 	const submittedDrafts = new Map<string, { manager: DraftManager; ticket: DraftTicket }>();
 
@@ -924,10 +937,16 @@
 		void restoreChatInput(null);
 	}
 
-	const withSelectedText = (text: string) =>
-		embedded && selectedText?.trim()
-			? `${text}\n\nSelected note text for replace_note_content operations:\n${selectedText.trim()}`
-			: text;
+	const withSelectedText = (text: string) => {
+		if (!embedded) return text;
+		return (
+			text +
+			(notePageId ? `\n\nActive note page_id: ${notePageId}` : '') +
+			(selectedText?.trim()
+				? `\n\nSelected note text for replace_note_content operations:\n${selectedText.trim()}`
+				: '')
+		);
+	};
 	const noteChatDebug = (message: string, data: Record<string, unknown> = {}) => {
 		if (!embedded) return;
 		console.info('[note-chat]', message, {
@@ -953,12 +972,21 @@
 	}
 
 	let saveControlsTimer;
-	$: if (!loading && !$temporaryChatEnabled && $chatId && params && chatFiles) {
+	$: if (!loading && !$temporaryChatEnabled && $chatId && chatFiles) {
 		clearTimeout(saveControlsTimer);
 		saveControlsTimer = setTimeout(saveControls, 400);
 	}
 
+	let chatLoadController = new AbortController();
+	const startChatLoad = () => {
+		chatLoadController.abort();
+		chatLoadController = new AbortController();
+		return chatLoadController.signal;
+	};
+	onDestroy(() => chatLoadController.abort());
 	const navigateHandler = async () => {
+		const signal = startChatLoad();
+		modelDefaults = null;
 		cancelBrowserInteractions();
 		bridge?.end();
 		noteChatDebug('navigateHandler start');
@@ -971,6 +999,7 @@
 
 		clearTimeout(saveControlsTimer);
 		await saveControls();
+		if (signal.aborted) return;
 		loading = true;
 
 		prompt = '';
@@ -984,46 +1013,18 @@
 		imageGenerationEnabled = false;
 		codeInterpreterEnabled = false;
 
-		const storageChatInput = sessionStorage.getItem(
-			`chat-input${chatIdProp ? `-${chatIdProp}` : ''}`
-		);
-
-		const loaded = chatIdProp ? await loadChat() : false;
-		noteChatDebug('loadChat completed inside navigateHandler', { loaded });
-		if (loaded) {
-			await tick();
-			loading = false;
-			noteChatDebug('embedded chat loading false');
-			if (!$page.url.searchParams.has('message')) window.setTimeout(() => scrollToBottom(), 0);
-
-			await tick();
-
-			// Mark chat read when initially loading it
-			if (chatIdProp && !$temporaryChatEnabled) {
-				updateLastReadAt(chatIdProp);
-			}
-
-			// Process any queued requests if the chat is idle
-			const lastMessage = history.currentId ? history.messages[history.currentId] : null;
-			const isIdle = !lastMessage || lastMessage.role !== 'assistant' || lastMessage.done;
-			if (!(await restoreChatInput(storageChatInput))) {
-				await setDefaults();
-			}
-			if (isIdle) await processNextInQueue(chatIdProp);
-
-			messageInput?.focus({ preventScroll: true });
+		if (chatIdProp) {
+			await loadChat(signal);
 		} else if (!embedded) {
 			await goto('/');
 		} else {
 			loading = false;
-			console.warn('[note-chat] embedded load failed; clearing spinner', {
-				chatIdProp,
-				activeChatId: $chatId
-			});
 		}
 	};
 
 	const initEmbeddedDraft = async () => {
+		chatLoadController.abort();
+		modelDefaults = null;
 		terminalContext = null;
 		clearTimeout(saveControlsTimer);
 		await saveControls();
@@ -1069,7 +1070,7 @@
 
 		if (type === 'prompt') {
 			// Handle prompt selection
-			messageInput?.setText(data, async () => {
+			messageInput?.setTextHandler(data, async () => {
 				if (!($settings?.insertSuggestionPrompt ?? false)) {
 					await tick();
 					submitHandler(prompt);
@@ -1155,153 +1156,147 @@
 		lastTerminalSkillSelector = $selectedTerminalId;
 	}
 
+	let defaultsModelIds: string[] = [];
+	let modelDefaults: Record<string, any> | null = null;
 	let settingDefaults: Promise<void> | null = null;
-	const setDefaults = async () => {
-		// Concurrent callers must wait, or the earlier run overwrites what they write afterwards
-		if (settingDefaults) return settingDefaults;
+
+	const setDefaults = async (preserveSelections = false) => {
+		const modelIds = atSelectedModel ? [atSelectedModel.id] : [...selectedModels];
+		const id = $chatId;
+		while (settingDefaults) await settingDefaults;
 		let resolveDefaults = () => {};
 		settingDefaults = new Promise<void>((resolve) => (resolveDefaults = resolve));
 
 		try {
-			if (!$tools) {
-				tools.set(await getTools(localStorage.token));
-			}
-			if (!$functions) {
-				functions.set(await getFunctions(localStorage.token));
-			}
-			if (!$skills) {
-				skills.set(await getSkills(localStorage.token));
-			}
-			if (selectedModels.length !== 1 && !atSelectedModel) {
-				const comparedModels = selectedModels
-					.filter((id) => id)
-					.map((id) => $models.find((m) => m.id === id));
-				const isSharedDefaultFeature = (feature) =>
-					comparedModels.length > 0 &&
-					comparedModels.every(
-						(model) =>
-							model?.info?.meta?.capabilities?.[feature] &&
-							model?.info?.meta?.defaultFeatureIds?.includes(feature)
-					);
-
-				if (
-					isSharedDefaultFeature('image_generation') &&
-					$config?.features?.enable_image_generation &&
-					($user?.role === 'admin' || $user?.permissions?.features?.image_generation)
-				) {
-					imageGenerationEnabled = true;
-				}
-
-				if (
-					isSharedDefaultFeature('web_search') &&
-					$config?.features?.enable_web_search &&
-					($user?.role === 'admin' || $user?.permissions?.features?.web_search)
-				) {
-					webSearchEnabled = true;
-				}
-
-				if (
-					isSharedDefaultFeature('code_interpreter') &&
-					$config?.features?.enable_code_interpreter &&
-					($user?.role === 'admin' || $user?.permissions?.features?.code_interpreter)
-				) {
-					codeInterpreterEnabled = true;
-				}
-
+			if (!$tools) tools.set(await getTools(localStorage.token));
+			if (!$functions) functions.set(await getFunctions(localStorage.token));
+			if (!$skills) skills.set(await getSkills(localStorage.token));
+			if ($tools === null || $functions === null || $skills === null) return;
+			if (
+				id !== $chatId ||
+				!equal(modelIds, atSelectedModel ? [atSelectedModel.id] : selectedModels)
+			)
 				return;
+
+			const currentModels: any[] = modelIds.map((id) => $models.find((model) => model.id === id));
+			if (!currentModels.length || currentModels.some((model) => !model)) return;
+			const supports = (feature: string) =>
+				currentModels.every((model) => model.info?.meta?.capabilities?.[feature] ?? true);
+			const featureAvailable = (feature: 'web_search' | 'image_generation' | 'code_interpreter') =>
+				supports(feature) &&
+				$config?.features?.[`enable_${feature}`] &&
+				($user?.role === 'admin' || $user?.permissions?.features?.[feature]);
+			const defaultFeature = (feature: 'web_search' | 'image_generation' | 'code_interpreter') =>
+				featureAvailable(feature) &&
+				currentModels.every((model) => model.info?.meta?.defaultFeatureIds?.includes(feature));
+			const terminalId = currentModels[0]?.info?.meta?.terminalId;
+			const defaults: Record<string, any> = {
+				selectedToolIds: [
+					...new Set(
+						currentModels.flatMap(
+							(model) =>
+								model.info?.meta?.toolIds?.filter(
+									(id: string) =>
+										selectedToolIds.includes(id) || ($tools as any[]).some((tool) => tool.id === id)
+								) ??
+								($settings as any)?.tools ??
+								[]
+						)
+					)
+				],
+				selectedSkillIds: [
+					...new Set(currentModels.flatMap((model) => model.info?.meta?.skillIds ?? []))
+				].filter(
+					(id) =>
+						selectedSkillIds.includes(id) ||
+						$skills.some((skill) => skill.id === id && skill.is_active)
+				),
+				selectedFilterIds: [
+					...new Set(currentModels.flatMap((model) => model.info?.meta?.defaultFilterIds ?? []))
+				],
+				webSearchEnabled: !!defaultFeature('web_search'),
+				imageGenerationEnabled: !!defaultFeature('image_generation'),
+				codeInterpreterEnabled: !!defaultFeature('code_interpreter'),
+				terminalId:
+					terminalId &&
+					isTerminalAvailable(terminalId) &&
+					currentModels.every((model) => model.info?.meta?.terminalId === terminalId)
+						? terminalId
+						: preserveSelections
+							? null
+							: $selectedTerminalId
+			};
+
+			if (preserveSelections) {
+				const current: Record<string, any> = {
+					selectedToolIds: [...selectedToolIds, ...pendingOAuthTools.map((tool) => tool.id)],
+					selectedSkillIds,
+					selectedFilterIds,
+					webSearchEnabled,
+					imageGenerationEnabled,
+					codeInterpreterEnabled,
+					terminalId: $selectedTerminalId
+				};
+				modelDefaults ??= structuredClone(defaults);
+				for (const key of Object.keys(defaults)) {
+					const previous = modelDefaults[key];
+					if (Array.isArray(previous)) {
+						const added = current[key].filter((id: string) => !previous.includes(id));
+						const removed = previous.filter((id: string) => !current[key].includes(id));
+						// Keep deselected defaults in the baseline so later presets cannot re-enable them.
+						modelDefaults[key] = [
+							...new Set([...removed, ...defaults[key].filter((id: string) => !added.includes(id))])
+						];
+						defaults[key] = [
+							...new Set([...defaults[key].filter((id: string) => !removed.includes(id)), ...added])
+						];
+					} else if (current[key] !== previous) {
+						defaults[key] = current[key];
+					} else {
+						modelDefaults[key] = defaults[key];
+					}
+				}
+			} else {
+				modelDefaults = structuredClone(defaults);
 			}
 
-			const model = atSelectedModel ?? $models.find((m) => m.id === selectedModels[0]);
-			if (model) {
-				// Set Default Tools
-				if (model?.info?.meta?.toolIds) {
-					const defaultIds = [
-						...new Set(
-							[...(model?.info?.meta?.toolIds ?? [])].filter((id) =>
-								$tools.find((t) => t.id === id)
-							)
-						)
-					];
-
-					// Separate unauthenticated OAuth tools
-					const unauthed = [];
-					const authed = [];
-					for (const id of defaultIds) {
-						const tool = $tools.find((t) => t.id === id);
-						if (tool && tool.authenticated === false) {
-							const parts = id.split(':');
-							const serverId = parts.at(-1) ?? id;
-							const authType =
-								parts.length > 1 ? (parts[0] === 'server' ? parts[1] : parts[0]) : null;
-							unauthed.push({ id, name: tool.name ?? id, serverId, authType });
-						} else {
-							authed.push(id);
-						}
-					}
-					selectedToolIds = authed;
-					pendingOAuthTools = unauthed;
-					await continueOAuthRedirect();
-				} else if ($settings?.tools) {
-					selectedToolIds = $settings.tools;
-				} else {
-					selectedToolIds = selectedToolIds.filter((id) => !id.startsWith('direct_server:'));
-				}
-
-				// Set Default Skills
-				if (model?.info?.meta?.skillIds) {
-					selectedSkillIds = [
-						...new Set(
-							[...(model?.info?.meta?.skillIds ?? [])].filter((id) =>
-								($skills ?? []).find((s) => s.id === id && s.is_active)
-							)
-						)
-					];
-				} else {
-					selectedSkillIds = [];
-				}
-
-				// Set Default Filters (Toggleable only)
-				if (model?.info?.meta?.defaultFilterIds) {
-					selectedFilterIds = model.info.meta.defaultFilterIds.filter((id) =>
-						model?.filters?.find((f) => f.id === id)
-					);
-				}
-
-				// Set Default Features
-				if (model?.info?.meta?.defaultFeatureIds) {
-					if (
-						model.info?.meta?.capabilities?.['image_generation'] &&
-						$config?.features?.enable_image_generation &&
-						($user?.role === 'admin' || $user?.permissions?.features?.image_generation)
-					) {
-						imageGenerationEnabled = model.info.meta.defaultFeatureIds.includes('image_generation');
-					}
-
-					if (
-						model.info?.meta?.capabilities?.['web_search'] &&
-						$config?.features?.enable_web_search &&
-						($user?.role === 'admin' || $user?.permissions?.features?.web_search)
-					) {
-						webSearchEnabled = model.info.meta.defaultFeatureIds.includes('web_search');
-					}
-
-					if (
-						model.info?.meta?.capabilities?.['code_interpreter'] &&
-						$config?.features?.enable_code_interpreter &&
-						($user?.role === 'admin' || $user?.permissions?.features?.code_interpreter)
-					) {
-						codeInterpreterEnabled = model.info.meta.defaultFeatureIds.includes('code_interpreter');
-					}
-				}
-
-				// Set Default Terminal — only if the referenced terminal actually exists
-				if (model?.info?.meta?.terminalId) {
-					const tid = model.info.meta.terminalId;
-					if (isTerminalAvailable(tid)) {
-						selectedTerminalId.set(tid);
-					}
-				}
+			defaults.selectedFilterIds = defaults.selectedFilterIds.filter((id: string) =>
+				currentModels.every((model) =>
+					model.filters?.some((filter: { id: string }) => filter.id === id)
+				)
+			);
+			defaults.webSearchEnabled &&= !!featureAvailable('web_search');
+			defaults.imageGenerationEnabled &&= !!featureAvailable('image_generation');
+			defaults.codeInterpreterEnabled &&= !!featureAvailable('code_interpreter');
+			if (!currentModels.some((model) => model.info?.meta?.capabilities?.terminal ?? true)) {
+				defaults.terminalId = null;
 			}
+			if (defaults.terminalId) defaults.codeInterpreterEnabled = false;
+			defaultsModelIds = modelIds;
+			({
+				selectedToolIds,
+				selectedSkillIds,
+				selectedFilterIds,
+				webSearchEnabled,
+				imageGenerationEnabled,
+				codeInterpreterEnabled
+			} = defaults);
+			selectedTerminalId.set(defaults.terminalId);
+
+			pendingOAuthTools = [];
+			selectedToolIds = selectedToolIds.filter((id) => {
+				const tool = ($tools as any[]).find((tool) => tool.id === id);
+				if (tool?.authenticated !== false) return true;
+				const parts = id.split(':');
+				pendingOAuthTools.push({
+					id,
+					name: tool.name ?? id,
+					serverId: parts.at(-1) ?? id,
+					authType: parts.length > 1 ? (parts[0] === 'server' ? parts[1] : parts[0]) : null
+				});
+				return false;
+			});
+			await continueOAuthRedirect();
 		} finally {
 			settingDefaults = null;
 			resolveDefaults();
@@ -1373,40 +1368,21 @@
 		}
 	};
 
-	const dismissContextCompactionToast = () => {
-		if (contextCompactionToastId !== null) {
-			toast.dismiss(contextCompactionToastId);
-			contextCompactionToastId = null;
-		}
+	const clearContextCompaction = (messageId: string) => {
+		const next = { ...$contextCompactions };
+		delete next[messageId];
+		contextCompactions.set(next);
 	};
 
-	const handleContextCompactionStatus = (status) => {
-		if (status?.action !== 'context_compaction') {
-			return;
-		}
-
-		if (status?.done) {
-			if (contextCompactionToastId !== null) {
-				if (status?.error) {
-					toast.error($i18n.t('Context compaction failed'), {
-						id: contextCompactionToastId,
-						duration: 3000
-					});
-				} else {
-					toast.success($i18n.t('Context compacted'), {
-						id: contextCompactionToastId,
-						duration: 1800
-					});
-				}
-				contextCompactionToastId = null;
-			}
-			return;
-		}
-
-		if (contextCompactionToastId === null) {
-			contextCompactionToastId = toast.loading($i18n.t('Compacting context'), {
-				duration: Infinity
-			});
+	const handleContextCompactionStatus = (status, messageId: string) => {
+		if (status?.action !== 'context_compaction') return;
+		if (status.done && !status.error) {
+			clearContextCompaction(messageId);
+		} else {
+			$contextCompactions = {
+				...$contextCompactions,
+				[messageId]: status.error ? { error: $i18n.t('Context compaction failed') } : 'in_progress'
+			};
 		}
 	};
 
@@ -1481,11 +1457,22 @@
 				(taskIds?.length || generating);
 			if (!local || (!ownActive && (!baseline || baseline[id] === local))) {
 				history.messages[id] = { ...local, ...message };
+				// Keep recovered replies finished unless their task is active or has been replaced.
+				if (
+					local?.done === true &&
+					message.done === false &&
+					local.meta?.task_id &&
+					local.meta.task_id === message.meta?.task_id &&
+					!taskIds?.includes(local.meta.task_id)
+				) {
+					history.messages[id].done = true;
+				}
 			}
 			if (local) {
-				history.messages[id].childrenIds = [
-					...new Set([...(local.childrenIds ?? []), ...(message.childrenIds ?? [])])
-				];
+				history.messages[id] = {
+					...history.messages[id],
+					childrenIds: [...new Set([...(local.childrenIds ?? []), ...(message.childrenIds ?? [])])]
+				};
 			}
 		}
 		if ((!currentId || follow) && incoming.currentId && next[incoming.currentId]) {
@@ -1500,14 +1487,15 @@
 		if (!id || $temporaryChatEnabled) return Promise.resolve();
 		if (chatRefresh?.id === id) return chatRefresh.promise;
 		const baseline = { ...history.messages };
+		const signal = chatLoadController.signal;
 		const promise = (async () => {
 			try {
-				const fresh = await getChatById(localStorage.token, id);
-				if ($chatId !== id || joinedChatId !== id) return;
+				const fresh = await getChatById(localStorage.token, id, signal);
+				if ($chatId !== id || joinedChatId !== id || signal.aborted) return;
 				chat = fresh;
 				mergeChatMessages(fresh.chat.history, baseline);
 			} catch (error) {
-				if ($chatId === id && joinedChatId === id) {
+				if ($chatId === id && joinedChatId === id && !signal.aborted) {
 					clearPresence();
 					chat = null;
 					history = { messages: {}, currentId: null };
@@ -1563,9 +1551,17 @@
 			return;
 		}
 		if (event.shared && event.user_id === $user?.id && event.data?.type !== 'chat:messages') return;
+		// The first event can identify a new chat before the HTTP response arrives.
+		if (!$chatId && event.chat_id && history.messages[event.message_id]) {
+			chatId.set(event.chat_id);
+		}
 		const interactionType = event?.data?.type;
 		const interactionData = event?.data?.data;
 		if (interactionType === 'request:interaction:done') {
+			if (eventInteractionId && eventInteractionId === interactionData?.interaction_id) {
+				showEventConfirmation = false;
+				eventInteractionId = null;
+			}
 			browserInteractions = browserInteractions.filter(
 				(item) => item.id !== interactionData?.interaction_id
 			);
@@ -1577,7 +1573,7 @@
 			(interactionType === 'confirmation' && interactionData?.tool_call)
 		) {
 			if (!cb) return;
-			if (event.chat_id !== $chatId || !history.messages[event.message_id]) {
+			if (event.chat_id !== $chatId) {
 				cb({ status: 'cancelled', answers: {} });
 				return;
 			}
@@ -1602,11 +1598,7 @@
 			return;
 		}
 
-		// A new chat's title can arrive before its id; the response message already exists.
-		if (
-			event.chat_id === $chatId ||
-			(!$chatId && event?.data?.type === 'chat:title' && history.messages[event.message_id])
-		) {
+		if (event.chat_id === $chatId) {
 			await tick();
 			const type = event?.data?.type ?? null;
 			if (type === 'typing') {
@@ -1651,7 +1643,7 @@
 			let message = history.messages[event.message_id];
 			if (message) message = { ...message };
 
-			if (message) {
+			if (message || type === 'confirmation' || type === 'input') {
 				const data = event?.data?.data ?? null;
 
 				queueMicrotask(() => bridge?.update());
@@ -1662,7 +1654,11 @@
 						message.statusHistory = [data];
 					}
 				} else if (type === 'context_compaction') {
-					handleContextCompactionStatus(data);
+					if (data?.checkpoint_message_id && history.messages[data.checkpoint_message_id]) {
+						history.messages[data.checkpoint_message_id].contextSummary = data.context_summary;
+					}
+					handleContextCompactionStatus(data, event.message_id);
+					autoScrollToBottom();
 				} else if (type === 'chat:active') {
 					if (!data?.active) {
 						taskIds = null;
@@ -1692,7 +1688,7 @@
 					}
 					message.bridgeCancelled = true;
 					bridgeCancellations.get(event.message_id)?.();
-					if (!event.shared) dismissContextCompactionToast();
+					clearContextCompaction(event.message_id);
 					if (data?.output) {
 						message.output = data.output;
 					}
@@ -1701,6 +1697,7 @@
 						// Set all response messages to done
 						for (const messageId of history.messages[message.parentId].childrenIds) {
 							history.messages[messageId].done = true;
+							clearContextCompaction(messageId);
 						}
 						message.done = true;
 						await processNextInQueue($chatId);
@@ -1739,7 +1736,7 @@
 						message.done = true;
 					} else handleOpenAIError(data.error, message);
 					if (!event.shared && !responseCompleted) {
-						dismissContextCompactionToast();
+						clearContextCompaction(message.id);
 						if (event.message_id === history.currentId) {
 							await processNextInQueue(event.chat_id);
 						}
@@ -1822,6 +1819,7 @@
 					}
 				} else if (type === 'confirmation') {
 					eventCallback = cb;
+					eventInteractionId = data.interaction_id ?? null;
 
 					eventConfirmationInput = false;
 					showEventConfirmation = true;
@@ -1830,8 +1828,6 @@
 					eventConfirmationTitle = data.title;
 					eventConfirmationMessage = data.message;
 				} else if (type === 'execute') {
-					eventCallback = cb;
-
 					try {
 						// Use Function constructor to evaluate code in a safer way
 						const asyncFunction = new Function(`return (async () => { ${data.code} })()`);
@@ -1845,6 +1841,7 @@
 					}
 				} else if (type === 'input') {
 					eventCallback = cb;
+					eventInteractionId = data.interaction_id ?? null;
 
 					eventConfirmationInput = true;
 					showEventConfirmation = true;
@@ -1861,7 +1858,7 @@
 					console.log('Unknown message type', data);
 				}
 
-				history.messages[event.message_id] = message;
+				if (message) history.messages[event.message_id] = message;
 			}
 		} else {
 			// Non-active chat completion: queue stays in the global store.
@@ -1905,6 +1902,7 @@
 					eventConfirmationInput = false;
 					eventConfirmationTitle = $i18n.t('Confirm Prompt from Embed');
 					eventConfirmationMessage = prompt;
+					eventInteractionId = null;
 					eventCallback = async (confirmed: boolean) => {
 						if (confirmed) {
 							await tick();
@@ -1922,7 +1920,7 @@
 			const inputElement = document.getElementById('chat-input');
 
 			if (inputElement) {
-				messageInput?.setText(event.data.text);
+				messageInput?.setTextHandler(event.data.text);
 				messageInput?.focus({ preventScroll: true });
 			}
 		}
@@ -1938,6 +1936,7 @@
 					eventConfirmationInput = false;
 					eventConfirmationTitle = $i18n.t('Confirm Prompt from Embed');
 					eventConfirmationMessage = event.data.text;
+					eventInteractionId = null;
 					eventCallback = async (confirmed: boolean) => {
 						if (confirmed) {
 							await tick();
@@ -2082,7 +2081,7 @@
 				$socket?.off('disconnect', clearTyping);
 				$socket?.off('disconnect', clearPresence);
 				$socket?.off('disconnect', cancelBrowserInteractions);
-				dismissContextCompactionToast();
+				contextCompactions.set({});
 				audioQueueInstance?.destroy();
 				audioQueue.set(null);
 			} catch (e) {
@@ -2439,7 +2438,7 @@
 		if (!$chatId) {
 			const modelId = selectedModelIds[0];
 			const _chatId = await initChatHandler(history);
-			if (!$temporaryChatEnabled) {
+			if (_chatId && !$temporaryChatEnabled) {
 				// Realtime replies need no chat completion; start metadata work at chat creation.
 				void generateVoiceChatMetadata(_chatId, modelId, content, chat.title).catch((error) => {
 					console.error('Could not save voice chat metadata', error);
@@ -2653,6 +2652,14 @@
 			return;
 		}
 
+		if (
+			$user?.role !== 'admin' &&
+			!($user?.permissions?.chat?.stt ?? true) &&
+			!$config?.audio?.realtime?.enabled
+		) {
+			return;
+		}
+
 		if (selectedModels.length > 1) {
 			toast.error($i18n.t('Select only one model to call'));
 			return;
@@ -2673,6 +2680,10 @@
 	};
 
 	const initNewChat = async () => {
+		chatLoadController.abort();
+		modelDefaults = null;
+		clearTimeout(saveControlsTimer);
+		await saveControls();
 		if ($chatId) terminalContext = null;
 		cancelBrowserInteractions();
 		bridge?.end();
@@ -2793,6 +2804,10 @@
 			}
 		}
 
+		if (!($user?.role === 'admin' || ($user?.permissions?.chat?.multiple_models ?? true))) {
+			selectedModels = selectedModels.length > 0 ? [selectedModels[0]] : [''];
+		}
+
 		if ($mobile) {
 			await showControls.set(false);
 		}
@@ -2807,9 +2822,10 @@
 
 		// resetInput() must stay last: the selected model's defaults override the draft's selection.
 		const previousChatId = $chatId;
+		const previousMessageId = history.currentId;
 		await resetInput();
-		// A chat opened in the meantime keeps its id
-		if ($chatId !== previousChatId) return;
+		// A chat opened or a message sent in the meantime keeps its id and history
+		if (($chatId && $chatId !== previousChatId) || history.currentId !== previousMessageId) return;
 		await chatId.set('');
 		await chatTitle.set('');
 
@@ -2898,7 +2914,7 @@
 				}
 
 				if (query) {
-					messageInput?.setText(query, () => submitHandler(prompt));
+					messageInput?.setTextHandler(query, () => submitHandler(prompt));
 				} else if (eventFiles?.length) {
 					await tick();
 					submitHandler('');
@@ -2907,7 +2923,7 @@
 		} else if ($page.url.searchParams.get('q')) {
 			const q = $page.url.searchParams.get('q') ?? '';
 
-			messageInput?.setText(q);
+			messageInput?.setTextHandler(q);
 		}
 
 		selectedModels = preserveModelReferences($models, selectedModels);
@@ -2916,8 +2932,12 @@
 		messageInput?.focus({ preventScroll: true });
 	};
 
-	const loadChat = async () => {
-		if (chatIdProp && chatIdProp !== $chatId) terminalContext = null;
+	const loadChat = async (signal = startChatLoad()) => {
+		if (chatIdProp && chatIdProp !== $chatId) {
+			terminalContext = null;
+			history = { messages: {}, currentId: null };
+		}
+		const initialHistory = { ...history, messages: { ...history.messages } };
 		noteChatDebug('loadChat start');
 		// chatIdProp is empty for chats started from the home page (URL set via replaceState)
 		chatId.set(chatIdProp || $chatId);
@@ -2928,26 +2948,25 @@
 			temporaryChatEnabled.set(false);
 		}
 
-		chat = await getChatById(localStorage.token, $chatId).catch(async (error) => {
+		const id = $chatId;
+		const loadedChat = await getChatById(localStorage.token, id, signal).catch(async (error) => {
 			console.error('[note-chat] getChatById failed', {
 				chatIdProp,
 				activeChatId: $chatId,
 				error
 			});
-			if (!embedded) {
-				await goto('/');
-			}
 			return null;
 		});
+		if (signal.aborted) return;
 		noteChatDebug('getChatById completed', {
-			found: !!chat,
-			chatId: chat?.id,
-			hasChatPayload: !!chat?.chat,
-			title: chat?.title
+			found: !!loadedChat,
+			chatId: loadedChat?.id,
+			hasChatPayload: !!loadedChat?.chat,
+			title: loadedChat?.title
 		});
 
-		if (chat) {
-			tags = await getTagsById(localStorage.token, $chatId).catch(async (error) => {
+		if (loadedChat) {
+			const loadedTags = await getTagsById(localStorage.token, id, signal).catch(async (error) => {
 				console.warn('[note-chat] getTagsById failed; continuing without tags', {
 					chatIdProp,
 					activeChatId: $chatId,
@@ -2955,6 +2974,9 @@
 				});
 				return [];
 			});
+			if (signal.aborted) return;
+			chat = loadedChat;
+			tags = loadedTags;
 			noteChatDebug('getTagsById completed', { tagCount: tags?.length ?? 0 });
 
 			const chatContent = chat.chat;
@@ -2985,12 +3007,15 @@
 					noteChatDebug('normalized empty selected models after load', { selectedModels });
 				}
 
-				oldSelectedModelIds = structuredClone(selectedModels);
-
-				history =
-					(chatContent?.history ?? undefined) !== undefined
-						? chatContent.history
-						: convertMessagesToHistory(chatContent.messages);
+				chatContent.history ??= convertMessagesToHistory(chatContent.messages);
+				// Keep live updates received while the chat and tags were loading.
+				for (const [id, message] of Object.entries(history.messages)) {
+					if (initialHistory.messages[id] !== message)
+						chatContent.history.messages[id] = { ...chatContent.history.messages[id], ...message };
+				}
+				if (history.currentId !== initialHistory.currentId)
+					chat.current_message_id = history.currentId;
+				history = chatContent.history;
 				if (chat?.current_message_id && history?.messages?.[chat.current_message_id]) {
 					history.currentId = chat.current_message_id;
 				}
@@ -3011,6 +3036,7 @@
 
 				autoScroll = true;
 				await tick();
+				if (signal.aborted) return;
 
 				// Mark all non-current assistant messages as done
 				if (history.currentId) {
@@ -3031,7 +3057,7 @@
 				// work (follow-ups, title gen) that shouldn't block the input.
 				const activeTaskIds = taskIds;
 				const currentMessage = history.currentId ? history.messages[history.currentId] : null;
-				const pendingTaskIds = await getTaskIdsByChatId(localStorage.token, $chatId)
+				const pendingTaskIds = await getTaskIdsByChatId(localStorage.token, id, signal)
 					.then((res) => res?.task_ids ?? [])
 					.catch((error) => {
 						console.warn('[note-chat] getTaskIdsByChatId failed; continuing without tasks', {
@@ -3041,31 +3067,30 @@
 						});
 						return [];
 					});
+				if (signal.aborted) return;
 				noteChatDebug('task reconciliation completed', {
 					pendingTaskCount: pendingTaskIds.length,
 					hasCurrentMessage: !!currentMessage
 				});
-				if (taskIds !== activeTaskIds) {
-					noteChatDebug('task ids changed during load; aborting stale load');
-					return;
-				}
 				const responseComplete = currentMessage?.role === 'assistant' && currentMessage?.done;
 
-				if (pendingTaskIds.length > 0 && !responseComplete) {
-					taskIds = pendingTaskIds;
-				} else {
-					taskIds = null;
-					// No active tasks and message incomplete → generation was interrupted
-					if (pendingTaskIds.length === 0) {
-						for (const message of Object.values(history.messages)) {
-							if (
-								message?.role === 'assistant' &&
-								(message.user_id ?? chat?.user_id) === $user?.id &&
-								!message.done &&
-								!messageHasPendingAskUser(message)
-							) {
-								message.done = true;
-								history = history;
+				if (taskIds === activeTaskIds) {
+					if (pendingTaskIds.length > 0 && !responseComplete) {
+						taskIds = pendingTaskIds;
+					} else {
+						taskIds = null;
+						// No active tasks and message incomplete → generation was interrupted
+						if (pendingTaskIds.length === 0) {
+							for (const message of Object.values(history.messages)) {
+								if (
+									message?.role === 'assistant' &&
+									(message.user_id ?? chat?.user_id) === $user?.id &&
+									!message.done &&
+									!messageHasPendingAskUser(message)
+								) {
+									message.done = true;
+									history = history;
+								}
 							}
 						}
 					}
@@ -3073,6 +3098,31 @@
 
 				await tick();
 
+				if (signal.aborted) return;
+				if (loading) {
+					if (chatIdProp && !$temporaryChatEnabled) updateLastReadAt(chatIdProp);
+
+					initializingDraft = signal;
+					try {
+						// Mount the editor before restoring its literal rich-text draft.
+						// Queue dispatch waits until restoration and model defaults finish.
+						loading = false;
+						await tick();
+						if (signal.aborted) return;
+						const restored = await restoreChatInput(
+							sessionStorage.getItem(`chat-input${chatIdProp ? `-${chatIdProp}` : ''}`)
+						);
+						if (signal.aborted) return;
+						await setDefaults(restored);
+					} finally {
+						if (initializingDraft === signal) initializingDraft = null;
+					}
+					if (signal.aborted) return;
+					await processNextInQueue(id);
+					if (signal.aborted) return;
+					if (!$page.url.searchParams.has('message')) scrollToBottom();
+					messageInput?.focus({ preventScroll: true });
+				}
 				return true;
 			} else {
 				console.warn('[note-chat] chat response missing chat payload', {
@@ -3080,13 +3130,16 @@
 					activeChatId: $chatId,
 					chat
 				});
-				return null;
 			}
 		}
 		console.warn('[note-chat] no chat returned from getChatById', {
 			chatIdProp,
 			activeChatId: $chatId
 		});
+		chat = null;
+		if (!embedded) await goto('/');
+		else loading = false;
+		return false;
 	};
 
 	const scrollToBottom = async (behavior = 'auto') => {
@@ -3096,6 +3149,7 @@
 				top: messagesContainerElement.scrollHeight,
 				behavior
 			});
+			lastScrollTop = messagesContainerElement.scrollTop;
 
 			// content-visibility: auto causes the initial scrollHeight to be based on
 			// estimated sizes (contain-intrinsic-size). After we scroll, previously
@@ -3104,17 +3158,19 @@
 			// (new sizes reveal more content, triggering further size resolution), so
 			// we re-scroll across two animation frames to land at the true bottom.
 			requestAnimationFrame(() => {
-				if (messagesContainerElement) {
+				if (messagesContainerElement && autoScroll) {
 					messagesContainerElement.scrollTo({
 						top: messagesContainerElement.scrollHeight,
 						behavior
 					});
+					lastScrollTop = messagesContainerElement.scrollTop;
 					requestAnimationFrame(() => {
-						if (messagesContainerElement) {
+						if (messagesContainerElement && autoScroll) {
 							messagesContainerElement.scrollTo({
 								top: messagesContainerElement.scrollHeight,
 								behavior
 							});
+							lastScrollTop = messagesContainerElement.scrollTop;
 						}
 					});
 				}
@@ -3200,7 +3256,7 @@
 		if (!scrollRAF) {
 			scrollRAF = requestAnimationFrame(async () => {
 				scrollRAF = null;
-				await scrollToBottom();
+				if (shouldAutoScrollResponse()) await scrollToBottom();
 			});
 		}
 	};
@@ -3307,6 +3363,7 @@
 	const processNextInQueue = async (targetChatId: string) => {
 		if (
 			loading ||
+			initializingDraft ||
 			restoringDraft ||
 			!draftManager?.ready ||
 			processingQueueChats.has(targetChatId) ||
@@ -3366,6 +3423,8 @@
 
 	const chatActionHandler = async (_chatId, actionId, modelId, responseMessageId, event = null) => {
 		const messages = createMessagesList(history, responseMessageId);
+		// Actions can also update this message through events.
+		const original = structuredClone(history.messages[responseMessageId]);
 
 		const res = await chatAction(localStorage.token, actionId, {
 			model: modelId,
@@ -3384,14 +3443,19 @@
 			id: responseMessageId
 		}).catch((error) => {
 			toast.error(`${error}`);
-			messages.at(-1).error = { content: error };
+			if ($chatId === _chatId && history.messages[responseMessageId]) {
+				history.messages[responseMessageId].error = { content: error };
+			}
 			return null;
 		});
 
-		if (res !== null && res.messages) {
+		if ($chatId !== _chatId) return;
+
+		let changed = !equal(original, history.messages[responseMessageId]);
+		if (res?.messages) {
 			// Update chat history with the new messages
 			for (const message of res.messages) {
-				history.messages[message.id] = {
+				const updated = {
 					...history.messages[message.id],
 					...(history.messages[message.id].content !== message.content
 						? { originalContent: history.messages[message.id].content }
@@ -3401,21 +3465,22 @@
 						: {}),
 					...message
 				};
+				if (!equal(history.messages[message.id], updated)) {
+					history.messages[message.id] = updated;
+					changed = true;
+				}
 			}
 		}
 
-		if ($chatId == _chatId) {
-			if (!$temporaryChatEnabled) {
-				chat = await updateChatById(localStorage.token, _chatId, {
-					models: selectedModels,
-					messages: messages,
-					history: history,
-					params: params,
-					files: chatFiles
-				});
+		if (changed && !$temporaryChatEnabled) {
+			chat = await updateChatById(localStorage.token, _chatId, {
+				models: selectedModels,
+				messages: createMessagesList(history, responseMessageId),
+				history: history,
+				files: chatFiles
+			});
 
-				await refreshChatList(localStorage.token);
-			}
+			await refreshChatList(localStorage.token);
 		}
 	};
 
@@ -3663,9 +3728,10 @@
 
 		if (done) {
 			message.done = true;
+			if ($contextCompactions[message.id] === 'in_progress') clearContextCompaction(message.id);
 			if (shared) return;
 			if (message.error) {
-				dismissContextCompactionToast();
+				clearContextCompaction(message.id);
 				bridge?.update();
 				await processNextInQueue(chatId);
 				return;
@@ -3809,17 +3875,21 @@
 		}
 
 		const model = atSelectedModel?.id ?? selectedModels.find((modelId) => modelId);
-		const toastId = toast.loading($i18n.t('Compacting context...'));
+		// Preserve the former toast translation for i18n extraction.
+		// const toastId = toast.loading($i18n.t('Compacting context...'));
+		const compactChatId = $chatId;
+		const compactMessageId = history.currentId;
+		if ($contextCompactions[compactMessageId] === 'in_progress') return;
+		$contextCompactions = { ...$contextCompactions, [compactMessageId]: 'in_progress' };
 		manualCompactionState = 'running';
 
 		try {
-			const result = await compactChatById(localStorage.token, $chatId, model);
+			const result = await compactChatById(localStorage.token, compactChatId, model);
+			if ($chatId !== compactChatId) return;
 			serverContextUsage = result?.context_usage ?? serverContextUsage;
 			manualCompactionState = result?.compacted ? 'applied' : 'idle';
 
-			if (result?.compacted) {
-				toast.success($i18n.t('Context compacted'), { id: toastId });
-			} else {
+			if (!result?.compacted) {
 				const skippedReason =
 					result?.reason === 'too_short'
 						? $i18n.t('Chat is too short to compact')
@@ -3828,14 +3898,21 @@
 							: result?.reason === 'disabled'
 								? $i18n.t('Context compaction is disabled')
 								: $i18n.t('Nothing to compact');
-				toast.message(skippedReason, { id: toastId });
+				toast.message(skippedReason);
 			}
 
 			await loadChat();
+			clearContextCompaction(compactMessageId);
 		} catch (error) {
 			manualCompactionState = 'failed';
-			const message = error?.detail ?? error?.message ?? $i18n.t('Context compaction failed');
-			toast.error(message, { id: toastId });
+			if ($chatId === compactChatId) {
+				$contextCompactions = {
+					...$contextCompactions,
+					[compactMessageId]: {
+						error: String(error?.detail ?? error?.message ?? $i18n.t('Context compaction failed'))
+					}
+				};
+			}
 		} finally {
 			messageInput?.focus({ preventScroll: true });
 		}
@@ -3873,6 +3950,7 @@
 
 		atSelectedModel = undefined;
 		selectedModels = [model.id];
+		saveControls(selectedModels);
 		saveSessionSelectedModels();
 		toast.success(`Model switched to: ${model.id}`);
 		messageInput?.setText('');
@@ -3881,7 +3959,7 @@
 	};
 
 	const handleForkChat = async (messageId: string | null = null) => {
-		if (!$chatId || !history?.currentId) {
+		if (!$chatId || $temporaryChatEnabled || !history?.currentId) {
 			toast.message($i18n.t('No chat to fork'));
 			return;
 		}
@@ -3930,6 +4008,37 @@
 		prompt = '';
 	};
 
+	const getChatId = async (_history: typeof history) => {
+		let _chatId = $chatId;
+		// Empty embedded drafts create their backing chat only when the first message is sent.
+		if (!_chatId) {
+			if (embedded && onCreateEmbeddedChat) {
+				const createdChat = await onCreateEmbeddedChat();
+				if (!createdChat?.id) {
+					toast.error($i18n.t('Failed to create chat'));
+					return null;
+				}
+				if (history !== _history) return null;
+
+				chat = createdChat;
+				_chatId = createdChat.id;
+				loadedChatIdProp = _chatId;
+				await chatId.set(_chatId);
+				await chatTitle.set(createdChat?.chat?.title ?? createdChat?.title ?? $i18n.t('Chat'));
+
+				params = structuredClone(createdChat?.chat?.params ?? {});
+				delete params.note_id;
+				chatFiles = mergeFiles(chatFiles, createdChat?.chat?.files ?? []);
+				await onSelectEmbeddedChat?.(_chatId);
+			} else if ($temporaryChatEnabled) {
+				_chatId = createTemporaryChatId($socket?.id);
+				await chatId.set(_chatId);
+			}
+			await tick();
+		}
+		return _chatId;
+	};
+
 	const submitHandler = async (
 		userPrompt: string,
 		{
@@ -3937,6 +4046,15 @@
 			bridge: bridgeRequest = null
 		}: { _raw?: boolean; bridge?: { userMessageId: string; modelId: string } | null } = {}
 	): Promise<BridgeSubmission> => {
+		if (embedded && onBeforeNoteSubmit) {
+			try {
+				await onBeforeNoteSubmit();
+			} catch (error) {
+				toast.error(String(error));
+				return { status: 'rejected' };
+			}
+		}
+		if (processing === 'uploading') return { status: 'deferred' };
 		emitTyping(false);
 		if (bridgeRequest && (selectedModelIds.length !== 1 || !bridgeRequest.modelId))
 			return { status: 'rejected' };
@@ -4016,6 +4134,26 @@
 			return { status: 'deferred' };
 		}
 
+		const currentHistory = history;
+		processing = 'uploading';
+		try {
+			const _chatId = await getChatId(currentHistory);
+			if (_chatId === null) return { status: 'rejected' };
+
+			if (history !== currentHistory) return { status: 'rejected' };
+			if (
+				files.some((file) => file.status === 'pending' && file.file instanceof File) &&
+				!(await messageInput?.uploadPendingFiles(_chatId || (await initChatHandler(history))))
+			)
+				return { status: 'rejected' };
+			if (history !== currentHistory) return { status: 'rejected' };
+		} catch (error) {
+			toast.error(`${error}`);
+			return { status: 'rejected' };
+		} finally {
+			processing = '';
+		}
+
 		if (
 			($chatRequestQueues[$chatId] ?? []).some((m) =>
 				(m.files ?? []).some((file) => ['uploading', 'error'].includes(file.status))
@@ -4083,13 +4221,15 @@
 			modelId = null,
 			modelIdx = null,
 			regenerationPrompt = null,
-			queued = null
+			queued = null,
+			regenerationMessageId = null
 		}: {
 			messages?: any[] | null;
 			modelId?: string | null;
 			modelIdx?: number | null;
 			regenerationPrompt?: string | null;
 			queued?: QueuedDraft | null;
+			regenerationMessageId?: string | null;
 		} = {}
 	) => {
 		const parent = _history.messages[parentId];
@@ -4115,6 +4255,10 @@
 		_history = structuredClone(_history);
 
 		const responseMessageIds: Record<PropertyKey, string> = {};
+		if (!queued && !modelId && atSelectedModel) {
+			selectedModels = [atSelectedModel.id];
+			atSelectedModel = undefined;
+		}
 		// If modelId is provided, use it, else use selected model
 		let selectedModelIds =
 			queued?.context.selectedModels ??
@@ -4168,32 +4312,6 @@
 			}
 		}
 		history = history;
-
-		// Empty embedded drafts create their backing chat only when the first message is sent.
-		if (!_chatId) {
-			if (embedded && onCreateEmbeddedChat) {
-				const createdChat = await onCreateEmbeddedChat();
-				if (!createdChat?.id) {
-					toast.error($i18n.t('Failed to create chat'));
-					return;
-				}
-
-				chat = createdChat;
-				_chatId = createdChat.id;
-				loadedChatIdProp = _chatId;
-				await chatId.set(_chatId);
-				await chatTitle.set(createdChat?.chat?.title ?? createdChat?.title ?? $i18n.t('Chat'));
-
-				params = structuredClone(createdChat?.chat?.params ?? {});
-				delete params.note_id;
-				chatFiles = mergeFiles(chatFiles, createdChat?.chat?.files ?? []);
-				await onSelectEmbeddedChat?.(_chatId);
-			} else if ($temporaryChatEnabled) {
-				_chatId = createTemporaryChatId($socket?.id);
-				await chatId.set(_chatId);
-			}
-			await tick();
-		}
 
 		await tick();
 
@@ -4251,7 +4369,8 @@
 						// column identity and collapse on reload.
 						messageIdsList: messageIdsList.length > 0 ? messageIdsList : undefined,
 						regenerationPrompt,
-						queued
+						queued,
+						regenerationMessageId
 					}
 				);
 				submittedTaskIds =
@@ -4302,9 +4421,13 @@
 
 		const tokens = Array.isArray(stop) ? stop : stop.split(',').map((s) => s.trim());
 
-		return tokens
-			.filter(Boolean)
-			.map((token) => decodeURIComponent(JSON.parse(`"${token.replace(/"/g, '\\"')}"`)));
+		return tokens.filter(Boolean).map((token) => {
+			try {
+				return decodeURIComponent(JSON.parse(`"${token.replace(/"/g, '\\"')}"`));
+			} catch {
+				return token;
+			}
+		});
 	};
 	const getRequestParams = () => ({
 		...$settings?.params,
@@ -4322,11 +4445,13 @@
 		{
 			messageIdsList,
 			regenerationPrompt,
+			regenerationMessageId,
 			continueResponse = false,
 			queued = null
 		}: {
 			messageIdsList?: Array<{ model_id: string; message_id: string }>;
 			regenerationPrompt?: string | null;
+			regenerationMessageId?: string | null;
 			continueResponse?: boolean;
 			queued?: QueuedDraft | null;
 		} = {}
@@ -4417,7 +4542,9 @@
 
 					if (message.role === 'user' && imageFiles.length > 0) {
 						return {
+							id: message.id,
 							role: message.role,
+							contextSummary: message?.contextSummary,
 							content: [
 								{
 									type: 'text',
@@ -4434,7 +4561,9 @@
 					}
 
 					return {
+						id: message.id,
 						role: message.role,
+						contextSummary: message?.contextSummary,
 						content: message?.merged?.content ?? message.content,
 						model: message.model,
 						meta: message.meta
@@ -4463,7 +4592,7 @@
 			}
 		}
 
-		// Menu-selected skills and inline <$skillId|label> mentions both load instructions.
+		// The backend applies the skill loading setting to menu-selected skills.
 		// Keep mentions in the message so the backend can resolve them.
 		const skillIds = [...(queued?.context.selectedSkillIds ?? selectedSkillIds)];
 		const filterIds = queued?.context.selectedFilterIds ?? selectedFilterIds;
@@ -4482,7 +4611,11 @@
 				...(messages.length > 0 ? { messages } : {}),
 				params: requestParams,
 
-				files: (files?.length ?? 0) > 0 ? files : undefined,
+				files: embedded
+					? [...(files ?? []), ...noteFiles]
+					: (files?.length ?? 0) > 0
+						? files
+						: undefined,
 
 				filter_ids:
 					$config?.features?.enable_functions && filterIds.length > 0 ? filterIds : undefined,
@@ -4533,15 +4666,13 @@
 				parent_id: userMessage?.parentId ?? null,
 				user_message: userMessage,
 				...(regenerationPrompt ? { regeneration_prompt: regenerationPrompt } : {}),
+				...(regenerationMessageId ? { regeneration_message_id: regenerationMessageId } : {}),
 				...(continueResponse ? { assistant_message_id: responseMessageId } : {}),
 
 				background_tasks: {
 					...(!$temporaryChatEnabled &&
 					(!_chatId ||
-						(userMessage?.parentId === null &&
-							createMessagesList(_history, responseMessageId).length === 2) ||
-						(embedded &&
-							(userMessage?.parentId ?? null) === null &&
+						((userMessage?.parentId ?? null) === null &&
 							createMessagesList(_history, responseMessageId).length === 2))
 						? {
 								title_generation: $settings?.title?.auto ?? true,
@@ -4594,8 +4725,14 @@
 			if (res.error) {
 				await handleOpenAIError(res.error, responseMessage);
 			} else {
-				// Backend returns task_ids (multi-model) or task_id (single model)
-				onToolCallResolved(res);
+				// An early completion event may have already finished these replies.
+				if (
+					(messageIdsList ?? [{ message_id: responseMessageId }]).some(
+						({ message_id }) => history.messages[message_id]?.done === false
+					)
+				) {
+					onToolCallResolved(res);
+				}
 				if ($temporaryChatEnabled && draftManager)
 					registerBillingIdentity(_chatId, `temporary:${draftManager.chatId}`);
 				const submitted = submittedDrafts.get(userMessage?.id);
@@ -4609,11 +4746,16 @@
 						}));
 				}
 
-				// Backend returns chat_id for new chats — set store + URL.
+				// Finish new-chat setup even if an event already supplied the chat id.
 				// Only update if the user hasn't navigated to a different chat
 				// while the request was in flight (prevents overwriting $chatId
 				// and causing spurious toast notifications / state duplication).
-				if (res.chat_id && $chatId !== res.chat_id && $chatId === _chatId) {
+				if (
+					res.chat_id &&
+					history.messages[responseMessageId] &&
+					res.chat_id !== _chatId &&
+					($chatId === _chatId || $chatId === res.chat_id)
+				) {
 					chatRequestQueues.update((q) => {
 						if (!q[_chatId]?.length) return q;
 
@@ -4651,11 +4793,10 @@
 						// chat completion request.  Files are now persisted
 						// by the backend at chat creation time.
 						if (Object.keys(params).length > 0) {
-							await updateChatById(localStorage.token, res.chat_id, {
-								params: params
-							});
+							await updateChatParams(localStorage.token, res.chat_id, params);
 						}
 					}
+					await processNextInQueue(res.chat_id);
 				}
 			}
 		}
@@ -4714,6 +4855,7 @@
 			if (responseMessage?.parentId && history.messages[responseMessage.parentId]) {
 				for (const messageId of history.messages[responseMessage.parentId].childrenIds) {
 					history.messages[messageId].done = true;
+					clearContextCompaction(messageId);
 				}
 			}
 
@@ -4783,21 +4925,25 @@
 				scrollToBottom();
 			}
 
-			await sendMessage(history, userMessage.id, {
+			const currentModels = atSelectedModel ? [atSelectedModel.id] : selectedModels;
+			const options = {
 				...(suggestionPrompt
 					? {
 							messages: createMessagesList(history, message.id),
-							regenerationPrompt: suggestionPrompt
+							regenerationPrompt: suggestionPrompt,
+							regenerationMessageId: message.id
 						}
 					: {}),
-				...((userMessage?.models ?? [...selectedModels]).length > 1
+				...((userMessage.models ?? currentModels).length > 1 && currentModels.length > 1
 					? {
-							// If multiple models are selected, use the model from the message
-							modelId: message.model,
+							// Regenerate the selected column with its current model.
+							modelId: currentModels[message.modelIdx ?? 0] ?? message.model,
 							modelIdx: message.modelIdx
 						}
 					: {})
-			});
+			};
+			userMessage.models = [...currentModels];
+			await sendMessage(history, userMessage.id, options);
 		}
 	};
 
@@ -4879,12 +5025,12 @@
 		}
 	};
 
-	const initChatHandler = async (history) => {
+	const initChatHandler = async (_history: typeof history) => {
 		let _chatId = $chatId;
 		const selectedFolderId = $selectedFolder?.id;
 
 		if (!$temporaryChatEnabled) {
-			chat = await createNewChat(
+			const createdChat = await createNewChat(
 				localStorage.token,
 				{
 					id: _chatId,
@@ -4892,8 +5038,8 @@
 					models: selectedModels,
 					system: $settings.system ?? undefined,
 					params: params,
-					history: history,
-					messages: createMessagesList(history, history.currentId),
+					history: _history,
+					messages: createMessagesList(_history, _history.currentId),
 					tags: [],
 					timestamp: Date.now()
 				},
@@ -4901,6 +5047,9 @@
 				chatVariables
 			);
 
+			if (!createdChat?.id) throw new Error($i18n.t('Failed to create chat'));
+			if (history !== _history || $chatId !== _chatId) return '';
+			chat = createdChat;
 			_chatId = chat.id;
 			await chatId.set(_chatId);
 
@@ -4937,28 +5086,36 @@
 					models: selectedModels,
 					history: history,
 					messages: createMessagesList(history, history.currentId),
-					params: params,
 					files: chatFiles
 				});
 			}
 		}
 	};
 
-	const saveControls = async () => {
-		if (isShared) return;
-		if (!$chatId || $temporaryChatEnabled) return;
-		const loaded = chat?.chat ?? {};
-		if (equal(params, loaded.params ?? {}) && equal(chatFiles, loaded.files ?? [])) return;
+	const saveParam = async (key: string, value: unknown) => {
+		if (isShared || !$chatId || $temporaryChatEnabled || isTemporaryChatId($chatId)) return;
+		await updateChatParams(localStorage.token, $chatId, { [key]: value }).catch((error) => {
+			toast.error(`${error}`);
+		});
+	};
 
-		const res = await updateChatById(localStorage.token, $chatId, {
-			params,
-			files: chatFiles
+	const saveControls = async (models: string[] | null = null) => {
+		if (isShared) return;
+		if (!$chatId || $temporaryChatEnabled || chat?.id !== $chatId) return;
+		// Model choices are passed explicitly; automatic fallbacks must not be saved.
+		if (!models?.length || !models.every(Boolean)) models = null;
+		if (!models && equal(chatFiles, chat.chat?.files ?? [])) return;
+		const id = $chatId;
+
+		const res = await updateChatById(localStorage.token, id, {
+			files: chatFiles,
+			...(models ? { models } : {})
 		}).catch((err) => {
 			console.error('[controls autosave]', err);
 			return null;
 		});
 		// Refresh the dedupe baseline so a later revert still saves.
-		if (res) chat = res;
+		if (res && $chatId === id) chat = res;
 	};
 
 	const getDraftChatId = () => chatIdProp || $chatId || null;
@@ -5111,6 +5268,7 @@
 			<div class="flex justify-between px-4 pt-3 pb-1 dark:text-gray-300">
 				<div class="self-center text-sm font-medium">{$i18n.t('Chat Variables')}</div>
 				<button
+					aria-label={$i18n.t('Close')}
 					class="self-center rounded-lg p-1 text-gray-500 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
 					on:click={() => {
 						showChatVariablesModal = false;
@@ -5270,7 +5428,12 @@
 	id={chatContainerId}
 >
 	{#if !loading}
-		<div in:fade={{ duration: 50 }} class="w-full h-full flex flex-col">
+		<div
+			in:fade={{ duration: 50 }}
+			class="w-full h-full flex flex-col"
+			inert={!!initializingDraft}
+			aria-busy={!!initializingDraft}
+		>
 			{#if backgroundImage}
 				<div
 					class="pointer-events-none absolute top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat"
@@ -5319,6 +5482,7 @@
 							chat={{
 								id: $chatId,
 								archived: chat?.archived ?? false,
+								folder_id: chat?.folder_id,
 								chat: {
 									title: $chatTitle,
 									models: selectedModels,
@@ -5380,6 +5544,7 @@
 						/>
 					{/if}
 					<div id="chat-pane" class="flex flex-col flex-auto z-10 w-full @container overflow-auto">
+						<div class="sr-only" aria-live="polite" aria-atomic="true">{liveStatus}</div>
 						{#if ($settings?.landingPageMode === 'chat' && !$selectedFolder) || createMessagesList(history, history.currentId).length > 0}
 							<!-- Focusable scroll region: keyboard users must be able to page through the transcript. -->
 							<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
@@ -5402,10 +5567,13 @@
 								on:touchmove={() => (readingTouched = true)}
 								on:scroll={(e) => {
 									if (!messagesContainerElement) return;
+									const { scrollTop, scrollHeight, clientHeight } = messagesContainerElement;
+									// Content growing below the viewport must not stop following.
 									autoScroll =
-										messagesContainerElement.scrollHeight - messagesContainerElement.scrollTop <=
-										messagesContainerElement.clientHeight + 5;
-									isNearTop = messagesContainerElement.scrollTop <= 100;
+										scrollHeight - scrollTop <= clientHeight + 5 ||
+										(autoScroll && scrollTop >= lastScrollTop);
+									lastScrollTop = scrollTop;
+									isNearTop = scrollTop <= 100;
 									rememberReadingPosition();
 								}}
 							>
@@ -5420,7 +5588,7 @@
 										bind:autoScroll
 										bind:prompt
 										setInputText={(text) => {
-											messageInput?.setText(text);
+											messageInput?.setTextHandler(text);
 										}}
 										bind:selectedModels
 										{atSelectedModel}
@@ -5435,7 +5603,7 @@
 										{addMessages}
 										{onToolCallResolved}
 										allowDelete={!(generating || taskIds?.length)}
-										forkHandler={handleForkChat}
+										forkHandler={$temporaryChatEnabled ? null : handleForkChat}
 										topPadding={!embedded}
 										bottomPadding={files.length > 0}
 										{onSelect}
@@ -5502,6 +5670,7 @@
 										{history}
 										{taskIds}
 										bind:selectedModels
+										onModelSelect={saveControls}
 										bind:files
 										bind:prompt
 										bind:autoScroll
@@ -5625,6 +5794,7 @@
 										{history}
 										{taskIds}
 										bind:selectedModels
+										onModelSelect={saveControls}
 										bind:files
 										bind:prompt
 										bind:autoScroll
@@ -5708,12 +5878,14 @@
 												retry: () => draftManager?.flush()
 											}
 										: null}
+									chatId={$chatId}
 									{terminalContext}
 									callActive={!!(bridge?.connected || bridge?.connecting)}
 									callEnabled={!isShared}
 									bind:selectedModelIdx
 									{history}
 									bind:selectedModels
+									onModelSelect={saveControls}
 									bind:messageInput
 									bind:files
 									bind:prompt
@@ -5766,6 +5938,7 @@
 						bind:history
 						bind:chatFiles
 						bind:params
+						onParamChange={saveParam}
 						bind:files
 						chatId={$chatId}
 						chatUser={chatOwner}

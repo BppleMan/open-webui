@@ -12,7 +12,7 @@
 	import ConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
 	import { flyAndScale } from '$lib/utils/transitions';
 
-	import { createEventDispatcher, onMount, getContext, tick } from 'svelte';
+	import { onMount, getContext, tick } from 'svelte';
 
 	import { deleteModel, getOllamaVersion, pullModel } from '$lib/apis/ollama';
 	import { deleteModelById } from '$lib/apis/models';
@@ -32,7 +32,8 @@
 		temporaryChatEnabled,
 		settings,
 		config,
-		showSettings
+		showSettings,
+		visibleControls
 	} from '$lib/stores';
 	import { toast } from 'svelte-sonner';
 	import { capitalizeFirstLetter, sanitizeResponseContent, splitStream } from '$lib/utils';
@@ -56,11 +57,11 @@
 	import Link from '$lib/components/icons/Link.svelte';
 
 	const i18n: any = getContext('i18n');
-	const dispatch = createEventDispatcher();
 
 	export let id = '';
 	export let value: string | null = '';
 	export let values: string[] | null = null;
+	export let onModelSelect: (models: string[]) => void = () => {};
 	export let compareEnabled = false;
 	export let multipleEnabled = false;
 	export let disabled = false;
@@ -137,6 +138,13 @@
 		} else {
 			document.getElementById('chat-input')?.focus();
 		}
+
+		if (
+			$settings?.highContrastMode &&
+			(document.activeElement === document.body || contentElement?.contains(document.activeElement))
+		) {
+			document.getElementById(`model-selector-${id}-button`)?.focus();
+		}
 	};
 
 	const toggleOpen = async () => {
@@ -181,6 +189,7 @@
 
 	const handleKeydown = (e: KeyboardEvent) => {
 		if (show && e.key === 'Escape') {
+			if ((e.target as HTMLElement).closest?.('.model-selector-child-menu')) return;
 			e.preventDefault();
 			e.stopPropagation();
 			show = false;
@@ -192,7 +201,7 @@
 
 	let selectedModel = '';
 	$: selectedValues = values ?? (value ? [value] : []);
-	$: primaryValue = selectedValues[0] ?? value ?? '';
+	$: primaryValue = selectedValues[0] ?? '';
 	$: selectedModel = items.find((item) => item.value === primaryValue) ?? '';
 	$: selectedCount = selectedValues.filter(Boolean).length;
 	$: triggerLabel = selectedModel
@@ -410,6 +419,7 @@
 		if (!enabled && values) {
 			values = [primaryValue || selectedValues[0] || ''];
 			value = values[0];
+			onModelSelect(values);
 		}
 	};
 
@@ -426,11 +436,13 @@
 
 				values = nextValues.length ? nextValues : [item.value];
 				value = values[0];
+				onModelSelect(values);
 				return;
 			}
 
 			values = [item.value];
 			value = item.value;
+			onModelSelect(values);
 			show = false;
 			window.setTimeout(focusChatInput, 0);
 			return;
@@ -930,6 +942,7 @@
 								placeholder={searchPlaceholder ?? '搜索连接或模型'}
 								autocomplete="off"
 								role="combobox"
+								aria-autocomplete="list"
 								aria-label={searchPlaceholder ?? '搜索连接或模型'}
 								aria-expanded={show}
 								aria-controls={`model-selector-${id}-listbox`}
@@ -1023,6 +1036,16 @@
 						</div>
 					{/if}
 
+					<div class="sr-only" aria-live="polite" aria-atomic="true">
+						{#if sanitizedSearchValue}
+							{filteredItems.length === 0
+								? $i18n.t('No results found')
+								: filteredItems.length === 1
+									? $i18n.t('1 item')
+									: $i18n.t('{{count}} items', { count: filteredItems.length })}
+						{/if}
+					</div>
+
 					<div class="group relative flex min-h-0 flex-1 flex-col">
 						{#if filteredItems.length === 0}
 							{#if items.length === 0 && $user?.role === 'admin'}
@@ -1109,7 +1132,7 @@
 												<ModelItem
 													optionId={`model-selector-${id}-option-${item.directoryIndex}`}
 													connectionGrouped
-													{selectedModelIdx}
+													bind:selectedModelIdx
 													{item}
 													index={item.directoryIndex}
 													value={primaryValue}
@@ -1142,6 +1165,7 @@
 									placement="top-start"
 								>
 									<div
+										id={`model-selector-${id}-option-${filteredItems.length + targetIndex}`}
 										role="option"
 										aria-selected={selectedModelIdx === filteredItems.length + targetIndex}
 										data-arrow-selected={selectedModelIdx === filteredItems.length + targetIndex}
@@ -1194,6 +1218,7 @@
 								<Tooltip content={target.actionLabel} placement="top-start">
 									<button
 										type="button"
+										id={`model-selector-${id}-option-${filteredItems.length + targetIndex}`}
 										role="option"
 										aria-selected={selectedModelIdx === filteredItems.length + targetIndex}
 										data-arrow-selected={selectedModelIdx === filteredItems.length + targetIndex}
@@ -1281,11 +1306,18 @@
 						{/each}
 					</div>
 
-					{#if showSetDefault}
-						<div class="flex shrink-0 items-center justify-end px-2 py-1 leading-none">
+					{#if showSetDefault && $visibleControls['models.set_default']}
+						<div
+							class="flex shrink-0 items-center justify-end px-2 leading-none {($settings?.highContrastMode ??
+							false)
+								? ''
+								: 'py-1'}"
+						>
 							<button
 								type="button"
-								class="focus-ring text-[0.65rem] font-normal leading-none text-gray-500 underline-offset-2 transition-colors duration-100 hover:text-gray-700 hover:underline dark:text-gray-500 dark:hover:text-gray-300"
+								class="focus-ring {($settings?.highContrastMode ?? false)
+									? 'inline-flex min-h-6 items-center'
+									: ''} text-[0.65rem] font-normal leading-none text-gray-500 underline-offset-2 transition-colors duration-100 hover:text-gray-700 hover:underline dark:text-gray-500 dark:hover:text-gray-300"
 								on:click|stopPropagation={setDefaultHandler}
 							>
 								{$i18n.t('Set as default')}

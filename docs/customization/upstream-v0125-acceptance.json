@@ -1,0 +1,56 @@
+{
+  "requirement": "R62",
+  "prototype": "P47",
+  "status": "locally_verified_CI_pending",
+  "upstream": {
+    "from_tag": "v0.12.3",
+    "to_tag": "v0.12.5",
+    "commit": "f7ac7ee10962ddec0017f5c29b6740d9b9c5faca",
+    "release": "https://github.com/open-webui/open-webui/releases/tag/v0.12.5",
+    "merge_strategy": "merge commit; customization lineage retained",
+    "conflicted_files_resolved": 24,
+    "new_upstream_alembic_migrations": 0
+  },
+  "checks": {
+    "backend": 377,
+    "frontend": 65,
+    "type_baseline": "upstream-v0125-type-baseline.json",
+    "type_new": 0,
+    "build": "passed",
+    "real_supplier_requests": 0
+  },
+  "staging_backup": {
+    "encrypted_snapshot": true,
+    "isolated_restore_table_hashes_matching": 63,
+    "attachment_files": 3,
+    "schema": "oi0000000007",
+    "http_on_restored_copy": "not_performed"
+  },
+  "deployment": {
+    "scope": "isolated_preview_only",
+    "status": "pending_CI_and_browser_acceptance",
+    "production": "unchanged_R50"
+  },
+  "remaining_boundaries": [
+    "R59 actual CPA readable summary not yet returned; guarded paid probe not repeated",
+    "stage8B production switch is not authorized"
+  ],
+  "local_browser": {
+    "server_and_browser_native_generation": "passed_loopback_only",
+    "regen": "2nd_generation_retained_and_counted_once",
+    "draft_reload": {
+      "characters": 6760,
+      "selected_binding_retained": true
+    },
+    "composer_mount_race": "fixed_and_retested; controls_inert_until_restoration_complete",
+    "thought_summary_and_editor_tabs": "passed_synthetic",
+    "info_full_usage": "passed",
+    "sessions_explorer": "rendered_with_grouped_binding_filter",
+    "mobile_widths": [
+      390,
+      430
+    ],
+    "cost_and_cumulative_same_row": true,
+    "horizontal_overflow": false
+  }
+}

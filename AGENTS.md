@@ -2,7 +2,7 @@
 
 Read docs/customization/requirements.md, prototype.md, implementation.md and features.json before changes. The user has approved implementation of this contract. Keep feature implementation, verification and deployment statuses separate.
 
-- Base: upstream v0.12.3. Preserve upstream licensing and branding.
+- Base: upstream v0.12.5, merged from the original v0.12.3 fork. Preserve upstream licensing and branding.
 - Every model list/selector uses connection-to-model identity, including capability-specific lists.
 - Preserve native structured content and CPA RP semantics. Do not silently add prompts or truncate history.
 - Record every generation/call once; actual and estimated USD are separate, unknown is not zero. Forks inherit anchor cost snapshots, not duplicate charges.
@@ -46,3 +46,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R59/R60 code is deployed to isolated preview; read docs/customization/thoughts-session-acceptance.json. Synthetic server/browser summary, persistence, controls and CI pass; one actual CPA stream still returned only reasoning usage/signature, with no readable summary. Keep that supplier acceptance gap open and do not repeat the guarded paid probe. R60 recovery is verified. R50 production hold remains.
 
 - R61/P46 supersedes natural wrapping on narrow screens: use explicit responsive grid groups, shared usage icons in info, and padded connection headings. Read docs/customization/usage-responsive-acceptance.json for current checks/deployment; retain R50, U49 and the separate R59 supplier gap.
+
+- R62/P47: upstream v0.12.5 sync and same-row mobile current/cumulative cost. Read docs/customization/upstream-v0125-acceptance.json for merge, checks and runtime status. Preserve native history, call-based statistics, durable drafts, stable connection identities and R50. Do not reset the type baseline from modified application code.
