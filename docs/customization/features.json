@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-30",
-  "phase": "R62_upstream_v0125_preview_verified; R59_CPA_summary_pending; stage8B_not_authorized",
+  "phase": "R63_review_remediation_preview_verified; R59_CPA_summary_pending; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,12 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "197335833f08ad54adf5fa423215757c22ac70ac",
+    "latest_code_commit": "b96836df3e0faf88be9187957995de729fd97e45",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "197335833f08ad54adf5fa423215757c22ac70ac",
-    "latest_documentation_revision": "U60/R62: v0.12.5 sync and same-row mobile fees verified on isolated preview",
+    "latest_commit": "b96836df3e0faf88be9187957995de729fd97e45",
+    "latest_documentation_revision": "U62/R63: 14 full-history findings repaired and verified on isolated preview",
     "original_base": {
       "tag": "v0.12.3",
       "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60"
@@ -48,7 +48,8 @@
         "R52",
         "R53",
         "R59",
-        "R62"
+        "R62",
+        "R63"
       ],
       "prototypes": [
         "P01",
@@ -57,7 +58,8 @@
         "P37",
         "P38",
         "P44",
-        "P47"
+        "P47",
+        "P48"
       ],
       "priority": "P1",
       "status": "verified",
@@ -136,6 +138,21 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "upstream-v0125-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-01",
+          "CR30-02",
+          "CR30-04",
+          "CR30-06",
+          "CR30-09",
+          "CR30-13"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -150,7 +167,8 @@
         "R54",
         "R55",
         "R57",
-        "R62"
+        "R62",
+        "R63"
       ],
       "prototypes": [
         "P02",
@@ -160,7 +178,8 @@
         "P39",
         "P40",
         "P42",
-        "P47"
+        "P47",
+        "P48"
       ],
       "priority": "P1",
       "status": "verified",
@@ -235,6 +254,16 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "upstream-v0125-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-14"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -251,7 +280,8 @@
         "R58",
         "R59",
         "R61",
-        "R62"
+        "R62",
+        "R63"
       ],
       "prototypes": [
         "P03",
@@ -264,7 +294,8 @@
         "P43",
         "P44",
         "P46",
-        "P47"
+        "P47",
+        "P48"
       ],
       "priority": "P1",
       "status": "verified",
@@ -383,6 +414,20 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "upstream-v0125-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-05",
+          "CR30-06",
+          "CR30-07",
+          "CR30-12",
+          "CR30-14"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -392,13 +437,15 @@
         "R04",
         "R56",
         "R57",
-        "R62"
+        "R62",
+        "R63"
       ],
       "prototypes": [
         "P04",
         "P41",
         "P42",
-        "P47"
+        "P47",
+        "P48"
       ],
       "priority": "P1",
       "status": "verified",
@@ -438,6 +485,16 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "upstream-v0125-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-02"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -525,14 +582,16 @@
         "R47",
         "R53",
         "R61",
-        "R62"
+        "R62",
+        "R63"
       ],
       "prototypes": [
         "P06",
         "P32",
         "P38",
         "P46",
-        "P47"
+        "P47",
+        "P48"
       ],
       "priority": "P1",
       "status": "verified",
@@ -610,6 +669,20 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "upstream-v0125-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-03",
+          "CR30-06",
+          "CR30-07",
+          "CR30-12",
+          "CR30-14"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -617,11 +690,13 @@
       "title": "导入历史费用基数",
       "requirements": [
         "R08",
-        "R47"
+        "R47",
+        "R63"
       ],
       "prototypes": [
         "P07",
-        "P32"
+        "P32",
+        "P48"
       ],
       "priority": "P1",
       "status": "verified",
@@ -652,6 +727,16 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-07"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -662,14 +747,16 @@
         "R51",
         "R52",
         "R53",
-        "R59"
+        "R59",
+        "R63"
       ],
       "prototypes": [
         "P08",
         "P36",
         "P37",
         "P38",
-        "P44"
+        "P44",
+        "P48"
       ],
       "priority": "P1",
       "status": "verified",
@@ -732,6 +819,18 @@
           "Diagnose readable-summary absence on the existing CPA/AGY upstream path without claiming completed live acceptance."
         ],
         "evidence": "thoughts-session-acceptance.json"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-01",
+          "CR30-02",
+          "CR30-04"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -845,12 +944,14 @@
         "R14",
         "R16",
         "R51",
-        "R62"
+        "R62",
+        "R63"
       ],
       "prototypes": [
         "P11",
         "P36",
-        "P47"
+        "P47",
+        "P48"
       ],
       "priority": "P0",
       "status": "verified",
@@ -908,6 +1009,16 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "upstream-v0125-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-11"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -1075,7 +1186,8 @@
         "R55",
         "R56",
         "R61",
-        "R62"
+        "R62",
+        "R63"
       ],
       "prototypes": [
         "P13",
@@ -1086,7 +1198,8 @@
         "P40",
         "P41",
         "P46",
-        "P47"
+        "P47",
+        "P48"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1257,6 +1370,20 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "upstream-v0125-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-05",
+          "CR30-08",
+          "CR30-09",
+          "CR30-10",
+          "CR30-13"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -1270,7 +1397,8 @@
         "R51",
         "R52",
         "R53",
-        "R55"
+        "R55",
+        "R63"
       ],
       "prototypes": [
         "P14",
@@ -1278,7 +1406,8 @@
         "P36",
         "P37",
         "P38",
-        "P40"
+        "P40",
+        "P48"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1351,6 +1480,18 @@
         "verification": "responsive_UI_native_scroll_fixed_frame_and_CI_passed; CPA_capacity_absence_verified",
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "model-editor-acceptance.json"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-08",
+          "CR30-10",
+          "CR30-13"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -1602,12 +1743,14 @@
       "requirements": [
         "R21",
         "R25",
-        "R47"
+        "R47",
+        "R63"
       ],
       "prototypes": [
         "P17",
         "P15",
-        "P32"
+        "P32",
+        "P48"
       ],
       "priority": "after_confirmed_core",
       "status": "verified",
@@ -1660,6 +1803,18 @@
         "acceptance": "stage8-acceptance.json",
         "release": "stage8-release.json",
         "production": "unchanged"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-03",
+          "CR30-11",
+          "CR30-12"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     },
     {
@@ -1682,7 +1837,8 @@
         "R59",
         "R60",
         "R61",
-        "R62"
+        "R62",
+        "R63"
       ],
       "prototypes": [
         "P18",
@@ -1697,7 +1853,8 @@
         "P44",
         "P45",
         "P46",
-        "P47"
+        "P47",
+        "P48"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
@@ -1905,13 +2062,36 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "upstream-v0125-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
+      },
+      "review_R63": {
+        "findings": [
+          "CR30-01",
+          "CR30-02",
+          "CR30-03",
+          "CR30-04",
+          "CR30-05",
+          "CR30-06",
+          "CR30-07",
+          "CR30-08",
+          "CR30-09",
+          "CR30-10",
+          "CR30-11",
+          "CR30-12",
+          "CR30-13",
+          "CR30-14"
+        ],
+        "implementation": "b96836df3e0faf88be9187957995de729fd97e45",
+        "verification": "410 backend, 67 frontend, zero new type diagnostics, full CI and loopback browser/HTTP; separate staging restore",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
       }
     }
   ],
   "latest_checks": {
-    "backend_tests": 351,
-    "frontend_tests": 57,
-    "type_gate": "no_new_diagnostics_5763_upstream_remain",
+    "backend_tests": 410,
+    "frontend_tests": 67,
+    "type_gate": "no_new_diagnostics_5695_upstream_remain",
     "frontend_build": "passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
     "postgres_archive_restore": "OI7_populated_migration_restore_and_63_preview_tables_verified",
@@ -2120,7 +2300,9 @@
       "ci": "https://github.com/BppleMan/open-webui/actions/runs/40920231140",
       "browser": "local_and_deployed_preview_passed",
       "evidence": "usage-responsive-acceptance.json"
-    }
+    },
+    "review_R63": "all_14_remediated_on_isolated_preview",
+    "CI": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
   },
   "review_remediation": {
     "review": "code-review-2026-10-25",
@@ -2154,59 +2336,73 @@
     "findings": {
       "CR30-01": {
         "implementation": "fixed",
-        "description": "Retain OpenAI reasoning_details/provider fields on native replay; opaque state stays scoped to its binding."
+        "description": "Retain OpenAI reasoning_details/provider fields on native replay; opaque state stays scoped to its binding.",
+        "verification": "regression_passed"
       },
       "CR30-02": {
         "implementation": "fixed",
-        "description": "Recover multiple call boundaries after Continue merges displayed assistant outputs."
+        "description": "Recover multiple call boundaries after Continue merges displayed assistant outputs.",
+        "verification": "regression_passed"
       },
       "CR30-03": {
         "implementation": "fixed",
-        "description": "Resolve earlier fork anchors across the bounded inherited snapshot chain."
+        "description": "Resolve earlier fork anchors across the bounded inherited snapshot chain.",
+        "verification": "regression_passed"
       },
       "CR30-04": {
         "implementation": "fixed",
-        "description": "Return authenticated encrypted client-held native state for temporary chats; validate user, chat, message and content before replay."
+        "description": "Return authenticated encrypted client-held native state for temporary chats; validate user, chat, message and content before replay.",
+        "verification": "regression_passed"
       },
       "CR30-05": {
         "implementation": "fixed",
-        "description": "Exclude individually accounted messages, including composite message keys, rather than all legacy usage in a chat."
+        "description": "Exclude individually accounted messages, including composite message keys, rather than all legacy usage in a chat.",
+        "verification": "regression_passed"
       },
       "CR30-06": {
         "implementation": "fixed",
-        "description": "Persist OpenAI length/content_filter endings as incomplete/blocked and display exceptional statuses."
+        "description": "Persist OpenAI length/content_filter endings as incomplete/blocked and display exceptional statuses.",
+        "verification": "regression_passed"
       },
       "CR30-07": {
         "implementation": "fixed",
-        "description": "Display unknown historical cost batches in both reply summaries and the info panel."
+        "description": "Display unknown historical cost batches in both reply summaries and the info panel.",
+        "verification": "regression_passed"
       },
       "CR30-08": {
         "implementation": "fixed",
-        "description": "Preserve migrated ACL provenance through ordinary model edits."
+        "description": "Preserve migrated ACL provenance through ordinary model edits.",
+        "verification": "regression_passed"
       },
       "CR30-09": {
         "implementation": "fixed",
-        "description": "Dispatch public embeddings through the selected native binding, permissions, raw model ID and ledger."
+        "description": "Dispatch public embeddings through the selected native binding, permissions, raw model ID and ledger.",
+        "verification": "regression_passed"
       },
       "CR30-10": {
         "implementation": "fixed",
-        "description": "Reconcile missing models and aliases when reusing a migrated connection; reject ambiguous mappings before retiring the source."
+        "description": "Reconcile missing models and aliases when reusing a migrated connection; reject ambiguous mappings before retiring the source.",
+        "verification": "regression_passed"
       },
       "CR30-11": {
         "implementation": "fixed",
-        "description": "Clear drafts, revisions and annotations through chat deletion paths; purge matching device drafts and hide old orphan drafts."
+        "description": "Clear drafts, revisions and annotations through chat deletion paths; purge matching device drafts and hide old orphan drafts.",
+        "verification": "regression_passed"
       },
       "CR30-12": {
         "implementation": "fixed",
-        "description": "Atomically save temporary conversations with a fixed inherited billing boundary, stable retry identity and no duplicated calls."
+        "description": "Atomically save temporary conversations with a fixed inherited billing boundary, stable retry identity and no duplicated calls.",
+        "verification": "regression_passed"
       },
       "CR30-13": {
         "implementation": "fixed",
-        "description": "Keep capability_params out of chat provider bodies, including provider-option merges."
+        "description": "Keep capability_params out of chat provider bodies, including provider-option merges.",
+        "verification": "regression_passed"
       },
       "CR30-14": {
         "implementation": "fixed",
-        "description": "Build snapshot totals from one call-prefix index and return conditional usage responses rather than repeated historical queries."
+        "description": "Build snapshot totals from one call-prefix index and return conditional usage responses rather than repeated historical queries.",
+        "verification": "regression_passed"
       }
     },
     "local": {
@@ -2226,8 +2422,72 @@
       "supplier_requests": "synthetic loopback only",
       "postgresql_stage7": "passed: imports, six concurrent restores, canonical statistics, billing and rollback"
     },
-    "ci": "first run exposed imported legacy usage duplication; corrected and locally reproduced PostgreSQL acceptance, rerun pending",
-    "deployment": "pending isolated preview",
-    "production": "unchanged; R50"
+    "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897",
+    "deployment": {
+      "source": "b96836df3e0faf88be9187957995de729fd97e45",
+      "image": "ghcr.io/bppleman/open-webui-oi:sha-b96836df3e0faf88be9187957995de729fd97e45@sha256:94dc5114705646f71fe6f2ef40b501baa312662f44b62d96dc49c58618ad9593",
+      "gitops": "58aa6f9fa6ff4b528e441aeb9dca660f5ccf27a6",
+      "argocd": "Synced/Healthy",
+      "schema": "oi0000000007",
+      "production_unchanged": true,
+      "no_database_migration": true,
+      "scope": "isolated_preview_only",
+      "status": "verified"
+    },
+    "production": "unchanged; R50",
+    "status": "verified_on_isolated_preview",
+    "source_commit": "b96836df3e0faf88be9187957995de729fd97e45",
+    "checks": {
+      "backend_CI": 410,
+      "frontend_CI": 67,
+      "type_new": 0,
+      "remaining_upstream_diagnostics": 5695,
+      "production_build": "passed",
+      "integration_CI": "PostgreSQL restore, pgvector, Realtime, sessions/drafts, native protocols and temporary HTTP/socket roundtrips, costs/archive passed",
+      "real_supplier_requests": 0
+    },
+    "preview_verification": {
+      "existing_conversation_readable": true,
+      "exact_current_cost": "0.000273",
+      "exact_cumulative_cost": "0.00082575",
+      "usage_info_verified": true,
+      "unknown_cache_distinct_from_zero": true,
+      "server_draft_status_visible": true,
+      "real_supplier_requests": 0,
+      "verification": "read-only existing synthetic conversation in built-in browser"
+    },
+    "performance": {
+      "kind": "isolated SQLite endpoint measurement, not production latency",
+      "before_800": {
+        "model_call_selects": 802,
+        "returned_call_rows": 322000,
+        "elapsed_seconds": 1.249
+      },
+      "after_200": {
+        "model_call_selects": 1,
+        "returned_call_rows": 200,
+        "elapsed_seconds": 0.006
+      },
+      "after_800": {
+        "model_call_selects": 1,
+        "returned_call_rows": 800,
+        "elapsed_seconds": 0.016
+      },
+      "unchanged_response": "ETag 304 verified",
+      "late_settlement": "invalidates ETag and corrects bounded snapshots"
+    },
+    "browser": {
+      "temporary_first_continue_followup_save_reload": "passed",
+      "saved_call_count": 3,
+      "saved_unknown_calls": 3,
+      "native_signatures_on_followup": true,
+      "client_capsule_not_sent_to_provider": true
+    },
+    "limitations": [
+      "No real provider requests in this batch. The existing R59 CPA readable-summary acceptance gap remains open.",
+      "Existing orphan drafts are hidden from listings; future chat deletions remove content records, while call accounting is retained.",
+      "Database/attachment restoration was separately verified, not an HTTP run against the restored copy.",
+      "No claim that the 14 findings exhaust all possible defects."
+    ]
   }
 }

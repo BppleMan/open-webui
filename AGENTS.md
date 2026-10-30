@@ -52,3 +52,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R62/P47 is verified on isolated preview; upstream base is v0.12.5. Full CI, a pristine type baseline, long draft reloads, native transport/regen and mobile exact-fee rows are recorded in upstream-v0125-acceptance.json. Continue user tuning; R50 and the R59 supplier gap remain.
 
 - R63/P48 repairs the 14 full-history review findings; read docs/customization/review-remediation.md and review-remediation-acceptance.json. Preserve authenticated temporary native state, atomic cost inheritance, composite message identity, immutable ACL provenance and R50.
+
+- R63/P48 is verified on isolated preview. The original 14 findings are remediated; full CI and loopback temporary chat acceptance are recorded in review-remediation-acceptance.json. Keep R50 and the R59 real-provider gap.

@@ -303,3 +303,6 @@ Preserve a Git recovery point, merge the stable tag and review conflicting and a
 
 
 P48: Keep temporary native state authenticated on the client, preserve cost boundaries on save/fork, retain legacy ACL identity and unknown cost indicators. No additional model context or implicit calls.
+
+
+2026-10-30：P48落地：临时状态加密绑定并跨请求回传；普通保存原子继承费用；旧历史与导入投影分别去重；未知历史基数可见。未增加模型上下文或额外真实调用。 源码 `b96836df3e0faf88be9187957995de729fd97e45`；CI https://github.com/BppleMan/open-webui/actions/runs/41022967897。
