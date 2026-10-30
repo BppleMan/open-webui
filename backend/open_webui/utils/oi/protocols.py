@@ -1017,7 +1017,7 @@ async def generate(request, form, user, binding, connection, call_id, transport=
             headers={k: v for k, v in response.headers.items() if k.lower() in {'retry-after', 'x-request-id'}},
         )
     state = NativeStream(binding.protocol)
-    state.input_media = any(
+    state.input_media = binding.protocol in {'gemini', 'cpa-agy'} and any(
         part.get('inlineData') or part.get('fileData')
         for content in payload.get('contents', [])
         for part in content.get('parts', [])
