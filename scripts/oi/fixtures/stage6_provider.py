@@ -57,6 +57,7 @@ async def generate(protocol: str, path: str, request: Request):
         body = {
             'id': 'r',
             'object': 'response',
+            'instructions': b.get('instructions'),
             'created_at': 1,
             'status': 'completed',
             'model': 'fixture',

@@ -310,3 +310,7 @@ P48: Keep temporary native state authenticated on the client, preserve cost boun
 ## P49 — Lifecycle and integration boundaries
 
 New temporary conversations have new identities; retry fingerprints reject changed bodies. Native terminal events and media are independent of text presence. Retrieval failures stop generation. Legacy usage boundaries, inherited protocols and discovery revisions remain explicit.
+
+## P50 — Ownership, privacy and asynchronous transfer boundaries
+
+Freeze the chat editor while saving a temporary conversation, retain pending input before retiring its source, and reject stale navigation contexts. Ledger ownership follows the stored Chat owner; each generation retains its authenticated caller and existing model permissions. Non-owner shared views receive visible outputs without raw native envelopes; trusted server history remains available for replay. Ollama accounting accepts only numeric metering fields. Gemini pricing uses reported modality/cache classifications and keeps incomplete rates unknown. Legacy archive restores receive an editable unknown imported-history baseline and exclude duplicate statistics. Map existing penalty controls to native generationConfig fields.

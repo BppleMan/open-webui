@@ -74,6 +74,20 @@ def call_purpose(metadata):
     return 'assistant'
 
 
+async def generation_ledger_owner(db, user, chat_id):
+    """The chat owns its ledger, while Generation retains the actual caller."""
+    from open_webui.models.chats import Chat, Chats
+
+    chat = await db.get(Chat, chat_id)
+    if chat is None:
+        return user.id  # Non-chat ledgers remain strictly scoped to their caller.
+    if chat.user_id != user.id:
+        allowed = await Chats.get_accessible_chat_by_id(chat_id, user, permission='write', db=db)
+        if allowed is None:
+            raise HTTPException(403, 'Conversation write access required')
+    return chat.user_id
+
+
 async def start_generation(user, metadata, model_id):
     chat_id = (
         ('temporary:' + metadata['oi_temporary_id'])
@@ -85,6 +99,7 @@ async def start_generation(user, metadata, model_id):
     # Each parallel model response is a generation, even when models have equal names.
     request_id = f'{request_id}:{message_id}'
     async with get_async_db() as db:
+        ledger_owner = await generation_ledger_owner(db, user, chat_id)
         generation, created = await accounting.begin_generation(
             db,
             user.id,
@@ -92,6 +107,7 @@ async def start_generation(user, metadata, model_id):
             message_id,
             request_id,
             'continue' if metadata.get('assistant_message_id') else call_purpose(metadata),
+            ledger_owner_id=ledger_owner,
         )
         await db.commit()
         if not created:
@@ -135,6 +151,7 @@ async def reserve_generations(user, metadata, entries):
     )
     reserved = {}
     async with get_async_db() as db:
+        ledger_owner = await generation_ledger_owner(db, user, chat_id)
         for index, entry in enumerate(entries):
             message_id = entry.get('message_id') or str(
                 uuid5(NAMESPACE_URL, f'oi:{user.id}:{metadata["oi_request_id"]}:{index}')
@@ -151,6 +168,7 @@ async def reserve_generations(user, metadata, entries):
                     message_id,
                     request_id,
                     'continue' if metadata.get('assistant_message_id') else call_purpose(metadata),
+                    ledger_owner_id=ledger_owner,
                 )
             except ValueError:
                 generation = (

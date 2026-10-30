@@ -158,6 +158,11 @@ async def shared_chat_response(chat, user=None, db=None):
             message['user_id'] = author_id
             if author.get('id') == author_id and author.get('name'):
                 authors[author_id] = {'id': author_id, 'name': author['name']}
+        if user is None or chat.user_id != user.id:
+            # Raw envelopes can echo private provider instructions/configuration.
+            # Visible output remains shared; server-side replay reads trusted stored history.
+            message.pop('oi_native', None)
+            message.pop('oi_native_state', None)
         if user is None or (message.get('user_id') or chat.user_id) != user.id:
             message.pop('meta', None)
     missing_ids = {message['user_id'] for message in messages if message.get('role') == 'user'} - authors.keys()

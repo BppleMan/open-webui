@@ -81,8 +81,8 @@ async def export_records(db, user_id, chat_id, directory=None):
         for call in calls:
             billing['calls'][call.id] = record(call)
             generation = await db.get(Generation, call.generation_id)
-            if generation is None or generation.user_id != user_id:
-                raise PermissionError('Call lineage is not owned by this user')
+            if generation is None or generation.chat_id != source_chat:
+                raise PermissionError('Call does not belong to the owned ledger')
             billing['generations'][generation.id] = record(generation)
         snapshots = (
             (
@@ -284,7 +284,9 @@ async def restore_billing(db, user_id, manifest):
             target = (
                 existing.chat_id
                 if key == 'ledgers' and owned
-                else existing.id if owned else canonical_id(user_id, key, origin_id)
+                else existing.id
+                if owned
+                else canonical_id(user_id, key, origin_id)
             )
             ids[key][source_id] = target
             if not provenance:
@@ -467,6 +469,14 @@ async def restore_records(db, user_id, manifest, chat_id, model_mapping=None):
     await db.flush()
     ledger = await accounting.ensure_ledger(db, user_id, chat_id)
     ledger.inherited_snapshot_id = anchor
+    if anchor is None:
+        await accounting.set_baseline(
+            db,
+            user_id,
+            chat_id,
+            'imported-history',
+            note='Unknown cost from legacy archive ' + manifest['root_chat_id'],
+        )
     for revision in manifest.get('revisions', []):
         db.add(
             MessageRevision(

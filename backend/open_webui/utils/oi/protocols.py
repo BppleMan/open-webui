@@ -435,11 +435,24 @@ def build_request(form, binding, connection):
             'max_completion_tokens': 'maxOutputTokens',
             'stop': 'stopSequences',
             'seed': 'seed',
+            'frequency_penalty': 'frequencyPenalty',
+            'presence_penalty': 'presencePenalty',
         }.items():
             if src in source:
                 config[dst] = source.pop(src)
         if isinstance(config.get('stopSequences'), str):
             config['stopSequences'] = [config['stopSequences']]
+        unsupported = {
+            'logit_bias',
+            'repetition_penalty',
+            'repeat_penalty',
+            'min_p',
+            'mirostat',
+            'mirostat_eta',
+            'mirostat_tau',
+        } & source.keys()
+        if unsupported:
+            raise HTTPException(422, 'Unsupported Gemini controls: ' + ', '.join(sorted(unsupported)))
         source['generationConfig'] = config
         declarations, native_tools = [], []
         for tool in source.pop('tools', []):
@@ -1058,7 +1071,11 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                                 delta,
                                 usage=convert_ollama_usage_to_openai(data) if data.get('done') else None,
                                 finish=finish,
-                                **({'oi_usage': data, 'oi_usage_protocol': 'ollama'} if data.get('done') else {}),
+                                **(
+                                    {'oi_usage': accounting.ollama_metering(data), 'oi_usage_protocol': 'ollama'}
+                                    if data.get('done')
+                                    else {}
+                                ),
                             )
                         )
                         + '\n\n'

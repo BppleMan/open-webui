@@ -1,0 +1,55 @@
+{
+  "requirement": "R65",
+  "prototype": "P50",
+  "status": "local_verified_ci_pending",
+  "source_baseline": "fbe1bace22fad76225f65e3f19463f3527b05c76",
+  "findings": {
+    "CR3-01": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR3-02": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR3-03": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR3-04": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR3-05": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR3-06": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR3-07": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    }
+  },
+  "local": {
+    "backend": 444,
+    "frontend": 73,
+    "type_new": 0,
+    "type_remaining": 5695,
+    "build": "passed",
+    "shared_http": "owner/writer/owner; snapshot/revoked denied; anonymous/non-owner native filtering",
+    "postgresql": "concurrent actor accounting, no-ledger archive unknown baseline and repeated restore",
+    "supplier_requests": "synthetic loopback only"
+  },
+  "deployment": {
+    "status": "pending",
+    "scope": "isolated_preview_only"
+  },
+  "production": "R50 unchanged",
+  "browser": {
+    "controlled_draft_delay": "inert and aria-busy verified; keyboard input blocked",
+    "pending_input_transfer": "GET/PUT controlled regressions passed"
+  }
+}

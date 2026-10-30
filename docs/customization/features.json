@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-30",
-  "phase": "R64_review_round2_preview_verified; R59_CPA_summary_pending; stage8B_not_authorized",
+  "phase": "R65_local_verified_CI_pending; R50_hold",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -50,7 +50,8 @@
         "R59",
         "R62",
         "R63",
-        "R64"
+        "R64",
+        "R65"
       ],
       "prototypes": [
         "P01",
@@ -61,7 +62,8 @@
         "P44",
         "P47",
         "P48",
-        "P49"
+        "P49",
+        "P50"
       ],
       "priority": "P1",
       "status": "verified",
@@ -295,7 +297,8 @@
         "R61",
         "R62",
         "R63",
-        "R64"
+        "R64",
+        "R65"
       ],
       "prototypes": [
         "P03",
@@ -310,7 +313,8 @@
         "P46",
         "P47",
         "P48",
-        "P49"
+        "P49",
+        "P50"
       ],
       "priority": "P1",
       "status": "verified",
@@ -611,7 +615,8 @@
         "R61",
         "R62",
         "R63",
-        "R64"
+        "R64",
+        "R65"
       ],
       "prototypes": [
         "P06",
@@ -620,7 +625,8 @@
         "P46",
         "P47",
         "P48",
-        "P49"
+        "P49",
+        "P50"
       ],
       "priority": "P1",
       "status": "verified",
@@ -724,12 +730,14 @@
       "requirements": [
         "R08",
         "R47",
-        "R63"
+        "R63",
+        "R65"
       ],
       "prototypes": [
         "P07",
         "P32",
-        "P48"
+        "P48",
+        "P50"
       ],
       "priority": "P1",
       "status": "verified",
@@ -782,7 +790,8 @@
         "R53",
         "R59",
         "R63",
-        "R64"
+        "R64",
+        "R65"
       ],
       "prototypes": [
         "P08",
@@ -791,7 +800,8 @@
         "P38",
         "P44",
         "P48",
-        "P49"
+        "P49",
+        "P50"
       ],
       "priority": "P1",
       "status": "verified",
@@ -987,14 +997,16 @@
         "R51",
         "R62",
         "R63",
-        "R64"
+        "R64",
+        "R65"
       ],
       "prototypes": [
         "P11",
         "P36",
         "P47",
         "P48",
-        "P49"
+        "P49",
+        "P50"
       ],
       "priority": "P0",
       "status": "verified",
@@ -1235,7 +1247,8 @@
         "R61",
         "R62",
         "R63",
-        "R64"
+        "R64",
+        "R65"
       ],
       "prototypes": [
         "P13",
@@ -1248,7 +1261,8 @@
         "P46",
         "P47",
         "P48",
-        "P49"
+        "P49",
+        "P50"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1808,14 +1822,16 @@
         "R25",
         "R47",
         "R63",
-        "R64"
+        "R64",
+        "R65"
       ],
       "prototypes": [
         "P17",
         "P15",
         "P32",
         "P48",
-        "P49"
+        "P49",
+        "P50"
       ],
       "priority": "after_confirmed_core",
       "status": "verified",
@@ -2737,6 +2753,61 @@
       "server_draft_status_visible": true,
       "supplier_requests": 0,
       "scope": "read-only existing synthetic preview conversation"
+    }
+  },
+  "review_round3_remediation": {
+    "requirement": "R65",
+    "prototype": "P50",
+    "status": "local_verified_ci_pending",
+    "source_baseline": "fbe1bace22fad76225f65e3f19463f3527b05c76",
+    "findings": {
+      "CR3-01": {
+        "implementation": "fixed",
+        "verification": "regression_passed"
+      },
+      "CR3-02": {
+        "implementation": "fixed",
+        "verification": "regression_passed"
+      },
+      "CR3-03": {
+        "implementation": "fixed",
+        "verification": "regression_passed"
+      },
+      "CR3-04": {
+        "implementation": "fixed",
+        "verification": "regression_passed"
+      },
+      "CR3-05": {
+        "implementation": "fixed",
+        "verification": "regression_passed"
+      },
+      "CR3-06": {
+        "implementation": "fixed",
+        "verification": "regression_passed"
+      },
+      "CR3-07": {
+        "implementation": "fixed",
+        "verification": "regression_passed"
+      }
+    },
+    "local": {
+      "backend": 444,
+      "frontend": 73,
+      "type_new": 0,
+      "type_remaining": 5695,
+      "build": "passed",
+      "shared_http": "owner/writer/owner; snapshot/revoked denied; anonymous/non-owner native filtering",
+      "postgresql": "concurrent actor accounting, no-ledger archive unknown baseline and repeated restore",
+      "supplier_requests": "synthetic loopback only"
+    },
+    "deployment": {
+      "status": "pending",
+      "scope": "isolated_preview_only"
+    },
+    "production": "R50 unchanged",
+    "browser": {
+      "controlled_draft_delay": "inert and aria-busy verified; keyboard input blocked",
+      "pending_input_transfer": "GET/PUT controlled regressions passed"
     }
   }
 }

@@ -200,3 +200,7 @@ R63: Independently reproduce and repair CR30-01 through CR30-14. Restore existin
 ## R64 — Second review remediation
 
 Verify and repair CR2-01..11, preserve R50 and existing accounting, identity, privacy and native protocol contracts. Preserve original review evidence. Batch validation and one isolated preview update.
+
+## U64 / R65 — Third review remediation
+
+2026-10-31: Verify the seven CR3 findings supplied by the user and repair confirmed defects under the existing remediation request. Preserve R50, U49 and the separate R59 supplier gap; no production or paid supplier changes. Original reports remain historical evidence.

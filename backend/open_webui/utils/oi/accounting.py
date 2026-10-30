@@ -33,10 +33,66 @@ def token(value):
         return None
 
 
+def ollama_metering(raw):
+    """Ollama final frames also contain text; only numeric measurements are ledger data."""
+    return {
+        key: token(raw[key])
+        for key in (
+            'prompt_eval_count',
+            'prompt_eval_cached_count',
+            'eval_count',
+            'total_duration',
+            'load_duration',
+            'prompt_eval_duration',
+            'eval_duration',
+        )
+        if key in raw and token(raw[key]) is not None
+    }
+
+
+def gemini_modalities(raw, result, fields):
+    missing = []
+    unknown = False
+    for prefix, details_key, total_key in (
+        ('input', 'promptTokensDetails', 'promptTokenCount'),
+        ('output', 'candidatesTokensDetails', 'candidatesTokenCount'),
+        ('cache_read', 'cacheTokensDetails', 'cachedContentTokenCount'),
+    ):
+        total = token(raw.get(total_key))
+        details = raw.get(details_key)
+        if details is None:
+            if total != 0:
+                missing.append(prefix)
+            continue
+        counts = {}
+        if not isinstance(details, list):
+            unknown = True
+            continue
+        for item in details:
+            kind = item.get('modality') if isinstance(item, dict) else None
+            count = token(item.get('tokenCount')) if isinstance(item, dict) else None
+            if count is None or kind not in {'TEXT', 'IMAGE', 'AUDIO'}:
+                unknown = True
+                continue
+            counts[kind] = counts.get(kind, 0) + count
+        if total is None or sum(counts.values()) != total:
+            unknown = True
+        for modality in ('image', 'audio'):
+            fields[f'{prefix}_{modality}_tokens'] = counts.get(modality.upper(), 0)
+    # Provider-side tool prompt tokens are not ordinary candidate text. Until their
+    # billing classification is supported, do not produce a confident partial estimate.
+    if token(raw.get('toolUsePromptTokenCount')):
+        unknown = True
+    result['missing_modality_breakdown'] = missing
+    result['unknown_modality_breakdown'] = unknown
+
+
 def normalize_usage(raw, protocol='openai'):
     """Canonical totals include cache/reasoning subsets; absence is not zero."""
     if not isinstance(raw, dict):
         return {}
+    if protocol == 'ollama':
+        raw = ollama_metering(raw)
     result = {'raw': raw}
     if protocol.startswith('embedding'):
         fields = {
@@ -62,6 +118,7 @@ def normalize_usage(raw, protocol='openai'):
             'reasoning_tokens': raw.get('thoughtsTokenCount'),
             'cache_read_tokens': raw.get('cachedContentTokenCount'),
         }
+        gemini_modalities(raw, result, fields)
         if token(fields['output_tokens']) is not None:
             fields['output_tokens'] = token(fields['output_tokens']) + (token(fields['reasoning_tokens']) or 0)
     elif protocol == 'anthropic':
@@ -116,6 +173,8 @@ def normalize_usage(raw, protocol='openai'):
                     fields[f'{prefix}_{modality}_tokens'] = details[f'{modality}_tokens']
         if protocol == 'realtime' and (not input_details or not output_details):
             result['unknown_modality_breakdown'] = True
+    if protocol == 'ollama' and 'prompt_eval_cached_count' in raw:
+        fields['cache_read_tokens'] = raw['prompt_eval_cached_count']
     result.update({key: token(value) for key, value in fields.items() if token(value) is not None})
     if 'input_tokens' in result and 'output_tokens' in result:
         result['total_tokens'] = result['input_tokens'] + result['output_tokens']
@@ -141,6 +200,9 @@ def _estimate(usage, pricing):
     for tier in sorted(pricing.get('tiers') or [], key=lambda t: t['min_input_tokens']):
         if usage['input_tokens'] >= tier['min_input_tokens']:
             rates.update(tier.get('rates') or {})
+    for prefix in usage.get('missing_modality_breakdown', []):
+        if any(rates.get(f'{prefix}_{kind}') is not None for kind in ('audio', 'image')):
+            return None
     read = usage.get('cache_read_tokens', 0)
     write = usage.get('cache_write_tokens', 0)
     reasoning = usage.get('reasoning_tokens', 0) if 'reasoning' in rates else 0
@@ -179,6 +241,11 @@ def _estimate(usage, pricing):
 
 
 async def ensure_ledger(db, user_id, chat_id):
+    from open_webui.models.chats import Chat
+
+    chat = await db.get(Chat, chat_id)
+    if chat is not None and chat.user_id != user_id:
+        raise PermissionError('Ledger must belong to the conversation owner')
     await lock_user_state(db, user_id)
     await insert_once(
         db,
@@ -193,12 +260,16 @@ async def ensure_ledger(db, user_id, chat_id):
     )
     ledger = await db.get(ChatLedger, chat_id, populate_existing=True)
     if ledger.user_id != user_id:
-        raise PermissionError('Ledger owner mismatch')
+        if chat is None or chat.user_id != user_id:
+            raise PermissionError('Ledger owner mismatch')
+        # Repair an old collaborator-created ledger using the authoritative Chat owner.
+        ledger.user_id = user_id
+        await db.flush()
     return ledger
 
 
-async def begin_generation(db, user_id, chat_id, message_id, request_id, kind='assistant'):
-    await ensure_ledger(db, user_id, chat_id)
+async def begin_generation(db, user_id, chat_id, message_id, request_id, kind='assistant', *, ledger_owner_id=None):
+    await ensure_ledger(db, ledger_owner_id or user_id, chat_id)
     from open_webui.utils.oi.statistics import capture_legacy_usage
 
     await capture_legacy_usage(db, chat_id, message_id)
@@ -227,7 +298,8 @@ async def begin_generation(db, user_id, chat_id, message_id, request_id, kind='a
 
 
 async def begin_call(db, generation, model_id, *, binding_id=None, connection_id=None, pricing=None, call_id=None):
-    await lock_user_state(db, generation.user_id)
+    ledger_owner = await db.get(ChatLedger, generation.chat_id)
+    await lock_user_state(db, ledger_owner.user_id)
     call_id = call_id or identifier()
     existing = await db.get(ModelCall, call_id)
     if existing:
@@ -309,7 +381,8 @@ async def finish_generation(db, generation_id, status='completed'):
     generation = await db.get(Generation, generation_id)
     if not generation:
         raise ValueError('Unknown generation')
-    await lock_user_state(db, generation.user_id)
+    ledger_owner = await db.get(ChatLedger, generation.chat_id)
+    await lock_user_state(db, ledger_owner.user_id)
     generation.status = status
     generation.completed_at = now()
     ledger = await db.get(ChatLedger, generation.chat_id, populate_existing=True)

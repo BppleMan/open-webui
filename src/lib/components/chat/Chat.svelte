@@ -860,6 +860,7 @@
 	let restoringDraft = false;
 	let initializingDraft: AbortSignal | null = null;
 	let clearingSubmittedInput = false;
+	let savingTemporaryChat = false;
 	const submittedDrafts = new Map<string, { manager: DraftManager; ticket: DraftTicket }>();
 
 	const applyDraftInput = async (input: any) => {
@@ -5440,8 +5441,8 @@
 		<div
 			in:fade={{ duration: 50 }}
 			class="w-full h-full flex flex-col"
-			inert={!!initializingDraft}
-			aria-busy={!!initializingDraft}
+			inert={!!initializingDraft || savingTemporaryChat}
+			aria-busy={!!initializingDraft || savingTemporaryChat}
 		>
 			{#if backgroundImage}
 				<div
@@ -5513,8 +5514,12 @@
 							{currentReadingPosition}
 							onFork={handleForkChat}
 							onSaveTempChat={async () => {
+								if (savingTemporaryChat) return;
+								savingTemporaryChat = true;
 								try {
+									await tick(); // Apply inert before any asynchronous save or input transfer.
 									const draftOwnerId = $user?.id;
+									const sourceDraft = draftManager;
 									if (!draftOwnerId) return;
 									if (!history?.currentId || !Object.keys(history.messages).length) {
 										toast.error($i18n.t('No conversation to save'));
@@ -5541,6 +5546,7 @@
 									);
 
 									if (savedChat) {
+										if (sourceDraft !== draftManager || $user?.id !== draftOwnerId) return;
 										const pendingDraft = structuredClone(getChatInputDraft());
 										// Persist the destination draft before navigation mounts another Chat.
 										// Read the editor directly: its debounced draft callback may still be pending.
@@ -5555,14 +5561,23 @@
 											});
 											try {
 												await destinationDraft.load();
-												if (!(await destinationDraft.edit(pendingDraft)))
-													throw new Error('Could not preserve the unsent draft');
-												await destinationDraft.flush();
+												if (sourceDraft !== draftManager || $user?.id !== draftOwnerId) return;
+												// Include any last editor/upload event already queued before inert applied.
+												let transferred;
+												do {
+													transferred = structuredClone(getChatInputDraft());
+													if (!(await destinationDraft.edit(transferred)))
+														throw new Error('Could not preserve the unsent draft');
+													await destinationDraft.flush();
+												} while (
+													JSON.stringify(transferred) !== JSON.stringify(getChatInputDraft())
+												);
 											} finally {
 												destinationDraft.dispose();
 											}
 										}
-										await draftManager?.retireTemporary();
+										if (sourceDraft !== draftManager || $user?.id !== draftOwnerId) return;
+										await sourceDraft?.retireTemporary();
 										temporaryChatEnabled.set(false);
 										chatId.set(savedChat.id);
 										await refreshChatList(localStorage.token);
@@ -5572,6 +5587,8 @@
 								} catch (error) {
 									console.error('Failed to save temporary chat:', error);
 									toast.error($i18n.t('Failed to save conversation'));
+								} finally {
+									savingTemporaryChat = false;
 								}
 							}}
 						/>
