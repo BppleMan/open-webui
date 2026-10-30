@@ -1,7 +1,7 @@
 {
   "requirement": "R62",
   "prototype": "P47",
-  "status": "locally_verified_CI_pending",
+  "status": "verified_on_isolated_preview",
   "upstream": {
     "from_tag": "v0.12.3",
     "to_tag": "v0.12.5",
@@ -16,8 +16,12 @@
     "frontend": 65,
     "type_baseline": "upstream-v0125-type-baseline.json",
     "type_new": 0,
-    "build": "passed",
-    "real_supplier_requests": 0
+    "build": "passed_in_CI",
+    "real_supplier_requests": 0,
+    "backend_CI": 377,
+    "frontend_CI": 65,
+    "remaining_upstream_diagnostics": 5695,
+    "integration_CI": "PostgreSQL restore, pgvector, Realtime, sessions/drafts, native protocols, costs/archive passed"
   },
   "staging_backup": {
     "encrypted_snapshot": true,
@@ -27,9 +31,15 @@
     "http_on_restored_copy": "not_performed"
   },
   "deployment": {
+    "source": "197335833f08ad54adf5fa423215757c22ac70ac",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-197335833f08ad54adf5fa423215757c22ac70ac@sha256:b7781ac624b06f9de15921afb2fc18cebad4fdc88a1d65ce46436ea381158832",
+    "gitops": "bb37b2a7a9340842d9722c6710a8b06cc0cd97c9",
+    "argocd": "Synced/Healthy",
+    "schema": "oi0000000007",
+    "production_unchanged": true,
+    "no_database_migration": true,
     "scope": "isolated_preview_only",
-    "status": "pending_CI_and_browser_acceptance",
-    "production": "unchanged_R50"
+    "status": "verified"
   },
   "remaining_boundaries": [
     "R59 actual CPA readable summary not yet returned; guarded paid probe not repeated",
@@ -63,5 +73,117 @@
       "both_single_line": true,
       "equal_fee_columns": true
     }
-  }
+  },
+  "source_commit": "197335833f08ad54adf5fa423215757c22ac70ac",
+  "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+  "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952",
+  "preview_verification": {
+    "version": "0.12.5",
+    "widths": {
+      "390": [
+        {
+          "fees": [
+            {
+              "field": "cost",
+              "height": 22,
+              "overflow": false,
+              "text": "费用 $0.00028575  ",
+              "y": 128.546875
+            },
+            {
+              "field": "cumulative-cost",
+              "height": 22,
+              "overflow": false,
+              "text": "累计 $0.00055275  ",
+              "y": 128.546875
+            }
+          ],
+          "overflow": false,
+          "rootFont": "17.6px"
+        },
+        {
+          "fees": [
+            {
+              "field": "cost",
+              "height": 22,
+              "overflow": false,
+              "text": "费用 $0.000273  ",
+              "y": 500.75
+            },
+            {
+              "field": "cumulative-cost",
+              "height": 22,
+              "overflow": false,
+              "text": "累计 $0.00082575  ",
+              "y": 500.75
+            }
+          ],
+          "overflow": false,
+          "rootFont": "17.6px"
+        }
+      ],
+      "430": [
+        {
+          "fees": [
+            {
+              "field": "cost",
+              "height": 22,
+              "overflow": false,
+              "text": "费用 $0.00028575  ",
+              "y": 242.546875
+            },
+            {
+              "field": "cumulative-cost",
+              "height": 22,
+              "overflow": false,
+              "text": "累计 $0.00055275  ",
+              "y": 242.546875
+            }
+          ],
+          "overflow": false
+        },
+        {
+          "fees": [
+            {
+              "field": "cost",
+              "height": 22,
+              "overflow": false,
+              "text": "费用 $0.000273  ",
+              "y": 587.9375
+            },
+            {
+              "field": "cumulative-cost",
+              "height": 22,
+              "overflow": false,
+              "text": "累计 $0.00082575  ",
+              "y": 587.9375
+            }
+          ],
+          "overflow": false
+        }
+      ]
+    },
+    "appScale": 1.1,
+    "readOnlyExistingChats": true,
+    "equal_cost_rows_verified": true,
+    "exact_amounts_preserved": true
+  },
+  "helm_validation": {
+    "dependency_refresh": "timed_out_45s",
+    "refresh_options": "skip unrelated repository index refresh; dependencies are version-pinned",
+    "locked_dependencies": "byte_identical_to_previous_deployed_revision",
+    "hashes": {
+      "charts/open-webui-staging/Chart.yaml": "300a9cac0e0accfe81431ecb03e72a5500b40d61bdbc834450091e47e78dcff7",
+      "charts/open-webui-staging/Chart.lock": "4b5238797ba0ad38ef28dffbb8910a428598ea390e4f609c3e51a73b90eb4b48",
+      "charts/open-webui-staging/charts/app-wrapper-0.0.4.tgz": "a471e66c0ab46a04f07f777a747f1df2b60c2a36052f7775c6e1728f1d97192a",
+      "charts/open-webui-staging/charts/open-webui-16.6.0.tgz": "ca96e875d059a115c55620a75013e72690dc0e703a023ee8c8c7dae6b903d637"
+    },
+    "lint": "passed",
+    "render": "passed",
+    "scope": "staging_image_only"
+  },
+  "publication_notes": [
+    "Main upstream merge passed and deployed first; preview acceptance found long amounts wrapping inside a narrow cost cell.",
+    "The final presentation-only correction preserves three token columns and gives current/cumulative fees equal half-row widths. Real component fixture and final preview verify 390/430px at 1.1 scale."
+  ]
 }

@@ -48,3 +48,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R61/P46 supersedes natural wrapping on narrow screens: use explicit responsive grid groups, shared usage icons in info, and padded connection headings. Read docs/customization/usage-responsive-acceptance.json for current checks/deployment; retain R50, U49 and the separate R59 supplier gap.
 
 - R62/P47: upstream v0.12.5 sync and same-row mobile current/cumulative cost. Read docs/customization/upstream-v0125-acceptance.json for merge, checks and runtime status. Preserve native history, call-based statistics, durable drafts, stable connection identities and R50. Do not reset the type baseline from modified application code.
+
+- R62/P47 is verified on isolated preview; upstream base is v0.12.5. Full CI, a pristine type baseline, long draft reloads, native transport/regen and mobile exact-fee rows are recorded in upstream-v0125-acceptance.json. Continue user tuning; R50 and the R59 supplier gap remain.

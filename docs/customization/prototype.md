@@ -297,3 +297,6 @@ At ≤639px use three fixed metric columns: input/output/reasoning, cache-read/c
 
 ## P47 — Stable upstream merge and shared cost row
 Preserve a Git recovery point, merge the stable tag and review conflicting and automatically merged customization intersections. Retain explicit mobile token columns; place current/cumulative cost side by side, with timing/call count/status on a separate row. Very long amounts may wrap within their own field, never disappear. Verify against a pristine v0.12.5 type baseline and the full integration suite before staging-only publication.
+
+
+2026-10-30：P47落地：token保持三列；费用与累计使用等宽半行，耗时/调用数/异常另排。上游合并保留原始调用去重、原生历史与服务器草稿；输入框挂载后再恢复草稿，初始化期间阻止抢跑输入和队列发送。 源码 `197335833f08ad54adf5fa423215757c22ac70ac`；CI https://github.com/BppleMan/open-webui/actions/runs/40992376952；证据 `upstream-v0125-acceptance.json`。

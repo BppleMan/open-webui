@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-30",
-  "phase": "R62_upstream_v0125_in_progress; R59_CPA_summary_pending; stage8B_not_authorized",
+  "phase": "R62_upstream_v0125_preview_verified; R59_CPA_summary_pending; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,12 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "a01e9d219ed232338c7a9d451430846e8003411c",
+    "latest_code_commit": "197335833f08ad54adf5fa423215757c22ac70ac",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "a01e9d219ed232338c7a9d451430846e8003411c",
-    "latest_documentation_revision": "U58: OI Gemini summaries deployed; actual CPA summary still missing; R60 recovery verified",
+    "latest_commit": "197335833f08ad54adf5fa423215757c22ac70ac",
+    "latest_documentation_revision": "U60/R62: v0.12.5 sync and same-row mobile fees verified on isolated preview",
     "original_base": {
       "tag": "v0.12.3",
       "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60"
@@ -130,12 +130,12 @@
         "evidence": "thoughts-session-acceptance.json"
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -229,12 +229,12 @@
         "evidence": "usage-editor-acceptance.json"
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -377,12 +377,12 @@
         }
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -432,12 +432,12 @@
         "evidence": "usage-editor-acceptance.json"
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -508,12 +508,12 @@
         "evidence": "thoughts-session-acceptance.json"
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -604,12 +604,12 @@
         }
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -771,12 +771,12 @@
         "production": "unchanged"
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -829,12 +829,12 @@
         "deployment": "isolated_preview_deployed"
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -902,12 +902,12 @@
         "evidence": "preview-refinement-2026-10-29.json"
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -1053,12 +1053,12 @@
         }
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -1251,12 +1251,12 @@
         }
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -1588,12 +1588,12 @@
         }
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     },
     {
@@ -1899,12 +1899,12 @@
         }
       },
       "upstream_sync_R62": {
-        "status": "in_progress",
-        "upstream": "v0.12.5",
-        "implementation": "merge_conflicts_resolved; composer_mount_order_repaired",
-        "verification": "377_backend_65_frontend_passed; browser_and_CI_in_progress",
-        "deployment": "pending_isolated_preview",
-        "evidence": "upstream-v0125-acceptance.json"
+        "implementation": "197335833f08ad54adf5fa423215757c22ac70ac",
+        "merge_commit": "f47748a1512970d11e5f661376602162984f020e",
+        "verification": "377 backend, 65 frontend, zero new type diagnostics, full integration CI, browser and isolated restore evidence",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "upstream-v0125-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/40992376952"
       }
     }
   ],
