@@ -56,3 +56,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R63/P48 is verified on isolated preview. The original 14 findings are remediated; full CI and loopback temporary chat acceptance are recorded in review-remediation-acceptance.json. Keep R50 and the R59 real-provider gap.
 
 - R64/P49 repairs the eleven second-review findings; read docs/customization/review-round2-remediation.md and its acceptance record. Preserve temporary lifecycle boundaries, native terminal/media outputs, retrieval errors, trusted historical usage and discovery revision checks. R50/U49/R59 remain.
+
+- R64/P49 is verified on isolated preview. The eleven second-review findings and adjacent temporary-draft retirement edge cases are repaired. Exact-source CI and built-in browser evidence are recorded separately. Preserve R50 and the R59 real-provider gap.

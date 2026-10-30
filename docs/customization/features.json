@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-30",
-  "phase": "R64_review_round2_remediation_local_verified; CI_and_preview_pending; R50_hold",
+  "phase": "R64_review_round2_preview_verified; R59_CPA_summary_pending; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,12 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "b96836df3e0faf88be9187957995de729fd97e45",
+    "latest_code_commit": "b739fd752f5755d615181686906d5b2a42c99501",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "b96836df3e0faf88be9187957995de729fd97e45",
-    "latest_documentation_revision": "U62/R63: 14 full-history findings repaired and verified on isolated preview",
+    "latest_commit": "b739fd752f5755d615181686906d5b2a42c99501",
+    "latest_documentation_revision": "U63/R64: eleven second-review findings repaired and verified on isolated preview",
     "original_base": {
       "tag": "v0.12.3",
       "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60"
@@ -2562,7 +2562,7 @@
   "review_round2_remediation": {
     "requirement": "R64",
     "prototype": "P49",
-    "status": "local_verified_pending_browser_and_ci",
+    "status": "verified_on_isolated_preview",
     "findings": {
       "CR2-01": {
         "implementation": "fixed",
@@ -2683,12 +2683,60 @@
       "supplier_requests": "synthetic loopback only"
     },
     "deployment": {
-      "status": "pending",
+      "source": "b739fd752f5755d615181686906d5b2a42c99501",
+      "image": "ghcr.io/bppleman/open-webui-oi:sha-b739fd752f5755d615181686906d5b2a42c99501@sha256:873f60024abbc542c5a89f81a70292765899d2ea680c1f6206167998f4f12c71",
+      "pod": "open-webui-staging-58fb9d8f85-knsg9",
+      "image_id": "ghcr.io/bppleman/open-webui-oi@sha256:873f60024abbc542c5a89f81a70292765899d2ea680c1f6206167998f4f12c71",
+      "restarts": 0,
+      "gitops": "8d3033d1a9890568819fb8eef1209b504bbc581d",
+      "argocd": "Synced/Healthy",
+      "schema": "oi0000000007",
+      "production_unchanged": true,
+      "no_database_migration": true,
+      "status": "verified",
       "scope": "isolated_preview_only"
     },
     "limitations": [
-      "No real provider request; R59 remains open.",
-      "No claim that these findings exhaust all possible defects."
-    ]
+      "No real supplier request. The existing R59 CPA readable-summary gap remains open.",
+      "Pre-existing damaged usage and orphan content are not reconstructed by this forward fix.",
+      "Database/attachment restore was separate from HTTP acceptance, not an HTTP test against the restored copy.",
+      "No claim that the eleven findings exhaust all possible defects."
+    ],
+    "browser": {
+      "two_independent_temporary_saves": "passed",
+      "distinct_saved_ids": true,
+      "one_call_each": true,
+      "unsent_draft_save_reload": "passed",
+      "gemini_image_dom_loaded": true,
+      "final_build": "b739fd752",
+      "supplier": "synthetic loopback only"
+    },
+    "source_commit": "b739fd752f5755d615181686906d5b2a42c99501",
+    "ci": "https://github.com/BppleMan/open-webui/actions/runs/41042705850",
+    "checks": {
+      "backend_CI": 423,
+      "frontend_CI": 71,
+      "new_type_diagnostics": 0,
+      "remaining_upstream_diagnostics": 5695,
+      "production_build": "passed",
+      "integration_CI": "PostgreSQL restore, pgvector, Realtime, sessions/drafts, native protocols, terminal/media HTTP, cost/archive and discovery race passed",
+      "real_supplier_requests": 0
+    },
+    "restore": {
+      "tables_verified": 63,
+      "attachments_verified": 3,
+      "schema": "oi0000000007",
+      "http_against_restored_copy": false
+    },
+    "preview_verification": {
+      "existing_conversation_readable": true,
+      "current_cost": "0.000273",
+      "cumulative_cost": "0.00082575",
+      "info_overview": true,
+      "unknown_cache_distinct_from_zero": true,
+      "server_draft_status_visible": true,
+      "supplier_requests": 0,
+      "scope": "read-only existing synthetic preview conversation"
+    }
   }
 }

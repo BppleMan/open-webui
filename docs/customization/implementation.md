@@ -98,3 +98,5 @@ R63 review remediation is implemented with isolated regression and HTTP validati
 ## R64 / P49 implementation
 
 Implemented the eleven second-review findings; see review-round2-remediation.md and the separate acceptance record. No database migration or production change.
+
+R64/P49 is verified on isolated preview. Exact-source CI passed 423 backend and 71 frontend tests, type delta and production build, with PostgreSQL/HTTP/socket integration. See review-round2-remediation-acceptance.json. Production and the separate real-provider gap are unchanged.
