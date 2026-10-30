@@ -51,6 +51,17 @@
       430
     ],
     "cost_and_cumulative_same_row": true,
-    "horizontal_overflow": false
+    "horizontal_overflow": false,
+    "long_settled_costs": {
+      "widths": [
+        390,
+        430
+      ],
+      "app_scale": 1.1,
+      "current": "0.00028575",
+      "cumulative": "0.00082575",
+      "both_single_line": true,
+      "equal_fee_columns": true
+    }
   }
 }

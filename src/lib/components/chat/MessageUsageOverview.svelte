@@ -101,12 +101,12 @@
 	@media (max-width: 639px) {
 		.usage-overview {
 			display: grid;
-			grid-template-columns: repeat(3, minmax(0, 1fr));
+			grid-template-columns: repeat(6, minmax(0, 1fr));
 			grid-template-areas:
-				'input_tokens output_tokens reasoning_tokens'
-				'cache_read_tokens cache_write_tokens total_tokens'
-				'cost cumulative cumulative'
-				'timing status status';
+				'input_tokens input_tokens output_tokens output_tokens reasoning_tokens reasoning_tokens'
+				'cache_read_tokens cache_read_tokens cache_write_tokens cache_write_tokens total_tokens total_tokens'
+				'cost cost cost cumulative cumulative cumulative'
+				'timing timing status status status status';
 			column-gap: 0.875rem;
 			row-gap: 0.125rem;
 			align-items: baseline;
