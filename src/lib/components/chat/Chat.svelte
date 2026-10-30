@@ -3655,6 +3655,7 @@
 	};
 
 	const chatCompletionEventHandler = async (data, message, chatId, shared = false) => {
+		if (data.oi_native_state) message.oi_native_state = data.oi_native_state;
 		const { id, done, choices, content, output, sources, selected_model_id, error, usage } = data;
 		const finishReason = data.finish_reason || choices?.[0]?.finish_reason;
 		if (finishReason) message.finish_reason = finishReason;
@@ -4533,6 +4534,9 @@
 
 					if (message.output && message.role === 'assistant') {
 						return {
+							id: message.id,
+							oi_native_state: message.oi_native_state,
+							oi_native_invalidated: message.oi_native_invalidated,
 							role: message.role,
 							model: message.model,
 							output: message.output,
@@ -5525,7 +5529,8 @@
 											timestamp: Date.now()
 										},
 										null,
-										chatVariables
+										chatVariables,
+										draftManager?.chatId
 									);
 
 									if (savedChat) {

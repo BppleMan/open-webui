@@ -388,7 +388,10 @@ async def apply(db, user, scope, version, choices):
                 )
             if canonical_protocol(existing.protocol) != canonical_protocol(item['protocol']):
                 raise HTTPException(409, 'Target protocol does not match the source')
-            prepared.append((choice, item, existing, []))
+            models = [{'id': m} for m in item['models'] if isinstance(m, str) and m]
+            if not models and item['transport'] == 'server' and item['enabled']:
+                raise HTTPException(409, 'Discover and confirm source models before reusing this connection')
+            prepared.append((choice, item, existing, models))
             continue
         if choice['action'] != 'create':
             raise HTTPException(422, 'Choose create or reuse')
@@ -398,7 +401,10 @@ async def apply(db, user, scope, version, choices):
             await db.execute(select(Connection).where(Connection.legacy_key == legacy_key))
         ).scalar_one_or_none()
         if existing:
-            prepared.append((choice, item, existing, []))
+            models = [{'id': m} for m in item['models'] if isinstance(m, str) and m]
+            if not models and item['transport'] == 'server' and item['enabled']:
+                raise HTTPException(409, 'Discover and confirm source models before reusing this connection')
+            prepared.append((choice, item, existing, models))
             continue
         target = Connection(
             id=identifier(),
@@ -470,6 +476,34 @@ async def apply(db, user, scope, version, choices):
                 for key in ('provider_options', 'custom_params')
             ):
                 raise HTTPException(409, 'A legacy parameter overrides the model identity; resolve it explicitly')
+            matches = (
+                (
+                    await db.execute(
+                        select(ModelBinding).where(
+                            ModelBinding.connection_id == target.id, ModelBinding.upstream_id == upstream
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            if len(matches) > 1:
+                raise HTTPException(409, 'Target model mapping is ambiguous; no changes applied')
+            if matches:
+                binding = matches[0]
+                if canonical_protocol(binding.protocol) != canonical_protocol(target.protocol):
+                    raise HTTPException(409, 'Target model protocol differs; resolve the mapping explicitly')
+                if scope == 'server' and not item['capability']:
+                    prior_acl = (binding.capabilities or {}).get('legacy_model_id')
+                    if prior_acl and prior_acl != alias:
+                        raise HTTPException(409, 'Target permission provenance differs; resolve explicitly')
+                    binding.capabilities = {
+                        **(binding.capabilities or {}),
+                        'legacy_model_id': alias,
+                        'legacy_unregistered': not bool(legacy),
+                    }
+                binding.aliases = list(dict.fromkeys([*(binding.aliases or []), alias]))
+                continue
             binding = ModelBinding(
                 id='oi:' + identifier(),
                 connection_id=target.id,

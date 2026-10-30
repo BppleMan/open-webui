@@ -70,7 +70,8 @@ export const createNewChat = async (
 	token: string,
 	chat: object,
 	folderId: string | null,
-	variables: object | null = null
+	variables: object | null = null,
+	temporaryId: string | null = null
 ) => {
 	let error = null;
 
@@ -83,6 +84,7 @@ export const createNewChat = async (
 		},
 		body: JSON.stringify({
 			chat: chat,
+			...(temporaryId ? { oi_temporary_id: temporaryId } : {}),
 			...(variables !== null ? { variables } : {}),
 			folder_id: folderId ?? null
 		})
@@ -1477,6 +1479,10 @@ export const deleteChatById = async (token: string, id: string) => {
 		throw error;
 	}
 
+	if (res) {
+		const { purgeLocalDrafts } = await import('$lib/utils/drafts');
+		await purgeLocalDrafts(token, [id]);
+	}
 	return res;
 };
 
@@ -1612,6 +1618,10 @@ export const deleteAllChats = async (token: string) => {
 		throw error;
 	}
 
+	if (res) {
+		const { purgeLocalDrafts } = await import('$lib/utils/drafts');
+		await purgeLocalDrafts(token, null);
+	}
 	return res;
 };
 

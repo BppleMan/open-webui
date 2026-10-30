@@ -113,8 +113,15 @@ async def acknowledge_queued(db, user_id, chat_id, queue_id, request_id, mutatio
 
 
 async def list_drafts(db, user_id):
+    from open_webui.models.chats import Chat
+
     rows = (
-        await db.execute(select(ChatDraft).where(ChatDraft.user_id == user_id).order_by(ChatDraft.updated_at.desc()))
+        await db.execute(
+            select(ChatDraft)
+            .join(Chat, Chat.id == ChatDraft.chat_id)
+            .where(ChatDraft.user_id == user_id, Chat.user_id == user_id)
+            .order_by(ChatDraft.updated_at.desc())
+        )
     ).scalars()
     return [
         serialize(row)

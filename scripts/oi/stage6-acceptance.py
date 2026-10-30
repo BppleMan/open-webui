@@ -68,6 +68,7 @@ try:
         else:
             raise RuntimeError(f'{name} startup timed out')
     subprocess.run([sys.executable, 'scripts/oi/stage6-http-acceptance.py'], env=env, check=True, timeout=180)
+    subprocess.run([sys.executable, 'scripts/oi/temporary-http-acceptance.py'], env=env, check=True, timeout=90)
     print(f'Stage6 native HTTP/control/compaction scenarios passed. Evidence: {state}')
 
 finally:

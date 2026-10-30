@@ -18,13 +18,18 @@ function createUsage(chatId: string) {
 		timer: ReturnType<typeof setInterval> | undefined,
 		pending: Promise<void> | null = null;
 	const state = writable<UsageData>(empty());
+	let etag: string | undefined;
 	const refresh = async () => {
 		if (!chatId || pending || document.visibilityState === 'hidden') return;
 		pending = (async () => {
 			try {
-				state.set(
-					await oiApi(`/chats/${encodeURIComponent(temporaryIds.get(chatId) || chatId)}/usage`)
+				const result = await oiApi(
+					`/chats/${encodeURIComponent(temporaryIds.get(chatId) || chatId)}/usage`,
+					'GET',
+					undefined,
+					{ etag, onEtag: (value) => (etag = value) }
 				);
+				if (result) state.set(result);
 			} catch (e: any) {
 				state.update((value) => ({ ...value, error: e.message }));
 			}

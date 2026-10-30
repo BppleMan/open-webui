@@ -255,7 +255,21 @@ async def track_call(request, form, user, dispatch, binding=None, connection=Non
             status = 'incomplete'
         elif data.get('type') == 'response.completed' or any(c.get('finish_reason') for c in data.get('choices', [])):
             if not ending and status != 'failed':
-                status = 'completed'
+                reasons = {c.get('finish_reason') for c in data.get('choices', [])}
+                status = (
+                    'blocked' if 'content_filter' in reasons else 'incomplete' if 'length' in reasons else 'completed'
+                )
+                ending = {
+                    'status': status,
+                    'normalized': (
+                        'content_filter'
+                        if 'content_filter' in reasons
+                        else 'length'
+                        if 'length' in reasons
+                        else next((reason for reason in sorted(reasons - {None}) if reason), 'stop')
+                    ),
+                    'source': 'provider',
+                }
 
     async def settle():
         async with get_async_db() as db:

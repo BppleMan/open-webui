@@ -169,8 +169,20 @@ async def request(
     )
 
 
-async def embeddings(reference, texts, user=None, transport=None, extra=None):
+async def embeddings(
+    reference, texts, user=None, transport=None, extra=None, public_response=False, encoding_format='float'
+):
     target, user = await target_for(reference, 'embedding', user)
+    if isinstance(texts, str):
+        texts = [texts]
+    if not isinstance(texts, list) or not texts:
+        raise HTTPException(422, 'Embedding input must be nonempty')
+    token_ids = all(isinstance(x, int) and not isinstance(x, bool) and x >= 0 for x in texts)
+    count = 1 if token_ids else len(texts)
+    if target.binding.protocol not in OPENAI and not all(isinstance(x, str) for x in texts):
+        raise HTTPException(422, 'This embedding protocol requires text input')
+    if encoding_format not in {'float', 'base64'}:
+        raise HTTPException(422, 'Unsupported embedding encoding')
     options = {**parameters(target, 'embedding'), **(extra or {})}
     protocol = target.binding.protocol
     model = target.binding.upstream_id
@@ -197,9 +209,21 @@ async def embeddings(reference, texts, user=None, transport=None, extra=None):
         path,
         body,
         transport=transport,
-        validate=lambda result: embedding_vectors(result, protocol, len(texts)),
+        validate=lambda result: embedding_vectors(result, protocol, count),
     )
-    return embedding_vectors(result, protocol, len(texts))
+    vectors = embedding_vectors(result, protocol, count)
+    if not public_response:
+        return vectors
+    if encoding_format == 'base64':
+        import struct
+
+        vectors = [base64.b64encode(struct.pack('<' + 'f' * len(v), *v)).decode() for v in vectors]
+    return {
+        'object': 'list',
+        'model': reference,
+        'data': [{'object': 'embedding', 'index': i, 'embedding': v} for i, v in enumerate(vectors)],
+        'usage': result.get('usage') or {},
+    }
 
 
 def embedding_vectors(result, protocol, count):

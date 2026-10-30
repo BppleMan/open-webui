@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from copy import deepcopy
 import logging
 import re
@@ -301,6 +301,7 @@ class ChatFileModel(BaseModel):
 
 
 class ChatForm(BaseModel):
+    oi_temporary_id: str | None = Field(default=None, min_length=1, max_length=200)
     chat: dict
     variables: dict | None = None
     folder_id: str | None = None
@@ -444,6 +445,13 @@ class ChatStatsExport(BaseModel):
     tags: list[str] = []
     stats: AggregateChatStats
     chat: ChatBody
+
+
+async def delete_oi_chat_content(session, chat_ids):
+    from open_webui.models.customization import ChatDraft, MessageRevision, ChatAnnotation
+
+    for table in (ChatDraft, MessageRevision, ChatAnnotation):
+        await session.execute(delete(table).where(table.chat_id.in_(chat_ids)))
 
 
 class ChatTable:
@@ -668,9 +676,10 @@ class ChatTable:
         *,
         internal_meta: dict | None = None,
         timer_at: int | None = None,
+        commit: bool = True,
     ) -> ChatModel | None:
         await self.require_chat_creation_permission(user_id, db=db)
-        async with get_async_db_context(db) as session:
+        async with nullcontext(db) if not commit and db is not None else get_async_db_context(db) as session:
             chat = ChatModel(
                 **{
                     'id': id,
@@ -692,7 +701,10 @@ class ChatTable:
 
             chat_item = Chat(**chat.model_dump())
             session.add(chat_item)
-            await session.commit()
+            if commit:
+                await session.commit()
+            else:
+                await session.flush()
 
             # Dual-write initial messages to chat_message table
             try:
@@ -713,8 +725,11 @@ class ChatTable:
                             or (message['user'].get('id') if isinstance(message.get('user'), dict) else None)
                             or user_id,
                             data=message,
+                            db=session if not commit else None,
                         )
             except Exception as e:
+                if not commit:
+                    raise
                 log.warning(f'Failed to write initial messages to chat_message table: {e}')
 
             return ChatModel.model_validate(chat_item) if chat_item else None
@@ -2914,6 +2929,7 @@ class ChatTable:
     async def delete_chat_by_id(self, id: str, db: AsyncSession | None = None) -> bool:
         try:
             async with get_async_db_context(db) as session:
+                await delete_oi_chat_content(session, [id])
                 await session.execute(update(AutomationRun).filter_by(chat_id=id).values(chat_id=None))
                 await session.execute(delete(ChatMessage).filter_by(chat_id=id))
                 await session.execute(delete(Chat).filter_by(id=id))
@@ -2926,6 +2942,10 @@ class ChatTable:
     async def delete_chat_by_id_and_user_id(self, id: str, user_id: str, db: AsyncSession | None = None) -> bool:
         try:
             async with get_async_db_context(db) as session:
+                owned = await session.scalar(select(Chat.id).where(Chat.id == id, Chat.user_id == user_id))
+                if owned is None:
+                    return False
+                await delete_oi_chat_content(session, [id])
                 await session.execute(update(AutomationRun).filter_by(chat_id=id).values(chat_id=None))
                 await session.execute(delete(ChatMessage).filter_by(chat_id=id))
                 await session.execute(delete(Chat).filter_by(id=id, user_id=user_id))
@@ -2940,6 +2960,10 @@ class ChatTable:
             async with get_async_db_context(db) as session:
                 await self.delete_shared_chats_by_user_id(user_id, db=session)
 
+                from open_webui.models.customization import ChatDraft, MessageRevision, ChatAnnotation
+
+                for table in (ChatDraft, MessageRevision, ChatAnnotation):
+                    await session.execute(delete(table).where(table.user_id == user_id))
                 chat_id_subquery = select(Chat.id).filter_by(user_id=user_id).scalar_subquery()
                 await session.execute(
                     update(AutomationRun)
@@ -2964,6 +2988,7 @@ class ChatTable:
         try:
             async with get_async_db_context(db) as session:
                 chat_ids_stmt = select(Chat.id).filter_by(user_id=user_id, folder_id=folder_id)
+                await delete_oi_chat_content(session, chat_ids_stmt)
                 await session.execute(
                     update(AutomationRun).filter(AutomationRun.chat_id.in_(chat_ids_stmt)).values(chat_id=None)
                 )

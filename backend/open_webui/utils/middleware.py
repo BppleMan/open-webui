@@ -2071,6 +2071,11 @@ def sanitize_tool_pairs(messages: list[dict]) -> list[dict]:
 
 
 async def process_chat_payload(request, form_data, user, metadata, model):
+    if metadata.get('oi_temporary_id'):
+        from open_webui.utils.oi.temporary_native import restore_request
+
+        restore_request(request, form_data.get('messages', []), metadata, user)
+
     # Ensure chat_id is always a string — external API clients may omit it.
     if not isinstance(metadata.get('chat_id'), str):
         metadata['chat_id'] = ''
@@ -6557,6 +6562,12 @@ async def streaming_chat_response_handler(response, ctx):
 
 
 async def process_chat_response(response, ctx):
+    metadata = ctx['metadata']
+    if not is_saved_chat_id(metadata.get('chat_id')) and ctx.get('event_emitter'):
+        from open_webui.utils.oi.temporary_native import wrap_emitter
+
+        ctx = {**ctx, 'event_emitter': wrap_emitter(ctx['event_emitter'], ctx['request'], metadata, ctx['user'])}
+
     # Non-streaming response
     if not isinstance(response, StreamingResponse):
         return await non_streaming_chat_response_handler(response, ctx)

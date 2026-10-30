@@ -50,9 +50,14 @@
 		cancelled: '已停止',
 		interrupted: '连接中断',
 		running: '生成中',
-		pending: '等待中'
+		pending: '等待中',
+		incomplete: '回复不完整',
+		blocked: '内容被拦截',
+		paused: '等待继续'
 	};
-	$: abnormal = calls.some((c) => ['failed', 'cancelled', 'interrupted'].includes(c.status));
+	$: abnormal = calls.some((c) =>
+		['failed', 'cancelled', 'interrupted', 'incomplete', 'blocked', 'paused'].includes(c.status)
+	);
 	$: status =
 		calls.length === 1
 			? statuses[calls[0].status] || calls[0].status
@@ -185,7 +190,13 @@
 										><span
 											>估算 <span class="tabular-nums">{dollars(snapshot.estimated_usd)}</span
 											></span
-										>{#if snapshot.unknown_calls}<span class="text-amber-700 dark:text-amber-400"
+										>{#if snapshot.incomplete && !snapshot.unknown_baselines && !snapshot.unknown_calls}<span
+												class="text-amber-700 dark:text-amber-400">累计尚不完整</span
+											>{/if}{#if snapshot.unknown_baselines}<span
+												class="whitespace-nowrap text-amber-700 dark:text-amber-400"
+												>+ {snapshot.unknown_baselines} 批历史费用待确认</span
+											>{/if}{#if snapshot.unknown_calls}<span
+												class="text-amber-700 dark:text-amber-400"
 												>{snapshot.unknown_calls} 次待确认</span
 											>{/if}
 									</div>{/if}

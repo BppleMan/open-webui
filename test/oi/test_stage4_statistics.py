@@ -13,7 +13,14 @@ async def test_statistics_use_original_calls_not_fork_message_projections(db):
     for key in ['source', 'fork', 'archive', 'legacy']:
         db.add(Chat(id=key, user_id='u', title=key, chat={}, created_at=stamp, updated_at=stamp))
         if key != 'legacy':
-            db.add(ChatLedger(chat_id=key, user_id='u', sequence=1))
+            db.add(
+                ChatLedger(
+                    chat_id=key,
+                    user_id='u',
+                    sequence=1,
+                    inherited_snapshot_id='source-anchor' if key in {'fork', 'archive'} else None,
+                )
+            )
         db.add(
             ChatMessage(
                 id=key + '-message',
@@ -34,7 +41,7 @@ async def test_statistics_use_original_calls_not_fork_message_projections(db):
                 id='g' + key,
                 user_id='u',
                 chat_id='source',
-                message_id='m',
+                message_id='message',
                 request_id=key,
                 kind='assistant',
                 status='completed',
@@ -59,6 +66,19 @@ async def test_statistics_use_original_calls_not_fork_message_projections(db):
                 created_at=stamp * 1000,
             )
         )
+    from open_webui.models.customization import CostSnapshot
+
+    db.add(
+        CostSnapshot(
+            id='source-anchor',
+            chat_id='source',
+            message_id='message',
+            max_sequence=4,
+            baseline_ids=[],
+            totals={},
+            created_at=stamp * 1000,
+        )
+    )
     await db.flush()
     totals = await ChatMessages.get_token_usage_by_model(db=db)
     assert totals['oi:a']['input_tokens'] == 1032 and totals['oi:a']['output_tokens'] == 1013

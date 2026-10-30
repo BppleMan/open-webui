@@ -190,3 +190,6 @@ Merge upstream stable v0.12.5 while preserving customized identity, accounting, 
 
 
 2026-10-30：R62收口：稳定上游v0.12.5已合并；本次费用/累计同排，390/430px、1.1缩放下完整金额单行。全量CI与隔离预发验证通过，R50生产边界不变。 源码 `197335833f08ad54adf5fa423215757c22ac70ac`；CI https://github.com/BppleMan/open-webui/actions/runs/40992376952；证据 `upstream-v0125-acceptance.json`。
+
+
+R63: Independently reproduce and repair CR30-01 through CR30-14. Restore existing privacy, native fidelity, accounting and migration contracts; preserve R50.

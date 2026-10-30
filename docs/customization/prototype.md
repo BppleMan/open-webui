@@ -300,3 +300,6 @@ Preserve a Git recovery point, merge the stable tag and review conflicting and a
 
 
 2026-10-30：P47落地：token保持三列；费用与累计使用等宽半行，耗时/调用数/异常另排。上游合并保留原始调用去重、原生历史与服务器草稿；输入框挂载后再恢复草稿，初始化期间阻止抢跑输入和队列发送。 源码 `197335833f08ad54adf5fa423215757c22ac70ac`；CI https://github.com/BppleMan/open-webui/actions/runs/40992376952；证据 `upstream-v0125-acceptance.json`。
+
+
+P48: Keep temporary native state authenticated on the client, preserve cost boundaries on save/fork, retain legacy ACL identity and unknown cost indicators. No additional model context or implicit calls.

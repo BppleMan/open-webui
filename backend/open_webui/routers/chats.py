@@ -47,6 +47,7 @@ from open_webui.utils.json_codec import JSONCodec
 from open_webui.utils.misc import get_message_list
 from open_webui.utils.models import get_all_models
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 log = logging.getLogger(__name__)
@@ -803,8 +804,65 @@ async def create_new_chat(
         )
 
     try:
+        from open_webui.utils.oi.temporary_native import restore
+
+        history_messages = (form_data.chat.get('history') or {}).get('messages', {})
+        for message in history_messages.values():
+            restore(message, user.id, form_data.oi_temporary_id)
+        for message in form_data.chat.get('messages', []):
+            if message is history_messages.get(message.get('id')):
+                continue
+            if message.get('id') in history_messages:
+                message.pop('oi_native_state', None)
+                message.pop('oi_native', None)
+                native = history_messages[message['id']].get('oi_native')
+                if native:
+                    message['oi_native'] = native
+            else:
+                restore(message, user.id, form_data.oi_temporary_id)
         set_message_authors(form_data.chat, user)
-        chat = await Chats.insert_new_chat(str(uuid4()), user.id, form_data, db=db)
+        if form_data.oi_temporary_id:
+            from uuid import uuid5, NAMESPACE_URL
+            from open_webui.models.customization import ChatLedger, CostSnapshot, Generation
+            from open_webui.utils.oi import accounting
+            from open_webui.utils.oi.storage import lock_user_state, now, identifier
+
+            await lock_user_state(db, user.id)
+            temporary_id = 'temporary:' + form_data.oi_temporary_id
+            ledger = await db.get(ChatLedger, temporary_id)
+            if ledger is None or ledger.user_id != user.id:
+                raise HTTPException(403, 'Temporary conversation billing is unavailable')
+            if await db.scalar(
+                select(Generation.id)
+                .where(Generation.chat_id == temporary_id, Generation.status.in_(['running', 'pending']))
+                .limit(1)
+            ):
+                raise HTTPException(409, 'Wait for the temporary reply to finish before saving')
+            saved_id = str(uuid5(NAMESPACE_URL, user.id + ':' + temporary_id))
+            chat = await Chats.get_chat_by_id(saved_id, db=db)
+            if chat is None:
+                chat = await Chats.insert_new_chat(saved_id, user.id, form_data, db=db, commit=False)
+                anchor = CostSnapshot(
+                    id=identifier(),
+                    chat_id=temporary_id,
+                    message_id=chat.current_message_id,
+                    generation_id=None,
+                    max_sequence=ledger.sequence,
+                    inherited_snapshot_id=ledger.inherited_snapshot_id,
+                    baseline_ids=[],
+                    created_at=now(),
+                )
+                db.add(anchor)
+                await db.flush()
+                saved_ledger = await accounting.ensure_ledger(db, user.id, saved_id)
+                if saved_ledger.sequence or saved_ledger.inherited_snapshot_id:
+                    raise HTTPException(
+                        409, 'This saved temporary conversation was deleted; its accounting cannot be replaced'
+                    )
+                saved_ledger.inherited_snapshot_id = anchor.id
+                await db.commit()
+        else:
+            chat = await Chats.insert_new_chat(str(uuid4()), user.id, form_data, db=db)
         await publish_event(
             request,
             EVENTS.CHAT_CREATED,
@@ -814,8 +872,10 @@ async def create_new_chat(
         )
         return ChatResponse.model_validate(chat, from_attributes=True)
     except HTTPException:
+        await db.rollback()
         raise
     except Exception as e:
+        await db.rollback()
         log.exception(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.DEFAULT())
 

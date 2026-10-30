@@ -32,8 +32,8 @@ def records(user_id=None, start=None, end=None, group_id=None):
     ranked = calls.subquery()
     columns = ['event_id', 'user_id', 'chat_id', 'model_id', 'created_at', 'input_tokens', 'output_tokens']
     canonical = select(*(ranked.c[key] for key in columns)).where(ranked.c.rank == 1)
-    # Once a conversation has a ledger, its message usage is a display snapshot. Legacy
-    # untracked chats remain readable, without claiming reconstructed historical billing.
+    # Exclude only messages represented by calls, plus inherited projections.
+    # A first new call must not erase the preceding untracked historical usage.
     legacy = select(
         (literal('legacy:') + ChatMessage.id).label('event_id'),
         ChatMessage.user_id,
@@ -51,7 +51,16 @@ def records(user_id=None, start=None, end=None, group_id=None):
     ).where(
         ChatMessage.role == 'assistant',
         ChatMessage.model_id.isnot(None),
-        ~ChatMessage.chat_id.in_(select(ChatLedger.chat_id)),
+        ~select(Generation.id)
+        .where(
+            Generation.chat_id == ChatMessage.chat_id,
+            (
+                (Generation.message_id == ChatMessage.id)
+                | (ChatMessage.chat_id + literal('-') + Generation.message_id == ChatMessage.id)
+            ),
+        )
+        .exists(),
+        ~ChatMessage.chat_id.in_(select(ChatLedger.chat_id).where(ChatLedger.inherited_snapshot_id.isnot(None))),
     )
     if user_id is not None:
         legacy = legacy.where(ChatMessage.user_id == user_id)

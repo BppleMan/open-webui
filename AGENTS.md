@@ -50,3 +50,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R62/P47: upstream v0.12.5 sync and same-row mobile current/cumulative cost. Read docs/customization/upstream-v0125-acceptance.json for merge, checks and runtime status. Preserve native history, call-based statistics, durable drafts, stable connection identities and R50. Do not reset the type baseline from modified application code.
 
 - R62/P47 is verified on isolated preview; upstream base is v0.12.5. Full CI, a pristine type baseline, long draft reloads, native transport/regen and mobile exact-fee rows are recorded in upstream-v0125-acceptance.json. Continue user tuning; R50 and the R59 supplier gap remain.
+
+- R63/P48 repairs the 14 full-history review findings; read docs/customization/review-remediation.md and review-remediation-acceptance.json. Preserve authenticated temporary native state, atomic cost inheritance, composite message identity, immutable ACL provenance and R50.

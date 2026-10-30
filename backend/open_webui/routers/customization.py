@@ -720,6 +720,7 @@ async def save_binding(db, user, form, binding_id=None):
     for key in ('upstream_id', 'name', 'enabled', 'pricing', 'params'):
         setattr(row, key, getattr(form, key))
     row.capabilities = {
+        **(row.capabilities or {}),  # Preserve immutable migration/ACL provenance.
         'discovered': (row.capabilities or {}).get('discovered', {}),
         'overrides': form.capability_overrides if form.capability_overrides is not None else form.capabilities,
         'manual': manual,
@@ -874,7 +875,12 @@ def call_json(call):
 
 
 @router.get('/chats/{chat_id}/usage')
-async def chat_usage(chat_id: str, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)):
+async def chat_usage(
+    chat_id: str,
+    user=Depends(get_verified_user),
+    db: AsyncSession = Depends(get_async_session),
+    request: Request = None,
+):
     model_aliases = {}
     if chat_id.startswith('temporary:'):
         ledger = await db.get(ChatLedger, chat_id)
@@ -885,7 +891,8 @@ async def chat_usage(chat_id: str, user=Depends(get_verified_user), db: AsyncSes
         if chat.user_id != user.id:
             raise HTTPException(403, 'Only the owner can view conversation billing')
         model_aliases = (chat.meta or {}).get('oi_archive_model_mapping') or {}
-    calls, _ = await accounting.conversation_records(db, chat_id)
+    calls, baselines = await accounting.conversation_records(db, chat_id)
+    total = accounting.totals(calls, baselines)
     calls = sorted(calls.values(), key=lambda call: (call.created_at, call.sequence, call.id))
     snapshots = await accounting.conversation_snapshots(db, chat_id)
     generations = (
@@ -899,8 +906,9 @@ async def chat_usage(chat_id: str, user=Depends(get_verified_user), db: AsyncSes
         .scalars()
         .all()
     )
-    return {
-        'totals': await accounting.get_totals(db, chat_id),
+    snapshot_totals = accounting.batch_snapshot_totals({c.id: c for c in calls}, baselines, snapshots)
+    result = {
+        'totals': total,
         'calls': [
             {**call_json(call), 'view_model_id': model_aliases.get(call.model_id, call.model_id)} for call in calls
         ],
@@ -912,11 +920,23 @@ async def chat_usage(chat_id: str, user=Depends(get_verified_user), db: AsyncSes
                 'id': s.id,
                 'message_id': s.message_id,
                 'generation_id': s.generation_id,
-                **await accounting.get_totals(db, s.chat_id, s.id),
+                **snapshot_totals[s.id],
             }
             for s in snapshots
         ],
     }
+
+    if request is None:
+        return result
+    import hashlib
+    import json
+    from fastapi.responses import JSONResponse, Response
+
+    etag = '"' + hashlib.sha256(json.dumps(result, sort_keys=True, separators=(',', ':')).encode()).hexdigest() + '"'
+    headers = {'ETag': etag, 'Cache-Control': 'private, no-store'}
+    if request.headers.get('if-none-match') == etag:
+        return Response(status_code=304, headers=headers)
+    return JSONResponse(result, headers=headers)
 
 
 class BaselineForm(BaseModel):

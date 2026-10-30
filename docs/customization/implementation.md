@@ -91,3 +91,6 @@ Merge the stable v0.12.5 tag into the existing integration branch, retaining the
 Mount the composer before applying durable draft content, and defer queued dispatch until draft restoration and model defaults finish. A restored pending terminal upload without its in-memory File is marked for reattachment rather than silently omitted. Current and cumulative fees share one deliberate mobile grid row; timing/status occupy the following row. Full decimals and unknown fees remain visible.
 
 The type baseline was regenerated from a pristine v0.12.5 archive using its locked dependencies, not from the merged fork. See upstream-v0125-acceptance.json for the separate implementation, validation and staging statuses. R50 production hold and the R59 actual-CPA-readable-summary gap remain.
+
+
+R63 review remediation is implemented with isolated regression and HTTP validation. See review-remediation.md and review-remediation-acceptance.json; CI and preview are separate pending gates.

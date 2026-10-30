@@ -203,12 +203,30 @@ export class DraftManager {
 			}
 		});
 		const body = await response.json().catch(() => ({}));
+		if (response.status === 404 && !this.isNew && path.startsWith(`/chats/${this.chatId}/draft`))
+			await this.forgetDeleted();
 		if (!response.ok)
 			throw Object.assign(new Error('Draft synchronization failed'), {
 				status: response.status,
 				body
 			});
 		return body;
+	}
+	private async forgetDeleted() {
+		await this.writes.catch(() => {});
+		for (const record of await this.store.all()) {
+			if (
+				record.userId === this.options.userId &&
+				record.chatId === this.chatId &&
+				!record.temporary
+			)
+				await this.store.remove(record.key);
+		}
+		this.payload = {};
+		this.dirty = false;
+		this.options.onRestore({});
+		this.emit('error');
+		this.dispose();
 	}
 	private persist(consumeRecovered = false) {
 		const record: LocalDraft = {
@@ -281,6 +299,7 @@ export class DraftManager {
 		}
 		// Restore the durable local copy before a possibly slow network read. User
 		// edits during that read must participate in CAS instead of being overwritten.
+		if (this.destroyed) return this.payload;
 		this.ready = true;
 		if (!this.destroyed) this.options.onRestore(this.payload);
 		try {
@@ -311,6 +330,7 @@ export class DraftManager {
 		} catch {
 			this.emit('offline');
 		}
+		if (this.destroyed) return this.payload;
 		this.ready = true;
 		if (!this.destroyed) this.options.onRestore(this.payload);
 		const dirtyCopies = candidates.filter((record) => record.dirty);
@@ -711,4 +731,21 @@ export function restoreDraftUploads(
 			? { queue: payload.queue.map((item: QueuedDraft) => ({ ...item, files: files(item.files) })) }
 			: {})
 	};
+}
+
+export async function purgeLocalDrafts(
+	token: string,
+	chatIds: string[] | null,
+	store = browserDraftStore
+) {
+	const id = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).id;
+	for (const record of await store.all()) {
+		if (
+			record.userId === id &&
+			!record.temporary &&
+			!record.isNew &&
+			(!chatIds || chatIds.includes(record.chatId))
+		)
+			await store.remove(record.key);
+	}
 }

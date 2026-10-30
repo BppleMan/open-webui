@@ -464,3 +464,22 @@ describe('upstream deferred terminal uploads', () => {
 		expect(restored.files[0].status).toBe('error');
 	});
 });
+
+it('purges deleted chat drafts only for the signed-in owner', async () => {
+	const { purgeLocalDrafts } = await import('./drafts');
+	const records: any[] = [
+		{ key: 'own', userId: 'u', chatId: 'deleted', temporary: false, isNew: false },
+		{ key: 'other', userId: 'v', chatId: 'deleted', temporary: false, isNew: false },
+		{ key: 'temp', userId: 'u', chatId: 'temporary', temporary: true, isNew: false },
+		{ key: 'new', userId: 'u', chatId: 'unsent', temporary: false, isNew: true }
+	];
+	const removed: string[] = [];
+	await purgeLocalDrafts('x.' + btoa(JSON.stringify({ id: 'u' })) + '.x', ['deleted'], {
+		all: async () => records,
+		put: async () => {},
+		remove: async (key) => {
+			removed.push(key);
+		}
+	});
+	expect(removed).toEqual(['own']);
+});

@@ -63,7 +63,12 @@
 					{#if data.snapshot.estimated_usd && data.snapshot.estimated_usd !== '0'}<span
 							class="break-all">≈{dollars(data.snapshot.estimated_usd)}</span
 						>{/if}
-					{#if data.snapshot.unknown_calls}<span class="whitespace-nowrap"
+					{#if data.snapshot.incomplete && !data.snapshot.unknown_baselines && !data.snapshot.unknown_calls}<span
+							class="text-amber-700 dark:text-amber-400">累计尚不完整</span
+						>{/if}{#if data.snapshot.unknown_baselines}<span
+							class="whitespace-nowrap text-amber-700 dark:text-amber-400"
+							>+ {data.snapshot.unknown_baselines} 批历史费用待确认</span
+						>{/if}{#if data.snapshot.unknown_calls}<span class="whitespace-nowrap"
 							>+ {data.snapshot.unknown_calls} 次待确认</span
 						>{/if}
 				</dd>

@@ -324,6 +324,7 @@ async def generate_chat_completion(
                     await check_model_access(user, {'id': binding.id, 'oi_binding': True})
             form_data = copy.deepcopy(form_data)
             params = copy.deepcopy(native_target.params)
+            params.pop('capability_params', None)
             system = params.pop('system', None)
             form_data = apply_model_params_to_body_openai(params, form_data)
             if not bypass_system_prompt and system:

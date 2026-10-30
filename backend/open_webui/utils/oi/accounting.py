@@ -451,17 +451,8 @@ async def inherit_snapshot(db, user_id, new_chat_id, parent_chat_id, message_id)
     parent = await db.get(ChatLedger, parent_chat_id)
     if not parent or parent.user_id != user_id:
         return None  # Shared chat forks must not expose the original owner's private bill.
-    snapshot = (
-        await db.execute(
-            select(CostSnapshot)
-            .where(
-                CostSnapshot.chat_id == parent_chat_id,
-                CostSnapshot.message_id == message_id,
-            )
-            .order_by(CostSnapshot.max_sequence.desc(), CostSnapshot.created_at.desc())
-            .limit(1)
-        )
-    ).scalar_one_or_none()
+    candidates = [s for s in await conversation_snapshots(db, parent_chat_id) if s.message_id == message_id]
+    snapshot = max(candidates, key=lambda s: (s.created_at, s.max_sequence, s.id), default=None)
     if snapshot is None:
         return None
     ledger = await ensure_ledger(db, user_id, new_chat_id)
@@ -578,3 +569,61 @@ async def refresh_snapshots(db, direct):
     for snapshot in affected.values():
         snapshot.totals = totals(*(await snapshot_records(db, snapshot.id)))
     await db.flush()
+
+
+def batch_snapshot_totals(calls, baselines, snapshots):
+    """One linear prefix index per source; never reload a call for each round."""
+    from bisect import bisect_right
+    from collections import defaultdict
+
+    grouped = defaultdict(list)
+    for call in calls.values():
+        grouped[call.chat_id].append(call)
+    prefixes = {}
+    with localcontext() as context:
+        context.prec = 128
+        for chat_id, rows in grouped.items():
+            sequences, sums = [], [(Decimal(0), Decimal(0), 0, 0)]
+            for call in sorted(rows, key=lambda c: (c.sequence, c.id)):
+                a, e, u, n = sums[-1]
+                if call.actual_usd is not None:
+                    a += Decimal(call.actual_usd)
+                elif call.estimated_usd is not None:
+                    e += Decimal(call.estimated_usd)
+                else:
+                    u += 1
+                sequences.append(call.sequence)
+                sums.append((a, e, u, n + 1))
+            prefixes[chat_id] = sequences, sums
+        lookup = {s.id: s for s in snapshots}
+        result = {}
+        for row in snapshots:
+            bounds, baseline_ids, visited = {}, set(), set()
+            current = row
+            while current:
+                if current.id in visited:
+                    raise ValueError('Cyclic cost inheritance')
+                visited.add(current.id)
+                bounds[current.chat_id] = max(bounds.get(current.chat_id, 0), current.max_sequence)
+                baseline_ids.update(current.baseline_ids)
+                if current.inherited_snapshot_id and current.inherited_snapshot_id not in lookup:
+                    raise ValueError('Missing inherited cost snapshot')
+                current = lookup.get(current.inherited_snapshot_id)
+            a, e, u, n = Decimal(0), Decimal(0), 0, 0
+            for chat_id, boundary in bounds.items():
+                sequences, sums = prefixes.get(chat_id, ([], [(Decimal(0), Decimal(0), 0, 0)]))
+                ca, ce, cu, cn = sums[bisect_right(sequences, boundary)]
+                a += ca
+                e += ce
+                u += cu
+                n += cn
+            base = totals({}, {key: baselines[key] for key in baseline_ids if key in baselines})
+            result[row.id] = {
+                'actual_usd': format(a + Decimal(base['actual_usd']), 'f'),
+                'estimated_usd': format(e + Decimal(base['estimated_usd']), 'f'),
+                'unknown_calls': u,
+                'unknown_baselines': base['unknown_baselines'],
+                'incomplete': bool(u or base['unknown_baselines']),
+                'call_count': n,
+            }
+        return result

@@ -61,6 +61,21 @@ async def generate_embeddings(
         models = request.app.state.MODELS
 
     model_id = form_data.get('model')
+    from open_webui.internal.db import get_async_db
+    from open_webui.utils.oi.model_targets import resolve_native_target
+    from open_webui.utils.oi import capability_calls
+
+    async with get_async_db() as db:
+        native = await resolve_native_target(db, model_id, user)
+    if native is not None:
+        return await capability_calls.embeddings(
+            model_id,
+            form_data.get('input'),
+            user=user,
+            extra={k: form_data[k] for k in ('dimensions', 'user') if k in form_data},
+            public_response=True,
+            encoding_format=form_data.get('encoding_format', 'float'),
+        )
     if model_id not in models:
         raise Exception('Model not found')
     model = models[model_id]

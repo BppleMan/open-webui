@@ -1,0 +1,81 @@
+{
+  "requirement": "R63",
+  "prototype": "P48",
+  "findings": {
+    "CR30-01": {
+      "implementation": "fixed",
+      "description": "Retain OpenAI reasoning_details/provider fields on native replay; opaque state stays scoped to its binding."
+    },
+    "CR30-02": {
+      "implementation": "fixed",
+      "description": "Recover multiple call boundaries after Continue merges displayed assistant outputs."
+    },
+    "CR30-03": {
+      "implementation": "fixed",
+      "description": "Resolve earlier fork anchors across the bounded inherited snapshot chain."
+    },
+    "CR30-04": {
+      "implementation": "fixed",
+      "description": "Return authenticated encrypted client-held native state for temporary chats; validate user, chat, message and content before replay."
+    },
+    "CR30-05": {
+      "implementation": "fixed",
+      "description": "Exclude individually accounted messages, including composite message keys, rather than all legacy usage in a chat."
+    },
+    "CR30-06": {
+      "implementation": "fixed",
+      "description": "Persist OpenAI length/content_filter endings as incomplete/blocked and display exceptional statuses."
+    },
+    "CR30-07": {
+      "implementation": "fixed",
+      "description": "Display unknown historical cost batches in both reply summaries and the info panel."
+    },
+    "CR30-08": {
+      "implementation": "fixed",
+      "description": "Preserve migrated ACL provenance through ordinary model edits."
+    },
+    "CR30-09": {
+      "implementation": "fixed",
+      "description": "Dispatch public embeddings through the selected native binding, permissions, raw model ID and ledger."
+    },
+    "CR30-10": {
+      "implementation": "fixed",
+      "description": "Reconcile missing models and aliases when reusing a migrated connection; reject ambiguous mappings before retiring the source."
+    },
+    "CR30-11": {
+      "implementation": "fixed",
+      "description": "Clear drafts, revisions and annotations through chat deletion paths; purge matching device drafts and hide old orphan drafts."
+    },
+    "CR30-12": {
+      "implementation": "fixed",
+      "description": "Atomically save temporary conversations with a fixed inherited billing boundary, stable retry identity and no duplicated calls."
+    },
+    "CR30-13": {
+      "implementation": "fixed",
+      "description": "Keep capability_params out of chat provider bodies, including provider-option merges."
+    },
+    "CR30-14": {
+      "implementation": "fixed",
+      "description": "Build snapshot totals from one call-prefix index and return conditional usage responses rather than repeated historical queries."
+    }
+  },
+  "local": {
+    "backend": 407,
+    "frontend": 67,
+    "type_new": 0,
+    "type_remaining": 5695,
+    "build": "passed",
+    "temporary_http": [
+      "streaming",
+      "nonstreaming",
+      "two requests",
+      "signature replay",
+      "atomic save",
+      "idempotent save"
+    ],
+    "supplier_requests": "synthetic loopback only"
+  },
+  "ci": "pending",
+  "deployment": "pending isolated preview",
+  "production": "unchanged; R50"
+}

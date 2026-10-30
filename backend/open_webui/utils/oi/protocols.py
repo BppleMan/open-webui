@@ -134,6 +134,8 @@ def clean_message(message):
             'audio',
             'annotations',
             'reasoning_content',
+            'reasoning_details',
+            'provider_specific_fields',
         }
     }
 
@@ -182,7 +184,7 @@ def _contains_opaque_native(value):
     if isinstance(value, dict):
         if any(value.get(key) for key in ('signature', 'thoughtSignature', 'encrypted_content')):
             return True
-        if value.get('type') in {'redacted_thinking', 'server_tool_use', 'computer_use'}:
+        if value.get('type') in {'redacted_thinking', 'server_tool_use', 'computer_use', 'reasoning.encrypted'}:
             return True
         return any(_contains_opaque_native(item) for item in value.values())
     return False
@@ -212,12 +214,14 @@ def build_request(form, binding, connection):
         'filter_ids',
         'skill_ids',
         'stream_options',
+        'capability_params',
     ):
         source.pop(field, None)
     native_options = source.pop('provider_options', {})
     if not isinstance(native_options, dict):
         raise HTTPException(422, 'provider_options must be an object')
     source = merge(source, native_options)
+    source.pop('capability_params', None)
     source['model'] = binding.upstream_id
     source.setdefault('store', False)
     for message in messages:
@@ -225,12 +229,15 @@ def build_request(form, binding, connection):
         if (
             isinstance(native, dict)
             and native.get('protocol')
-            and canonical_protocol(native['protocol']) != canonical_protocol(protocol)
+            and (
+                canonical_protocol(native['protocol']) != canonical_protocol(protocol)
+                or native.get('binding_id') != binding.id
+            )
         ):
             if _contains_opaque_native(native.get('body')):
                 raise HTTPException(
                     422,
-                    'This history contains signed native content from another protocol; use its original protocol to preserve it',
+                    'This history contains signed native content from another model or protocol; use its original binding to preserve it',
                 )
     try:
         url = resolve_endpoint(
@@ -973,6 +980,10 @@ async def generate(request, form, user, binding, connection, call_id, transport=
             result = state.nonstream(body)
             remember()
             await save_native(metadata, binding, call_id, state.body)
+            if not is_saved_chat_id(metadata.get('chat_id')):
+                from open_webui.utils.oi.temporary_native import response_state
+
+                result['oi_native_state'] = response_state(request, metadata, user, result['choices'][0]['message'])
             return result
         finally:
             await response.aclose()
@@ -1047,6 +1058,17 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                     + '\n\n'
                 )
             remember()
+            if not is_saved_chat_id(metadata.get('chat_id')):
+                from open_webui.utils.oi.temporary_native import response_state
+
+                projection = NativeStream(binding.protocol).nonstream(copy.deepcopy(state.body))['choices'][0][
+                    'message'
+                ]
+                yield (
+                    'data: '
+                    + compact({'oi_native_state': response_state(request, metadata, user, projection)})
+                    + '\n\n'
+                )
             yield 'data: [DONE]\n\n'
         finally:
             remember()

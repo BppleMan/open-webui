@@ -344,8 +344,11 @@ def test_copy_and_preset_replay_preserve_only_unchanged_matching_binding():
     assert payload['messages'][0]['content'][0]['signature'] == 'synthetic-signature'
     changed_binding = binding()
     changed_binding.id = 'oi:other'
-    _, switched = build_request({'messages': normalized}, changed_binding, connection())
-    assert 'synthetic-signature' not in json.dumps(switched)
+    from fastapi import HTTPException
+
+    with pytest.raises(HTTPException) as error:
+        build_request({'messages': normalized}, changed_binding, connection())
+    assert error.value.status_code == 422
     copy_message['content'] = 'new body'
     copy_message['output'][0]['content'][0]['text'] = 'new body'
     copy_message['previous_response_id'] = 'old'
