@@ -933,9 +933,9 @@
 	};
 	onDestroy(() => draftManager?.dispose());
 	// Toggling temporary mode on an unsent chat does not navigate/remount Chat.
-	// Replace the draft owner before any subsequent editor event can persist it.
+	// An explicit mode change starts a new identity; only initial page loading recovers drafts.
 	$: if (draftManager && $user && !draftManager.matchesContext($user.id, !!$temporaryChatEnabled)) {
-		void restoreChatInput(null);
+		void restoreChatInput(null, false);
 	}
 
 	const withSelectedText = (text: string) => {
