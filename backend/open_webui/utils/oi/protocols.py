@@ -692,6 +692,19 @@ class NativeStream:
                         msg[k] = v
                     elif isinstance(v, str):
                         msg[k] = (msg.get(k) or '') + v
+                    elif k == 'reasoning_details':
+                        from open_webui.utils.middleware import merge_streamed_reasoning_details
+
+                        merge_streamed_reasoning_details(msg.setdefault(k, []), v)
+                    elif k == 'provider_specific_fields' and isinstance(v, dict):
+                        from open_webui.utils.middleware import merge_streamed_reasoning_details
+
+                        fields = msg.setdefault(k, {})
+                        for field, value in v.items():
+                            if field == 'reasoning_details':
+                                merge_streamed_reasoning_details(fields.setdefault(field, []), value)
+                            else:
+                                fields[field] = copy.deepcopy(value)
                     elif k == 'tool_calls':
                         for t in v or []:
                             old = self.blocks.setdefault(

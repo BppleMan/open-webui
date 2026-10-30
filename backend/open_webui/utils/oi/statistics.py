@@ -1,7 +1,7 @@
 """Usage analytics count original calls, never copied conversation projections."""
 
 from sqlalchemy import BigInteger, Integer, cast, case, func, literal, select, union_all
-from open_webui.models.customization import ChatLedger, Generation, ModelCall
+from open_webui.models.customization import ChatLedger, Generation, ModelCall, ImportCostBaseline
 
 
 def records(user_id=None, start=None, end=None, group_id=None):
@@ -61,6 +61,9 @@ def records(user_id=None, start=None, end=None, group_id=None):
         )
         .exists(),
         ~ChatMessage.chat_id.in_(select(ChatLedger.chat_id).where(ChatLedger.inherited_snapshot_id.isnot(None))),
+        ~ChatMessage.chat_id.in_(
+            select(ImportCostBaseline.chat_id).where(ImportCostBaseline.batch_id == 'imported-history')
+        ),
     )
     if user_id is not None:
         legacy = legacy.where(ChatMessage.user_id == user_id)

@@ -238,3 +238,55 @@ async def test_temporary_state_roundtrips_between_independent_requests(protocol)
     await wrap_emitter(emit, request, meta, user)({'type': 'chat:completion', 'data': {'done': True, 'output': output}})
     saved = {'id': 'reply', 'output': output, 'oi_native_state': events[0]['data']['oi_native_state']}
     assert restore(saved, 'u', 'temp')[0]['call_id'] == 'first'
+
+
+@pytest.mark.parametrize('nested', [False, True])
+def test_streamed_reasoning_details_survive_later_summary_chunks(nested):
+    from open_webui.utils.oi.protocols import NativeStream
+
+    state = NativeStream('openai-chat')
+    for details in [
+        [{'index': 0, 'type': 'reasoning.encrypted', 'data': 'opaque-state'}],
+        [{'index': 1, 'type': 'reasoning.summary', 'summary': 'first '}],
+        [{'index': 1, 'type': 'reasoning.summary', 'summary': 'second'}],
+    ]:
+        delta = {'reasoning_details': details}
+        if nested:
+            delta = {'provider_specific_fields': delta}
+        state.feed({'choices': [{'delta': delta}]})
+    message = {
+        'role': 'assistant',
+        'content': '',
+        'oi_native': {'binding_id': 'oi:leaf', 'protocol': 'openai-chat', 'body': state.body},
+    }
+    _, body = build_request({'messages': [message]}, binding('openai-chat'), connection('openai-chat'))
+    replay = body['messages'][0]
+    details = (replay['provider_specific_fields'] if nested else replay)['reasoning_details']
+    assert details[0]['data'] == 'opaque-state'
+    assert details[1]['summary'] == 'first second'
+
+
+@pytest.mark.asyncio
+async def test_imported_usage_is_not_a_new_event_but_later_calls_are(db):
+    from open_webui.utils.oi import statistics
+
+    db.add(Chat(id='import', user_id='u', title='Imported', chat={}, created_at=1, updated_at=1))
+    await ChatMessages.upsert_message(
+        'old',
+        'import',
+        'u',
+        {
+            'id': 'old',
+            'role': 'assistant',
+            'model': 'old-model',
+            'content': 'copy',
+            'usage': {'input_tokens': 100, 'output_tokens': 20},
+        },
+        db=db,
+    )
+    await accounting.set_baseline(db, 'u', 'import', 'imported-history')
+    assert await statistics.by(db) == {}
+    await answer(db, 'import', 'new', '0.03')
+    totals = await statistics.by(db)
+    assert sum(row['count'] for row in totals.values()) == 1
+    assert sum(row['input_tokens'] for row in totals.values()) == 1
