@@ -839,9 +839,30 @@ async def create_new_chat(
             ):
                 raise HTTPException(409, 'Wait for the temporary reply to finish before saving')
             saved_id = str(uuid5(NAMESPACE_URL, user.id + ':' + temporary_id))
+            from open_webui.utils.oi.temporary_native import save_fingerprint
+
+            fingerprint = save_fingerprint(form_data)
             chat = await Chats.get_chat_by_id(saved_id, db=db)
-            if chat is None:
-                chat = await Chats.insert_new_chat(saved_id, user.id, form_data, db=db, commit=False)
+            if chat is not None:
+                previous_digest = (chat.meta or {}).get('oi_temporary_save_digest')
+                if previous_digest is None:
+                    previous_digest = save_fingerprint(
+                        ChatForm(chat=chat.chat, variables=chat.variables, folder_id=chat.folder_id)
+                    )
+                if previous_digest != fingerprint:
+                    raise HTTPException(
+                        409,
+                        'This temporary conversation identity was already saved with different content; start a new temporary conversation',
+                    )
+            else:
+                chat = await Chats.insert_new_chat(
+                    saved_id,
+                    user.id,
+                    form_data,
+                    db=db,
+                    commit=False,
+                    internal_meta={'oi_temporary_save_digest': fingerprint},
+                )
                 anchor = CostSnapshot(
                     id=identifier(),
                     chat_id=temporary_id,

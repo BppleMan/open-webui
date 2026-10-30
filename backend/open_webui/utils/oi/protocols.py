@@ -563,6 +563,16 @@ def chunk(delta=None, usage=None, finish=None, **extra):
     return result
 
 
+def inline_images(parts):
+    images = []
+    for part in parts:
+        media = part.get('inlineData') or part.get('inline_data') or {}
+        mime = media.get('mimeType') or media.get('mime_type') or ''
+        if mime.startswith('image/') and isinstance(media.get('data'), str) and media['data']:
+            images.append({'type': 'image_url', 'image_url': {'url': f'data:{mime};base64,{media["data"]}'}})
+    return images
+
+
 class NativeStream:
     def __init__(self, protocol):
         self.protocol = protocol
@@ -784,6 +794,9 @@ class NativeStream:
                 target = old['content']['parts']
                 for part in candidate.get('content', {}).get('parts', []):
                     part = copy.deepcopy(part)
+                    images = inline_images([part])
+                    if images:
+                        events.append(chunk({'images': images}))
                     if 'text' in part:
                         key = 'reasoning_content' if part.get('thought') else 'content'
                         events.append(chunk({key: part['text']}))
@@ -897,6 +910,9 @@ class NativeStream:
         )
         if reasoning:
             message['reasoning_content'] = reasoning
+        images = inline_images(blocks)
+        if images:
+            message['images'] = images
         tools = self._tools()
         ending = self.ending(tools)
         if tools and ending['normalized'] == 'tool_calls':

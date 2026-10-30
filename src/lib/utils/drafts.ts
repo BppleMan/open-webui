@@ -162,6 +162,7 @@ export class DraftManager {
 			userId: string;
 			chatId?: string | null;
 			temporary: boolean;
+			recover?: boolean;
 			onState: (state: DraftState) => void;
 			onRestore: (payload: DraftPayload) => void;
 			onAllocated: (id: string) => void;
@@ -177,6 +178,17 @@ export class DraftManager {
 	private get store() {
 		return this.options.store || browserDraftStore;
 	}
+	async retireTemporary() {
+		if (!this.options.temporary) return;
+		this.dispose();
+		await this.writes.catch(() => {});
+		await this.store.remove(this.key);
+		const current = await this.store.all();
+		for (const previous of this.recoveryCandidates) {
+			if (current.some((record) => equal(record, previous))) await this.store.remove(previous.key);
+		}
+	}
+
 	matchesContext(userId: string, temporary: boolean) {
 		return this.options.userId === userId && this.options.temporary === temporary;
 	}
@@ -247,6 +259,17 @@ export class DraftManager {
 		this.writes = this.writes
 			.catch(() => {})
 			.then(async () => {
+				// An empty consumed temporary draft is not a recoverable conversation identity.
+				if (record.temporary && !hasDraftInput(record.payload) && !record.payload.queue?.length) {
+					await this.store.remove(record.key);
+					const current = await this.store.all();
+					for (const previous of consumed) {
+						if (current.some((candidate) => equal(candidate, previous)))
+							await this.store.remove(previous.key);
+					}
+					this.recoveryCandidates = [];
+					return;
+				}
 				// Persist the replacement and retire handled versions in one IDB transaction.
 				if (this.store.replace) await this.store.replace(record, consumed);
 				else {
@@ -271,8 +294,12 @@ export class DraftManager {
 			candidates = (await this.store.all())
 				.filter(
 					(record) =>
+						this.options.recover !== false &&
 						record.userId === this.options.userId &&
 						record.temporary === this.options.temporary &&
+						(!record.temporary ||
+							hasDraftInput(record.payload) ||
+							!!record.payload.queue?.length) &&
 						(this.isNew ? record.isNew : record.chatId === this.chatId)
 				)
 				.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -690,6 +717,7 @@ export class DraftManager {
 	}
 
 	dispose() {
+		if (this.destroyed) return;
 		this.destroyed = true;
 		if (typeof window !== 'undefined') {
 			window.removeEventListener('online', this.resume);

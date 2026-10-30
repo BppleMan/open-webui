@@ -445,15 +445,27 @@ async def discover(db, connection, transport=None):
     if getattr(connection, 'transport', None) == 'browser':
         raise ValueError('Browser connections must discover models from the browser')
     # Fetch all pages before changing availability; a partial failure must preserve the catalog.
+    revision = connection.revision
     models = await fetch_models(connection, transport)
-    return await apply_discovered_models(db, connection, models)
+    return await apply_discovered_models(db, connection, models, expected_revision=revision)
 
 
-async def apply_discovered_models(db, connection, models):
+async def apply_discovered_models(db, connection, models, expected_revision=None):
     from sqlalchemy import update
 
     # A write lock also serializes SQLite; PostgreSQL holds it until commit.
-    await db.execute(update(Connection).where(Connection.id == connection.id).values(updated_at=Connection.updated_at))
+    from fastapi import HTTPException
+
+    revision = connection.revision if expected_revision is None else expected_revision
+    claimed = await db.execute(
+        update(Connection)
+        .where(Connection.id == connection.id, Connection.revision == revision)
+        .values(updated_at=Connection.updated_at)
+        .execution_options(synchronize_session=False)
+    )
+    if claimed.rowcount != 1:
+        raise HTTPException(409, 'Connection changed while discovering models; refresh and retry')
+    connection = await db.get(Connection, connection.id, populate_existing=True)
     protocol = canonical_protocol(connection.protocol)
     seen, result = set(), []
     for model in models:

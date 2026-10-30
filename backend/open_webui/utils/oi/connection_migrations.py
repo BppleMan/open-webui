@@ -491,7 +491,7 @@ async def apply(db, user, scope, version, choices):
                 raise HTTPException(409, 'Target model mapping is ambiguous; no changes applied')
             if matches:
                 binding = matches[0]
-                if canonical_protocol(binding.protocol) != canonical_protocol(target.protocol):
+                if catalog.effective_protocol(binding, target) != canonical_protocol(target.protocol):
                     raise HTTPException(409, 'Target model protocol differs; resolve the mapping explicitly')
                 if scope == 'server' and not item['capability']:
                     prior_acl = (binding.capabilities or {}).get('legacy_model_id')

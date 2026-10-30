@@ -94,3 +94,7 @@ The type baseline was regenerated from a pristine v0.12.5 archive using its lock
 
 
 R63 review remediation is implemented with isolated regression and HTTP validation. See review-remediation.md and review-remediation-acceptance.json; CI and preview are separate pending gates.
+
+## R64 / P49 implementation
+
+Implemented the eleven second-review findings; see review-round2-remediation.md and the separate acceptance record. No database migration or production change.

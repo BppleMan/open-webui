@@ -1441,7 +1441,7 @@ async def get_image_urls(delta_images, request, metadata, user) -> list[str]:
         if not url:
             continue
 
-        if re.match(r'data:image/\w+;base64', url):
+        if re.match(r'data:image/\w+;base64', url) and is_saved_chat_id(metadata.get('chat_id')):
             url = await get_image_url_from_base64(request, url, metadata, user)
 
         image_urls.append(url)
@@ -1807,8 +1807,11 @@ async def chat_completion_files_handler(
                 full_context=all_full_context or rag_config.get('rag.full_context'),
                 user=user,
             )
+        except HTTPException:
+            raise
         except Exception as e:
             log.exception(e)
+            raise HTTPException(502, 'File retrieval failed') from e
 
         log.debug('rag_contexts:sources: %s', sources)
 
@@ -2983,8 +2986,11 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         try:
             form_data, flags = await chat_completion_files_handler(request, form_data, extra_params, user)
             sources.extend(flags.get('sources', []))
+        except HTTPException:
+            raise
         except Exception as e:
             log.exception(e)
+            raise HTTPException(502, 'File retrieval failed') from e
 
     # The tool loop restores these prompts before rebuilding file and tool source context.
     system_message = get_system_message(form_data['messages'])
@@ -4015,10 +4021,9 @@ async def non_streaming_chat_response_handler(response, ctx):
             # Native tools only run on the streaming path; still finish the turn.
             tool_calls = choices[0].get('message', {}).get('tool_calls') if choices else None
 
-            if (continuing and 'error' not in response_data) or (
-                not continuing and choices and (content or response_output or tool_calls)
-            ):
-                if content or response_output or tool_calls or continuing:
+            if 'error' not in response_data and (choices or response_output or continuing):
+                # An empty terminal response (blocked/truncated/reasoning-only) still completes.
+                if choices or response_output or continuing:
                     if not continuing:
                         await event_emitter(
                             {
@@ -4028,6 +4033,19 @@ async def non_streaming_chat_response_handler(response, ctx):
                         )
 
                     title = await Chats.get_chat_title_by_id(metadata['chat_id']) if save_to_chat else ''
+
+                    choice_message = choices[0].get('message', {}) if choices else {}
+                    image_urls = await get_image_urls(choice_message.get('images'), request, metadata, user)
+                    if image_urls:
+                        image_files = [{'type': 'image', 'url': url} for url in image_urls]
+                        if save_to_chat:
+                            image_files = (
+                                await Chats.add_message_files_by_id_and_message_id(
+                                    chat_id, metadata['message_id'], image_files
+                                )
+                                or image_files
+                            )
+                        await event_emitter({'type': 'chat:message:files', 'data': {'files': image_files}})
 
                     # Use output from backend if provided (OR-compliant backends),
                     # otherwise generate from response content
@@ -4094,6 +4112,11 @@ async def non_streaming_chat_response_handler(response, ctx):
                         response_output = previous + response_output
                         content = get_output_text(response_output)
 
+                    usage = normalize_usage(response_data.get('usage', {}) or {})
+                    if continuing:
+                        usage = merge_usage(
+                            (ctx.get('assistant_message') or {}).get('usage'), usage or {'incomplete': True}
+                        )
                     finish_reason = choices[0].get('finish_reason') if choices else None
                     await event_emitter(
                         {
@@ -4101,6 +4124,7 @@ async def non_streaming_chat_response_handler(response, ctx):
                             'data': {
                                 **(response_data if continuing else {}),
                                 'done': True,
+                                'usage': usage,
                                 'output': response_output,
                                 'title': title,
                                 **({'finish_reason': finish_reason} if finish_reason else {}),
@@ -4109,11 +4133,6 @@ async def non_streaming_chat_response_handler(response, ctx):
                     )
 
                     # Save message in the database
-                    usage = normalize_usage(response_data.get('usage', {}) or {})
-                    if continuing:
-                        usage = merge_usage(
-                            (ctx.get('assistant_message') or {}).get('usage'), usage or {'incomplete': True}
-                        )
                     finish_reason = choices[0].get('finish_reason') if choices else None
 
                     if save_to_chat:

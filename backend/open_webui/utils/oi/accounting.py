@@ -199,6 +199,9 @@ async def ensure_ledger(db, user_id, chat_id):
 
 async def begin_generation(db, user_id, chat_id, message_id, request_id, kind='assistant'):
     await ensure_ledger(db, user_id, chat_id)
+    from open_webui.utils.oi.statistics import capture_legacy_usage
+
+    await capture_legacy_usage(db, chat_id, message_id)
     values = dict(
         id=identifier(),
         user_id=user_id,

@@ -23,7 +23,7 @@ def digest(projection):
     ).hexdigest()
 
 
-def seal(calls, projection, user_id, temporary_id, message_id):
+def seal(calls, value, user_id, temporary_id, message_id):
     return (
         cipher()
         .encrypt(
@@ -32,7 +32,7 @@ def seal(calls, projection, user_id, temporary_id, message_id):
                     'user': user_id,
                     'temporary': temporary_id,
                     'message': message_id,
-                    'projection': digest(projection),
+                    'projection': digest(projection(value) if isinstance(value, dict) else value),
                     'calls': calls,
                 },
                 ensure_ascii=False,
@@ -48,7 +48,21 @@ def projection(message):
         if isinstance(message.get('output'), list)
         else {
             key: message[key]
-            for key in ('role', 'content', 'reasoning_content', 'tool_calls', 'reasoning_details')
+            for key in (
+                'role',
+                'content',
+                'reasoning_content',
+                'reasoning',
+                'thinking',
+                'tool_calls',
+                'function_call',
+                'reasoning_details',
+                'provider_specific_fields',
+                'annotations',
+                'refusal',
+                'audio',
+                'images',
+            )
             if key in message
         }
     )
@@ -107,3 +121,24 @@ def wrap_emitter(emitter, request, metadata, user):
         return await emitter(event)
 
     return emit
+
+
+def save_fingerprint(form):
+    history = form.chat.get('history') or {}
+    keys = ('id', 'role', 'content', 'output', 'model', 'parentId', 'childrenIds', 'files', 'oi_native_invalidated')
+    return digest(
+        {
+            'history': {
+                'currentId': history.get('currentId'),
+                'messages': {
+                    mid: {key: message[key] for key in keys if key in message}
+                    for mid, message in (history.get('messages') or {}).items()
+                },
+            },
+            'fallback_messages': form.chat.get('messages', []) if not history.get('messages') else None,
+            'models': form.chat.get('models') or [],
+            'params': form.chat.get('params') or {},
+            'variables': form.variables or {},
+            'folder_id': form.folder_id,
+        }
+    )

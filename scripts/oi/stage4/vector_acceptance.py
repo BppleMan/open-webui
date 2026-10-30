@@ -78,3 +78,36 @@ assert any(e['connection'] == 'b' and e['operation'] == 'rerank' for e in events
 report = {'files': files, 'persistent_vectors': rows, 'result': result, 'provider_events': events}
 (p / 'vector-evidence.json').write_text(json.dumps(report, indent=2))
 print('Real upload, pgvector indexed readback and A-embedding/B-rerank query passed')
+
+# Full chat boundary: a retrieval failure must stop before the main model call.
+provider = os.environ.get('OI_STAGE4_PROVIDER', 'http://127.0.0.1:8095')
+call('POST', '/api/v1/configs/import', json={'config': {'task.query.retrieval.enable': False}})
+for operation in ['embeddings', 'rerank']:
+    httpx.post(provider + '/mode', json={'mode': operation + '_limited'}).raise_for_status()
+    before = len(httpx.get(provider + '/events').json())
+    try:
+        chat, mid, uid = [str(uuid.uuid4()) for _ in range(3)]
+        call('POST', '/api/v1/chats/drafts', json={'chat_id': chat})
+        response = c.post(
+            '/api/chat/completions',
+            json={
+                'model': seed['bindings']['a_chat']['id'],
+                'chat_id': chat,
+                'id': mid,
+                'oi_request_id': str(uuid.uuid4()),
+                'stream': False,
+                'messages': [{'role': 'user', 'content': 'alpha key'}],
+                'user_message': {'id': uid, 'role': 'user', 'content': 'alpha key'},
+                'files': [{'id': files[0]['file_id'], 'type': 'file', 'collection_name': files[0]['collection_name']}],
+                'params': {'function_calling': 'legacy'},
+                'background_tasks': {},
+            },
+        )
+        assert response.status_code == 429, (response.status_code, response.text[:300])
+        assert response.headers.get('retry-after') == '7'
+        recent = httpx.get(provider + '/events').json()[before:]
+        assert any(e['operation'] == operation for e in recent), recent
+        assert not any(e['operation'] == 'chat/completions' for e in recent), recent
+    finally:
+        httpx.post(provider + '/mode', json={'mode': 'normal'}).raise_for_status()
+print('Full chat embedding/rerank 429 preserves Retry-After and makes no main model request')

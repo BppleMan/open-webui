@@ -867,6 +867,10 @@ class UsersTable:
             deleted_chats = await Chats.delete_chats_by_user_id(id, db=session)
             if not deleted_chats:
                 return False  # chats deletion failed
+            from open_webui.models.customization import ChatDraft, MessageRevision, ChatAnnotation
+
+            for table in (ChatDraft, MessageRevision, ChatAnnotation):
+                await session.execute(delete(table).where(table.user_id == id))
             await session.execute(delete(User).where(User.id == id))
             await session.commit()
             return True

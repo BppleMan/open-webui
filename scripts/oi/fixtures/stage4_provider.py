@@ -53,7 +53,7 @@ async def generate(connection: str, operation: str, request: Request):
             'temperature': body.get('temperature'),
         }
     )
-    if body.get('model') == 'limited':
+    if body.get('model') == 'limited' or mode == operation + '_limited':
         return JSONResponse({'error': {'message': 'synthetic limited'}}, 429, headers={'retry-after': '7'})
     if operation == 'embeddings':
         inputs = body['input']

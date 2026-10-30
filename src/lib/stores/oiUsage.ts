@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import { oiApi } from '$lib/apis/customization';
 export type UsageData = {
 	totals: any;
@@ -9,8 +9,11 @@ export type UsageData = {
 };
 const entries = new Map<string, ReturnType<typeof createUsage>>();
 const temporaryIds = new Map<string, string>();
-export const registerBillingIdentity = (transport: string, stable: string) =>
+export const registerBillingIdentity = (transport: string, stable: string) => {
+	if (temporaryIds.get(transport) === stable) return;
 	temporaryIds.set(transport, stable);
+	entries.get(transport)?.resetIdentity();
+};
 export const billingIdentity = (chatId: string) => temporaryIds.get(chatId) || chatId;
 const empty = (): UsageData => ({ totals: null, calls: [], generations: [], snapshots: [] });
 function createUsage(chatId: string) {
@@ -21,24 +24,41 @@ function createUsage(chatId: string) {
 	let etag: string | undefined;
 	const refresh = async () => {
 		if (!chatId || pending || document.visibilityState === 'hidden') return;
+		const identity = billingIdentity(chatId);
 		pending = (async () => {
 			try {
 				const result = await oiApi(
-					`/chats/${encodeURIComponent(temporaryIds.get(chatId) || chatId)}/usage`,
+					`/chats/${encodeURIComponent(identity)}/usage`,
 					'GET',
 					undefined,
-					{ etag, onEtag: (value) => (etag = value) }
+					{
+						etag,
+						onEtag: (value) => {
+							if (identity === billingIdentity(chatId)) etag = value;
+						}
+					}
 				);
+				if (identity !== billingIdentity(chatId)) return;
 				if (result) state.set(result);
+				else if (get(state).error) {
+					const { error, ...data } = get(state);
+					state.set(data);
+				}
 			} catch (e: any) {
-				state.update((value) => ({ ...value, error: e.message }));
+				if (identity === billingIdentity(chatId))
+					state.update((value) => ({ ...value, error: e.message }));
 			}
 		})().finally(() => {
 			pending = null;
+			if (identity !== billingIdentity(chatId) && refs) void refresh();
 		});
 		return pending;
 	};
 	return {
+		resetIdentity: () => {
+			etag = undefined;
+			state.set(empty());
+		},
 		subscribe: state.subscribe,
 		refresh,
 		connect: () => {

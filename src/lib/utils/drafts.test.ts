@@ -483,3 +483,61 @@ it('purges deleted chat drafts only for the signed-in owner', async () => {
 	});
 	expect(removed).toEqual(['own']);
 });
+
+it('retires consumed temporary recovery identities but restores unsent input', async () => {
+	const store = new Map<string, LocalDraft>();
+	const options = {
+		userId: 'u',
+		temporary: true,
+		onState: vi.fn(),
+		onRestore: vi.fn(),
+		onAllocated: vi.fn(),
+		store: {
+			all: async () => [...store.values()],
+			put: async (row: LocalDraft) => {
+				store.set(row.key, structuredClone(row));
+			},
+			remove: async (key: string) => {
+				store.delete(key);
+			}
+		}
+	};
+	const first = new DraftManager(options);
+	await first.load();
+	await first.edit({ prompt: 'first' });
+	await first.accepted(await first.prepareSend());
+	const old = first.chatId;
+	first.dispose();
+	const second = new DraftManager(options);
+	await second.load();
+	expect(second.chatId).not.toBe(old);
+	await second.edit({ prompt: 'unsent second' });
+	const unsentId = second.chatId;
+	second.dispose();
+	const recovered = new DraftManager(options);
+	await recovered.load();
+	expect(recovered.chatId).toBe(unsentId);
+	expect(recovered.payload.prompt).toBe('unsent second');
+	const fresh = new DraftManager({ ...options, recover: false });
+	await fresh.load();
+	expect(fresh.chatId).not.toBe(unsentId);
+	expect(fresh.payload.prompt).toBeUndefined();
+	await recovered.retireTemporary();
+	expect([...store.values()].some((row) => row.chatId === unsentId)).toBe(false);
+	fresh.dispose();
+});
+
+it('does not resurrect a retired temporary draft when navigation disposes it again', async () => {
+	const h = harness(true, '');
+	await h.manager.load();
+	await h.manager.edit({ prompt: 'unsent moved to saved chat' });
+	await h.manager.retireTemporary();
+	h.manager.dispose();
+	await Promise.resolve();
+	expect(h.local.size).toBe(0);
+	const next = h.create();
+	await next.load();
+	expect(next.chatId).not.toBe(h.manager.chatId);
+	expect(next.payload.prompt).toBeUndefined();
+	next.dispose();
+});

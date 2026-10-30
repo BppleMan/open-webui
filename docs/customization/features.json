@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-30",
-  "phase": "R63_review_remediation_preview_verified; R59_CPA_summary_pending; stage8B_not_authorized",
+  "phase": "R64_review_round2_remediation_local_verified; CI_and_preview_pending; R50_hold",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -49,7 +49,8 @@
         "R53",
         "R59",
         "R62",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P01",
@@ -59,7 +60,8 @@
         "P38",
         "P44",
         "P47",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "P1",
       "status": "verified",
@@ -153,7 +155,13 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-02",
+        "CR2-03",
+        "CR2-07",
+        "CR2-08"
+      ]
     },
     {
       "id": "F02",
@@ -168,7 +176,8 @@
         "R55",
         "R57",
         "R62",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P02",
@@ -179,7 +188,8 @@
         "P40",
         "P42",
         "P47",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "P1",
       "status": "verified",
@@ -264,7 +274,10 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-11"
+      ]
     },
     {
       "id": "F03",
@@ -281,7 +294,8 @@
         "R59",
         "R61",
         "R62",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P03",
@@ -295,7 +309,8 @@
         "P44",
         "P46",
         "P47",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "P1",
       "status": "verified",
@@ -428,7 +443,13 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-02",
+        "CR2-04",
+        "CR2-05",
+        "CR2-11"
+      ]
     },
     {
       "id": "F04",
@@ -438,14 +459,16 @@
         "R56",
         "R57",
         "R62",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P04",
         "P41",
         "P42",
         "P47",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "P1",
       "status": "verified",
@@ -495,7 +518,11 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-04",
+        "CR2-06"
+      ]
     },
     {
       "id": "F05",
@@ -583,7 +610,8 @@
         "R53",
         "R61",
         "R62",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P06",
@@ -591,7 +619,8 @@
         "P38",
         "P46",
         "P47",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "P1",
       "status": "verified",
@@ -683,7 +712,11 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-01",
+        "CR2-11"
+      ]
     },
     {
       "id": "F07",
@@ -748,7 +781,8 @@
         "R52",
         "R53",
         "R59",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P08",
@@ -756,7 +790,8 @@
         "P37",
         "P38",
         "P44",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "P1",
       "status": "verified",
@@ -831,7 +866,13 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-01",
+        "CR2-02",
+        "CR2-07",
+        "CR2-08"
+      ]
     },
     {
       "id": "F09",
@@ -945,13 +986,15 @@
         "R16",
         "R51",
         "R62",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P11",
         "P36",
         "P47",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "P0",
       "status": "verified",
@@ -1019,7 +1062,11 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-01",
+        "CR2-06"
+      ]
     },
     {
       "id": "F12",
@@ -1187,7 +1234,8 @@
         "R56",
         "R61",
         "R62",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P13",
@@ -1199,7 +1247,8 @@
         "P41",
         "P46",
         "P47",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1384,7 +1433,15 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-03",
+        "CR2-04",
+        "CR2-05",
+        "CR2-08",
+        "CR2-09",
+        "CR2-10"
+      ]
     },
     {
       "id": "F14",
@@ -1398,7 +1455,8 @@
         "R52",
         "R53",
         "R55",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P14",
@@ -1407,7 +1465,8 @@
         "P37",
         "P38",
         "P40",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "P1",
       "status": "verified",
@@ -1492,7 +1551,11 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-09",
+        "CR2-10"
+      ]
     },
     {
       "id": "F15",
@@ -1744,13 +1807,15 @@
         "R21",
         "R25",
         "R47",
-        "R63"
+        "R63",
+        "R64"
       ],
       "prototypes": [
         "P17",
         "P15",
         "P32",
-        "P48"
+        "P48",
+        "P49"
       ],
       "priority": "after_confirmed_core",
       "status": "verified",
@@ -1815,7 +1880,11 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
-      }
+      },
+      "review_round2_findings": [
+        "CR2-01",
+        "CR2-06"
+      ]
     },
     {
       "id": "F18",
@@ -2488,6 +2557,138 @@
       "Existing orphan drafts are hidden from listings; future chat deletions remove content records, while call accounting is retained.",
       "Database/attachment restoration was separately verified, not an HTTP run against the restored copy.",
       "No claim that the 14 findings exhaust all possible defects."
+    ]
+  },
+  "review_round2_remediation": {
+    "requirement": "R64",
+    "prototype": "P49",
+    "status": "local_verified_pending_browser_and_ci",
+    "findings": {
+      "CR2-01": {
+        "implementation": "fixed",
+        "description": "Separate new temporary conversations from recoverable drafts; reject different transcripts sharing an idempotent save identity.",
+        "features": [
+          "F06",
+          "F08",
+          "F11",
+          "F17"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-02": {
+        "implementation": "fixed",
+        "description": "Finish empty terminal native responses, preserving reasoning, finish reason and usage.",
+        "features": [
+          "F01",
+          "F03",
+          "F08"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-03": {
+        "implementation": "fixed",
+        "description": "Propagate retrieval errors and Retry-After through the full chat path; do not invoke the main model after failed retrieval.",
+        "features": [
+          "F01",
+          "F13"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-04": {
+        "implementation": "fixed",
+        "description": "Exclude Save As Copy projections from historical statistics.",
+        "features": [
+          "F03",
+          "F04",
+          "F13"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-05": {
+        "implementation": "fixed",
+        "description": "Freeze trusted pre-ledger usage before continuing an old reply; count new calls separately.",
+        "features": [
+          "F03",
+          "F13"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-06": {
+        "implementation": "fixed",
+        "description": "Delete associated content for all authors by owned chat IDs; account deletion also removes that author’s content elsewhere.",
+        "features": [
+          "F04",
+          "F11",
+          "F17"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-07": {
+        "implementation": "fixed",
+        "description": "Use one canonical projection for sealing and restoring temporary native messages, including provider extensions.",
+        "features": [
+          "F01",
+          "F08"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-08": {
+        "implementation": "fixed",
+        "description": "Map Gemini inline images into the existing media channel in streaming and nonstreaming responses; temporary images remain inline.",
+        "features": [
+          "F01",
+          "F08",
+          "F13"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-09": {
+        "implementation": "fixed",
+        "description": "Compare effective inherited protocols when reusing migration targets.",
+        "features": [
+          "F13",
+          "F14"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-10": {
+        "implementation": "fixed",
+        "description": "Reject stale server discovery results under a revision check and database write lock.",
+        "features": [
+          "F13",
+          "F14"
+        ],
+        "verification": "regression_passed"
+      },
+      "CR2-11": {
+        "implementation": "fixed",
+        "description": "Clear transient usage errors on successful 304 responses without replacing cached data.",
+        "features": [
+          "F02",
+          "F03",
+          "F06"
+        ],
+        "verification": "regression_passed"
+      }
+    },
+    "local": {
+      "backend": 423,
+      "frontend": 71,
+      "type_new": 0,
+      "type_remaining": 5695,
+      "build": "passed",
+      "terminal_media_http_cases": 16,
+      "full_chat_retrieval_429": "embedding and rerank, Retry-After retained, no main model call",
+      "postgresql_discovery_race": "stale result 409; new catalog retained",
+      "supplier_requests": "synthetic loopback only"
+    },
+    "deployment": {
+      "status": "pending",
+      "scope": "isolated_preview_only"
+    },
+    "limitations": [
+      "No real provider request; R59 remains open.",
+      "No claim that these findings exhaust all possible defects."
     ]
   }
 }

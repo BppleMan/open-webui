@@ -4,6 +4,51 @@ from sqlalchemy import BigInteger, Integer, cast, case, func, literal, select, u
 from open_webui.models.customization import ChatLedger, Generation, ModelCall, ImportCostBaseline
 
 
+async def capture_legacy_usage(db, chat_id, message_id):
+    """Freeze a trusted pre-ledger message before Continue can merge new usage."""
+    from open_webui.models.chat_messages import ChatMessage
+    from open_webui.utils.oi.accounting import normalize_usage
+
+    if await db.scalar(
+        select(Generation.id).where(Generation.chat_id == chat_id, Generation.message_id == message_id).limit(1)
+    ):
+        return
+    ledger = await db.get(ChatLedger, chat_id)
+    if ledger and ledger.inherited_snapshot_id:
+        return
+    if await db.scalar(
+        select(ImportCostBaseline.id)
+        .where(ImportCostBaseline.chat_id == chat_id, ImportCostBaseline.batch_id == 'imported-history')
+        .limit(1)
+    ):
+        return
+    row = (
+        await db.execute(
+            select(ChatMessage)
+            .where(ChatMessage.chat_id == chat_id, ChatMessage.id.in_([message_id, chat_id + '-' + message_id]))
+            .with_for_update()
+        )
+    ).scalar_one_or_none()
+    if row is None or row.role != 'assistant' or not row.model_id:
+        return
+    state = row.oi_state or {}
+    if state.get('oi_source_message_id') or state.get('oi_legacy_usage') or not row.usage:
+        return
+    usage = normalize_usage(row.usage)
+    if not any(key in usage for key in ('input_tokens', 'output_tokens')):
+        return
+    row.oi_state = {
+        **state,
+        'oi_legacy_usage': {
+            'captured': True,
+            'model_id': row.model_id,
+            'created_at': row.created_at,
+            **{key: usage[key] for key in ('input_tokens', 'output_tokens') if key in usage},
+        },
+    }
+    await db.flush()
+
+
 def records(user_id=None, start=None, end=None, group_id=None):
     from open_webui.models.chat_messages import ChatMessage
 
@@ -34,32 +79,46 @@ def records(user_id=None, start=None, end=None, group_id=None):
     canonical = select(*(ranked.c[key] for key in columns)).where(ranked.c.rank == 1)
     # Exclude only messages represented by calls, plus inherited projections.
     # A first new call must not erase the preceding untracked historical usage.
+    historical = ChatMessage.oi_state['oi_legacy_usage']
+    captured = historical['captured'].as_boolean().is_(True)
     legacy = select(
         (literal('legacy:') + ChatMessage.id).label('event_id'),
         ChatMessage.user_id,
         ChatMessage.chat_id,
-        ChatMessage.model_id,
-        ChatMessage.created_at,
-        func.coalesce(
-            cast(ChatMessage.usage['input_tokens'].as_string(), BigInteger),
-            cast(ChatMessage.usage['prompt_tokens'].as_string(), BigInteger),
+        case((captured, historical['model_id'].as_string()), else_=ChatMessage.model_id).label('model_id'),
+        case((captured, cast(historical['created_at'].as_string(), BigInteger)), else_=ChatMessage.created_at).label(
+            'created_at'
+        ),
+        case(
+            (captured, cast(historical['input_tokens'].as_string(), BigInteger)),
+            else_=func.coalesce(
+                cast(ChatMessage.usage['input_tokens'].as_string(), BigInteger),
+                cast(ChatMessage.usage['prompt_tokens'].as_string(), BigInteger),
+            ),
         ).label('input_tokens'),
-        func.coalesce(
-            cast(ChatMessage.usage['output_tokens'].as_string(), BigInteger),
-            cast(ChatMessage.usage['completion_tokens'].as_string(), BigInteger),
+        case(
+            (captured, cast(historical['output_tokens'].as_string(), BigInteger)),
+            else_=func.coalesce(
+                cast(ChatMessage.usage['output_tokens'].as_string(), BigInteger),
+                cast(ChatMessage.usage['completion_tokens'].as_string(), BigInteger),
+            ),
         ).label('output_tokens'),
     ).where(
         ChatMessage.role == 'assistant',
         ChatMessage.model_id.isnot(None),
-        ~select(Generation.id)
-        .where(
-            Generation.chat_id == ChatMessage.chat_id,
-            (
-                (Generation.message_id == ChatMessage.id)
-                | (ChatMessage.chat_id + literal('-') + Generation.message_id == ChatMessage.id)
-            ),
-        )
-        .exists(),
+        ChatMessage.oi_state['oi_source_message_id'].as_string().is_(None),
+        (
+            captured
+            | ~select(Generation.id)
+            .where(
+                Generation.chat_id == ChatMessage.chat_id,
+                (
+                    (Generation.message_id == ChatMessage.id)
+                    | (ChatMessage.chat_id + literal('-') + Generation.message_id == ChatMessage.id)
+                ),
+            )
+            .exists()
+        ),
         ~ChatMessage.chat_id.in_(select(ChatLedger.chat_id).where(ChatLedger.inherited_snapshot_id.isnot(None))),
         ~ChatMessage.chat_id.in_(
             select(ImportCostBaseline.chat_id).where(ImportCostBaseline.batch_id == 'imported-history')

@@ -1,0 +1,132 @@
+{
+  "requirement": "R64",
+  "prototype": "P49",
+  "status": "local_verified_pending_browser_and_ci",
+  "findings": {
+    "CR2-01": {
+      "implementation": "fixed",
+      "description": "Separate new temporary conversations from recoverable drafts; reject different transcripts sharing an idempotent save identity.",
+      "features": [
+        "F06",
+        "F08",
+        "F11",
+        "F17"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-02": {
+      "implementation": "fixed",
+      "description": "Finish empty terminal native responses, preserving reasoning, finish reason and usage.",
+      "features": [
+        "F01",
+        "F03",
+        "F08"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-03": {
+      "implementation": "fixed",
+      "description": "Propagate retrieval errors and Retry-After through the full chat path; do not invoke the main model after failed retrieval.",
+      "features": [
+        "F01",
+        "F13"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-04": {
+      "implementation": "fixed",
+      "description": "Exclude Save As Copy projections from historical statistics.",
+      "features": [
+        "F03",
+        "F04",
+        "F13"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-05": {
+      "implementation": "fixed",
+      "description": "Freeze trusted pre-ledger usage before continuing an old reply; count new calls separately.",
+      "features": [
+        "F03",
+        "F13"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-06": {
+      "implementation": "fixed",
+      "description": "Delete associated content for all authors by owned chat IDs; account deletion also removes that author’s content elsewhere.",
+      "features": [
+        "F04",
+        "F11",
+        "F17"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-07": {
+      "implementation": "fixed",
+      "description": "Use one canonical projection for sealing and restoring temporary native messages, including provider extensions.",
+      "features": [
+        "F01",
+        "F08"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-08": {
+      "implementation": "fixed",
+      "description": "Map Gemini inline images into the existing media channel in streaming and nonstreaming responses; temporary images remain inline.",
+      "features": [
+        "F01",
+        "F08",
+        "F13"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-09": {
+      "implementation": "fixed",
+      "description": "Compare effective inherited protocols when reusing migration targets.",
+      "features": [
+        "F13",
+        "F14"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-10": {
+      "implementation": "fixed",
+      "description": "Reject stale server discovery results under a revision check and database write lock.",
+      "features": [
+        "F13",
+        "F14"
+      ],
+      "verification": "regression_passed"
+    },
+    "CR2-11": {
+      "implementation": "fixed",
+      "description": "Clear transient usage errors on successful 304 responses without replacing cached data.",
+      "features": [
+        "F02",
+        "F03",
+        "F06"
+      ],
+      "verification": "regression_passed"
+    }
+  },
+  "local": {
+    "backend": 423,
+    "frontend": 71,
+    "type_new": 0,
+    "type_remaining": 5695,
+    "build": "passed",
+    "terminal_media_http_cases": 16,
+    "full_chat_retrieval_429": "embedding and rerank, Retry-After retained, no main model call",
+    "postgresql_discovery_race": "stale result 409; new catalog retained",
+    "supplier_requests": "synthetic loopback only"
+  },
+  "deployment": {
+    "status": "pending",
+    "scope": "isolated_preview_only"
+  },
+  "limitations": [
+    "No real provider request; R59 remains open.",
+    "No claim that these findings exhaust all possible defects."
+  ]
+}

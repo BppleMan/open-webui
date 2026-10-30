@@ -1718,6 +1718,7 @@ async def chat_completion(
 
     async def process_chat(request, form_data, user, metadata, model, tasks=None):
         error_detail = None
+        error_metadata = {}
         generation_id = None
         defer_ledger_finish = False
         generation_status = 'completed'
@@ -1849,6 +1850,11 @@ async def chat_completion(
                 raise  # re-raise to ensure proper task cancellation handling
             except Exception as e:
                 error_detail = e.detail if isinstance(e, HTTPException) else str(e)
+                if isinstance(e, HTTPException):
+                    error_metadata = {'status_code': e.status_code}
+                    retry_after = (e.headers or {}).get('Retry-After') or (e.headers or {}).get('retry-after')
+                    if retry_after is not None:
+                        error_metadata['retry_after'] = retry_after
                 if not (metadata.get('session_id') and metadata.get('chat_id')):
                     raise
             finally:
@@ -1862,7 +1868,7 @@ async def chat_completion(
                                     metadata['message_id'],
                                     {
                                         'parentId': metadata.get('user_message_id'),
-                                        'error': {'content': error_detail},
+                                        'error': {'content': error_detail, **error_metadata},
                                         'done': True,
                                         'meta': {'response_ended_at': time.time()},
                                     },
@@ -1876,7 +1882,7 @@ async def chat_completion(
                                 await event_emitter(
                                     {
                                         'type': 'chat:message:error',
-                                        'data': {'error': {'content': error_detail}, 'done': True},
+                                        'data': {'error': {'content': error_detail, **error_metadata}, 'done': True},
                                     }
                                 )
                         except Exception:

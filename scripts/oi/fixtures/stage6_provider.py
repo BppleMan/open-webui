@@ -131,6 +131,25 @@ async def generate(protocol: str, path: str, request: Request):
                     ],
                 },
             ]
+        case = b.get('fixture_case')
+        if case == 'blocked':
+            body = {'promptFeedback': {'blockReason': 'SAFETY'}, 'usageMetadata': {'promptTokenCount': 3}}
+            frames = [body]
+        elif case in {'reasoning_only', 'image_only', 'mixed_image'}:
+            png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+y9bUAAAAASUVORK5CYII='
+            parts = (
+                [{'thought': True, 'text': 'Synthetic brief thought.', 'thoughtSignature': 'opaque'}]
+                if case == 'reasoning_only'
+                else [{'inlineData': {'mimeType': 'image/png', 'data': png}, 'thoughtSignature': 'opaque-image'}]
+            )
+            if case == 'mixed_image':
+                parts.insert(0, {'text': 'Synthetic generated image.'})
+            body['candidates'][0]['content']['parts'] = parts
+            body['candidates'][0]['finishReason'] = 'MAX_TOKENS' if case == 'reasoning_only' else 'STOP'
+            body['usageMetadata'].update(
+                candidatesTokenCount=0 if case == 'reasoning_only' else 5, thoughtsTokenCount=4
+            )
+            frames = [body]
     elif protocol == 'gemini-interactions':
         step = {'type': 'model_output', 'content': [{'type': 'text', 'text': text}]}
         body = {

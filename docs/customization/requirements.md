@@ -196,3 +196,7 @@ R63: Independently reproduce and repair CR30-01 through CR30-14. Restore existin
 
 
 2026-10-30：R63/U62收口：14项审查问题已复核、修复并通过回归和隔离预发验证。包括原生状态、临时保存费用、ACL与embedding路由、迁移/删除、历史统计与线性快照读取；R50生产边界保持。 源码 `b96836df3e0faf88be9187957995de729fd97e45`；CI https://github.com/BppleMan/open-webui/actions/runs/41022967897。
+
+## R64 — Second review remediation
+
+Verify and repair CR2-01..11, preserve R50 and existing accounting, identity, privacy and native protocol contracts. Preserve original review evidence. Batch validation and one isolated preview update.

@@ -306,3 +306,7 @@ P48: Keep temporary native state authenticated on the client, preserve cost boun
 
 
 2026-10-30：P48落地：临时状态加密绑定并跨请求回传；普通保存原子继承费用；旧历史与导入投影分别去重；未知历史基数可见。未增加模型上下文或额外真实调用。 源码 `b96836df3e0faf88be9187957995de729fd97e45`；CI https://github.com/BppleMan/open-webui/actions/runs/41022967897。
+
+## P49 — Lifecycle and integration boundaries
+
+New temporary conversations have new identities; retry fingerprints reject changed bodies. Native terminal events and media are independent of text presence. Retrieval failures stop generation. Legacy usage boundaries, inherited protocols and discovery revisions remain explicit.

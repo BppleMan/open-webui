@@ -436,6 +436,9 @@ async def discover_models(
         raise HTTPException(422, 'Add models using their deployment names for this template')
     try:
         rows = await catalog.discover(db, connection)
+    except HTTPException:
+        await db.rollback()
+        raise
     except Exception:
         # URLs and provider errors can include private information. Keep details out of API/logs.
         raise HTTPException(502, 'Model discovery failed; existing configuration was preserved') from None

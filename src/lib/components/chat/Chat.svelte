@@ -887,11 +887,11 @@
 		}
 	};
 
-	const restoreChatInput = async (storageChatInput: string | null) => {
+	const restoreChatInput = async (storageChatInput: string | null, recoverTemporary = true) => {
 		if (!$user || isShared) return false;
 		const id = $temporaryChatEnabled ? null : chatIdProp || $chatId || null;
 		const scope = `${$user.id}:${$temporaryChatEnabled ? 'temporary' : id || 'new'}`;
-		if (draftManager && scope === draftScope) {
+		if (draftManager && scope === draftScope && recoverTemporary) {
 			await draftLoad;
 			await draftRestore;
 			return !!draftManager.payload.prompt;
@@ -902,6 +902,7 @@
 			userId: $user.id,
 			chatId: id,
 			temporary: !!$temporaryChatEnabled,
+			recover: !$temporaryChatEnabled || recoverTemporary,
 			onState: (state) => {
 				if (manager === draftManager) draftState = state;
 			},
@@ -2680,6 +2681,7 @@
 	};
 
 	const initNewChat = async () => {
+		const freshTemporary = !!draftManager;
 		chatLoadController.abort();
 		modelDefaults = null;
 		clearTimeout(saveControlsTimer);
@@ -2840,7 +2842,10 @@
 		taskIds = null;
 		chatTasks = [];
 
-		await restoreChatInput(sessionStorage.getItem('chat-input'));
+		await restoreChatInput(
+			sessionStorage.getItem('chat-input'),
+			!$temporaryChatEnabled || !freshTemporary
+		);
 
 		const youtube = $page.url.searchParams.get('youtube');
 		const loadUrl = $page.url.searchParams.get('load-url');
@@ -5509,6 +5514,8 @@
 							onFork={handleForkChat}
 							onSaveTempChat={async () => {
 								try {
+									const draftOwnerId = $user?.id;
+									if (!draftOwnerId) return;
 									if (!history?.currentId || !Object.keys(history.messages).length) {
 										toast.error($i18n.t('No conversation to save'));
 										return;
@@ -5534,10 +5541,31 @@
 									);
 
 									if (savedChat) {
+										const pendingDraft = structuredClone(getChatInputDraft());
+										// Persist the destination draft before navigation mounts another Chat.
+										// Read the editor directly: its debounced draft callback may still be pending.
+										if (hasDraftInput(pendingDraft) || pendingDraft.queue?.length) {
+											const destinationDraft = new DraftManager({
+												userId: draftOwnerId,
+												chatId: savedChat.id,
+												temporary: false,
+												onState: () => {},
+												onRestore: () => {},
+												onAllocated: () => {}
+											});
+											try {
+												await destinationDraft.load();
+												if (!(await destinationDraft.edit(pendingDraft)))
+													throw new Error('Could not preserve the unsent draft');
+												await destinationDraft.flush();
+											} finally {
+												destinationDraft.dispose();
+											}
+										}
+										await draftManager?.retireTemporary();
 										temporaryChatEnabled.set(false);
 										chatId.set(savedChat.id);
 										await refreshChatList(localStorage.token);
-
 										await goto(`/c/${savedChat.id}`);
 										toast.success($i18n.t('Conversation saved successfully'));
 									}

@@ -2960,10 +2960,7 @@ class ChatTable:
             async with get_async_db_context(db) as session:
                 await self.delete_shared_chats_by_user_id(user_id, db=session)
 
-                from open_webui.models.customization import ChatDraft, MessageRevision, ChatAnnotation
-
-                for table in (ChatDraft, MessageRevision, ChatAnnotation):
-                    await session.execute(delete(table).where(table.user_id == user_id))
+                await delete_oi_chat_content(session, select(Chat.id).where(Chat.user_id == user_id))
                 chat_id_subquery = select(Chat.id).filter_by(user_id=user_id).scalar_subquery()
                 await session.execute(
                     update(AutomationRun)
