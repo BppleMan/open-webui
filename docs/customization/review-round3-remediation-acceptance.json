@@ -1,7 +1,7 @@
 {
   "requirement": "R65",
   "prototype": "P50",
-  "status": "local_verified_ci_pending",
+  "status": "verified_on_isolated_preview",
   "source_baseline": "fbe1bace22fad76225f65e3f19463f3527b05c76",
   "findings": {
     "CR3-01": {
@@ -34,8 +34,8 @@
     }
   },
   "local": {
-    "backend": 444,
-    "frontend": 73,
+    "backend": 449,
+    "frontend": 74,
     "type_new": 0,
     "type_remaining": 5695,
     "build": "passed",
@@ -44,12 +44,59 @@
     "supplier_requests": "synthetic loopback only"
   },
   "deployment": {
-    "status": "pending",
+    "source": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-1665423cd93a18557b4ff7a38cebc3c910a86bee@sha256:7a618f30803c71d6f54571b7a3f79119dcda7a111e9cc1993b957d00b9ed5611",
+    "pod": "open-webui-staging-59cbd5bbfc-nlnfh",
+    "image_id": "ghcr.io/bppleman/open-webui-oi@sha256:7a618f30803c71d6f54571b7a3f79119dcda7a111e9cc1993b957d00b9ed5611",
+    "restarts": 0,
+    "gitops": "e662efb387adfafb69e0359b0b6ffe21b931a77d",
+    "argocd": "Synced/Healthy",
+    "schema": "oi0000000007",
+    "production_unchanged": true,
+    "no_database_migration": true,
+    "status": "verified",
     "scope": "isolated_preview_only"
   },
   "production": "R50 unchanged",
   "browser": {
-    "controlled_draft_delay": "inert and aria-busy verified; keyboard input blocked",
-    "pending_input_transfer": "GET/PUT controlled regressions passed"
-  }
+    "controlled_draft_GET_wait": "passed",
+    "inert_and_keyboard_blocking": "passed",
+    "restore_after_save_reload": "passed",
+    "synthetic_GET_PUT_navigation_interleavings": "passed",
+    "supplier": "loopback synthetic only"
+  },
+  "source_commit": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+  "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556",
+  "checks": {
+    "backend_CI": 449,
+    "frontend_CI": 74,
+    "type_new": 0,
+    "remaining_upstream_diagnostics": 5695,
+    "production_build": "passed",
+    "integration_CI": "PostgreSQL restore, pgvector, Realtime, sessions/drafts, native protocols, shared HTTP permissions/privacy, costs/archive, parallel shared caller attribution and legacy archive deduplication passed",
+    "real_supplier_requests": 0
+  },
+  "preview_verification": {
+    "status": "passed",
+    "method": "built-in browser, read-only existing synthetic conversation after deployment reload",
+    "current_cost": "0.000273",
+    "cumulative_cost": "0.00082575",
+    "cache_read_zero": true,
+    "cache_write_unknown": true,
+    "usage_info": true,
+    "draft_saved": true,
+    "real_supplier_requests": 0
+  },
+  "restore": {
+    "verified_tables": 63,
+    "verified_attachments": 3,
+    "schema": "oi0000000007",
+    "http_against_restored_copy": false
+  },
+  "limitations": [
+    "No retrospective cleanup or reconstruction of existing historical ledger records.",
+    "No real supplier requests; the separate R59 CPA readable-summary gap remains open.",
+    "The restore rehearsal verifies stored data separately from HTTP/browser acceptance.",
+    "No claim that the seven reported findings exhaust all possible defects."
+  ]
 }

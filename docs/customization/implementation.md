@@ -100,3 +100,7 @@ R63 review remediation is implemented with isolated regression and HTTP validati
 Implemented the eleven second-review findings; see review-round2-remediation.md and the separate acceptance record. No database migration or production change.
 
 R64/P49 is verified on isolated preview. Exact-source CI passed 423 backend and 71 frontend tests, type delta and production build, with PostgreSQL/HTTP/socket integration. See review-round2-remediation-acceptance.json. Production and the separate real-provider gap are unchanged.
+
+## R65 / P50 — Third review remediation
+
+The seven findings and the adjacent navigation-during-transfer case are repaired and verified on isolated preview. Exact-source CI passed 449 backend and 74 frontend tests, type delta and build, plus real HTTP/socket and PostgreSQL boundaries. The built-in browser verified input freezing during a controlled pending draft request and recovery after save/reload. See review-round3-remediation.md and its acceptance record. No schema migration, historical ledger rewrite or production change occurred.

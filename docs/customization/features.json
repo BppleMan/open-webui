@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "project": "OI Open WebUI customization",
-  "updated_on": "2026-10-30",
-  "phase": "R65_local_verified_CI_pending; R50_hold",
+  "updated_on": "2026-10-31",
+  "phase": "R65_round3_preview_verified; R59_CPA_summary_pending; stage8B_not_authorized",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,12 +14,12 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "b739fd752f5755d615181686906d5b2a42c99501",
+    "latest_code_commit": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "b739fd752f5755d615181686906d5b2a42c99501",
-    "latest_documentation_revision": "U63/R64: eleven second-review findings repaired and verified on isolated preview",
+    "latest_commit": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+    "latest_documentation_revision": "U64/R65: seven third-review findings repaired and verified on isolated preview",
     "original_base": {
       "tag": "v0.12.3",
       "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60"
@@ -163,7 +163,14 @@
         "CR2-03",
         "CR2-07",
         "CR2-08"
-      ]
+      ],
+      "review_R65": {
+        "implementation": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+        "verification": "449 backend, 74 frontend, zero new type diagnostics, exact-source CI; HTTP/PG and controlled browser acceptance",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-round3-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556"
+      }
     },
     {
       "id": "F02",
@@ -453,7 +460,14 @@
         "CR2-04",
         "CR2-05",
         "CR2-11"
-      ]
+      ],
+      "review_R65": {
+        "implementation": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+        "verification": "449 backend, 74 frontend, zero new type diagnostics, exact-source CI; HTTP/PG and controlled browser acceptance",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-round3-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556"
+      }
     },
     {
       "id": "F04",
@@ -722,7 +736,14 @@
       "review_round2_findings": [
         "CR2-01",
         "CR2-11"
-      ]
+      ],
+      "review_R65": {
+        "implementation": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+        "verification": "449 backend, 74 frontend, zero new type diagnostics, exact-source CI; HTTP/PG and controlled browser acceptance",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-round3-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556"
+      }
     },
     {
       "id": "F07",
@@ -778,6 +799,13 @@
         "deployment": "isolated_preview_verified; production_unchanged_R50",
         "evidence": "review-remediation-acceptance.json",
         "ci": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
+      },
+      "review_R65": {
+        "implementation": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+        "verification": "449 backend, 74 frontend, zero new type diagnostics, exact-source CI; HTTP/PG and controlled browser acceptance",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-round3-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556"
       }
     },
     {
@@ -882,7 +910,14 @@
         "CR2-02",
         "CR2-07",
         "CR2-08"
-      ]
+      ],
+      "review_R65": {
+        "implementation": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+        "verification": "449 backend, 74 frontend, zero new type diagnostics, exact-source CI; HTTP/PG and controlled browser acceptance",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-round3-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556"
+      }
     },
     {
       "id": "F09",
@@ -1078,7 +1113,14 @@
       "review_round2_findings": [
         "CR2-01",
         "CR2-06"
-      ]
+      ],
+      "review_R65": {
+        "implementation": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+        "verification": "449 backend, 74 frontend, zero new type diagnostics, exact-source CI; HTTP/PG and controlled browser acceptance",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-round3-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556"
+      }
     },
     {
       "id": "F12",
@@ -1455,7 +1497,14 @@
         "CR2-08",
         "CR2-09",
         "CR2-10"
-      ]
+      ],
+      "review_R65": {
+        "implementation": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+        "verification": "449 backend, 74 frontend, zero new type diagnostics, exact-source CI; HTTP/PG and controlled browser acceptance",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-round3-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556"
+      }
     },
     {
       "id": "F14",
@@ -1900,7 +1949,14 @@
       "review_round2_findings": [
         "CR2-01",
         "CR2-06"
-      ]
+      ],
+      "review_R65": {
+        "implementation": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+        "verification": "449 backend, 74 frontend, zero new type diagnostics, exact-source CI; HTTP/PG and controlled browser acceptance",
+        "deployment": "isolated_preview_verified; production_unchanged_R50",
+        "evidence": "review-round3-remediation-acceptance.json",
+        "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556"
+      }
     },
     {
       "id": "F18",
@@ -2174,8 +2230,8 @@
     }
   ],
   "latest_checks": {
-    "backend_tests": 410,
-    "frontend_tests": 67,
+    "backend_tests": 449,
+    "frontend_tests": 74,
     "type_gate": "no_new_diagnostics_5695_upstream_remain",
     "frontend_build": "passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
@@ -2237,7 +2293,7 @@
       "tag": "sha-4fafc40d3d096e51941cd7bdd39983a2c4c0f1dc",
       "digest": "sha256:9b31ebf18465789426664d7ec4f49092d189fa67c4cca53050f3c46732cad216"
     },
-    "actual_CI": "https://github.com/BppleMan/open-webui/actions/runs/40836739314",
+    "actual_CI": "https://github.com/BppleMan/open-webui/actions/runs/41094559556",
     "stage8A": {
       "status": "verified_with_documented_methods",
       "source": "61ff81c61e2c9fee90d2237679c64833196978bb",
@@ -2387,7 +2443,13 @@
       "evidence": "usage-responsive-acceptance.json"
     },
     "review_R63": "all_14_remediated_on_isolated_preview",
-    "CI": "https://github.com/BppleMan/open-webui/actions/runs/41022967897"
+    "CI": "https://github.com/BppleMan/open-webui/actions/runs/41022967897",
+    "review_round3": {
+      "acceptance": "review-round3-remediation-acceptance.json",
+      "source": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+      "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556",
+      "status": "verified_on_isolated_preview"
+    }
   },
   "review_remediation": {
     "review": "code-review-2026-10-25",
@@ -2758,7 +2820,7 @@
   "review_round3_remediation": {
     "requirement": "R65",
     "prototype": "P50",
-    "status": "local_verified_ci_pending",
+    "status": "verified_on_isolated_preview",
     "source_baseline": "fbe1bace22fad76225f65e3f19463f3527b05c76",
     "findings": {
       "CR3-01": {
@@ -2791,8 +2853,8 @@
       }
     },
     "local": {
-      "backend": 444,
-      "frontend": 73,
+      "backend": 449,
+      "frontend": 74,
       "type_new": 0,
       "type_remaining": 5695,
       "build": "passed",
@@ -2801,13 +2863,60 @@
       "supplier_requests": "synthetic loopback only"
     },
     "deployment": {
-      "status": "pending",
+      "source": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+      "image": "ghcr.io/bppleman/open-webui-oi:sha-1665423cd93a18557b4ff7a38cebc3c910a86bee@sha256:7a618f30803c71d6f54571b7a3f79119dcda7a111e9cc1993b957d00b9ed5611",
+      "pod": "open-webui-staging-59cbd5bbfc-nlnfh",
+      "image_id": "ghcr.io/bppleman/open-webui-oi@sha256:7a618f30803c71d6f54571b7a3f79119dcda7a111e9cc1993b957d00b9ed5611",
+      "restarts": 0,
+      "gitops": "e662efb387adfafb69e0359b0b6ffe21b931a77d",
+      "argocd": "Synced/Healthy",
+      "schema": "oi0000000007",
+      "production_unchanged": true,
+      "no_database_migration": true,
+      "status": "verified",
       "scope": "isolated_preview_only"
     },
     "production": "R50 unchanged",
     "browser": {
-      "controlled_draft_delay": "inert and aria-busy verified; keyboard input blocked",
-      "pending_input_transfer": "GET/PUT controlled regressions passed"
-    }
+      "controlled_draft_GET_wait": "passed",
+      "inert_and_keyboard_blocking": "passed",
+      "restore_after_save_reload": "passed",
+      "synthetic_GET_PUT_navigation_interleavings": "passed",
+      "supplier": "loopback synthetic only"
+    },
+    "source_commit": "1665423cd93a18557b4ff7a38cebc3c910a86bee",
+    "ci": "https://github.com/BppleMan/open-webui/actions/runs/41094559556",
+    "checks": {
+      "backend_CI": 449,
+      "frontend_CI": 74,
+      "type_new": 0,
+      "remaining_upstream_diagnostics": 5695,
+      "production_build": "passed",
+      "integration_CI": "PostgreSQL restore, pgvector, Realtime, sessions/drafts, native protocols, shared HTTP permissions/privacy, costs/archive, parallel shared caller attribution and legacy archive deduplication passed",
+      "real_supplier_requests": 0
+    },
+    "preview_verification": {
+      "status": "passed",
+      "method": "built-in browser, read-only existing synthetic conversation after deployment reload",
+      "current_cost": "0.000273",
+      "cumulative_cost": "0.00082575",
+      "cache_read_zero": true,
+      "cache_write_unknown": true,
+      "usage_info": true,
+      "draft_saved": true,
+      "real_supplier_requests": 0
+    },
+    "restore": {
+      "verified_tables": 63,
+      "verified_attachments": 3,
+      "schema": "oi0000000007",
+      "http_against_restored_copy": false
+    },
+    "limitations": [
+      "No retrospective cleanup or reconstruction of existing historical ledger records.",
+      "No real supplier requests; the separate R59 CPA readable-summary gap remains open.",
+      "The restore rehearsal verifies stored data separately from HTTP/browser acceptance.",
+      "No claim that the seven reported findings exhaust all possible defects."
+    ]
   }
 }
