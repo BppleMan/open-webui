@@ -19,7 +19,7 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-it.each(['GET', 'PUT'])(
+it.each(['GET', 'PUT', 'navigation'])(
 	'retains queued edits during temporary transfer %s and freezes the chat',
 	async (waitAt) => {
 		const records = new Map<string, LocalDraft>();
@@ -43,7 +43,7 @@ it.each(['GET', 'PUT'])(
 			'fetch',
 			vi.fn(async (_url, init = {}) => {
 				const method = init.method || 'GET';
-				if (method === waitAt && !blocked) {
+				if (method === (waitAt === 'navigation' ? 'PUT' : waitAt) && !blocked) {
 					blocked = true;
 					reached();
 					await gate;
@@ -95,21 +95,28 @@ it.each(['GET', 'PUT'])(
 		};
 		const harness = new Function(
 			...Object.keys(env),
-			`return {run:(${handler}), busy:()=>savingTemporaryChat};`
+			`return {run:(${handler}), busy:()=>savingTemporaryChat, replace:(value)=>draftManager=value};`
 		)(...Object.values(env));
 		const saving = harness.run();
 		await waiting;
 		expect(harness.busy()).toBe(true);
 		expect(source).toContain('inert={!!initializingDraft || savingTemporaryChat}');
 		editor = { ...editor, prompt: 'queued-during-' + waitAt };
-		await manager.edit(editor);
+		if (waitAt === 'navigation') harness.replace({});
+		else await manager.edit(editor);
 		release();
 		await saving;
 		expect(errors).not.toHaveBeenCalled();
-		expect(server.payload.prompt).toBe(editor.prompt);
-		expect([...records.values()].some((row) => row.temporary)).toBe(false);
+		if (waitAt === 'navigation') {
+			expect(server.payload.prompt).toBe('at-click');
+			expect([...records.values()].some((row) => row.temporary)).toBe(true);
+			expect(goto).not.toHaveBeenCalled();
+		} else {
+			expect(server.payload.prompt).toBe(editor.prompt);
+			expect([...records.values()].some((row) => row.temporary)).toBe(false);
+			expect(goto).toHaveBeenCalledWith('/c/saved');
+		}
 		expect(harness.busy()).toBe(false);
-		expect(goto).toHaveBeenCalledWith('/c/saved');
 		manager.dispose();
 	}
 );

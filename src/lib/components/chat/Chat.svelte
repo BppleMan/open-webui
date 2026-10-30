@@ -5565,6 +5565,7 @@
 												// Include any last editor/upload event already queued before inert applied.
 												let transferred;
 												do {
+													if (sourceDraft !== draftManager || $user?.id !== draftOwnerId) return;
 													transferred = structuredClone(getChatInputDraft());
 													if (!(await destinationDraft.edit(transferred)))
 														throw new Error('Could not preserve the unsent draft');
