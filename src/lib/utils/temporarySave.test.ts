@@ -19,7 +19,7 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-it.each(['GET', 'PUT', 'navigation'])(
+it.each(['GET', 'PUT', 'navigation', 'retire', 'refresh-list', 'navigation-intent'])(
 	'retains queued edits during temporary transfer %s and freezes the chat',
 	async (waitAt) => {
 		const records = new Map<string, LocalDraft>();
@@ -32,6 +32,11 @@ it.each(['GET', 'PUT', 'navigation'])(
 			for (const old of consumed) if (old.key !== row.key) records.delete(old.key);
 		});
 		vi.spyOn(browserDraftStore, 'remove').mockImplementation(async (key) => {
+			if (waitAt === 'retire' && !blocked) {
+				blocked = true;
+				reached();
+				await gate;
+			}
 			records.delete(key);
 		});
 		let reached!: () => void, release!: () => void;
@@ -73,6 +78,7 @@ it.each(['GET', 'PUT', 'navigation'])(
 			errors = vi.fn();
 		const env = {
 			savingTemporaryChat: false,
+			temporarySaveEpoch: 0,
 			tick: async () => {},
 			$user: { id: 'u' },
 			history: { currentId: 'reply', messages: { reply: { id: 'reply' } } },
@@ -86,28 +92,41 @@ it.each(['GET', 'PUT', 'navigation'])(
 			getChatInputDraft: () => editor,
 			hasDraftInput,
 			DraftManager,
-			temporaryChatEnabled: { set() {} },
-			chatId: { set() {} },
-			refreshChatList: async () => {},
+			temporaryChatEnabled: { set: vi.fn() },
+			chatId: { set: vi.fn() },
+			refreshChatList: async () => {
+				if (['refresh-list', 'navigation-intent'].includes(waitAt)) {
+					reached();
+					await gate;
+				}
+			},
 			goto,
 			toast: { error: errors, success: vi.fn() },
 			uuidv4: () => crypto.randomUUID()
 		};
 		const harness = new Function(
 			...Object.keys(env),
-			`return {run:(${handler}), busy:()=>savingTemporaryChat, replace:(value)=>draftManager=value};`
+			`return {run:(${handler}), busy:()=>savingTemporaryChat, replace:(value)=>draftManager=value, navigate:()=>temporarySaveEpoch++};`
 		)(...Object.values(env));
 		const saving = harness.run();
 		await waiting;
 		expect(harness.busy()).toBe(true);
 		expect(source).toContain('inert={!!initializingDraft || savingTemporaryChat}');
 		editor = { ...editor, prompt: 'queued-during-' + waitAt };
-		if (waitAt === 'navigation') harness.replace({});
-		else await manager.edit(editor);
+		if (['navigation', 'retire', 'refresh-list', 'navigation-intent'].includes(waitAt)) {
+			if (waitAt === 'navigation-intent') harness.navigate();
+			else harness.replace({});
+			env.chatId.set.mockClear();
+			env.temporaryChatEnabled.set.mockClear();
+		} else await manager.edit(editor);
 		release();
 		await saving;
 		expect(errors).not.toHaveBeenCalled();
-		if (waitAt === 'navigation') {
+		if (['retire', 'refresh-list', 'navigation-intent'].includes(waitAt)) {
+			expect(goto).not.toHaveBeenCalled();
+			expect(env.chatId.set).not.toHaveBeenCalled();
+			expect(env.temporaryChatEnabled.set).not.toHaveBeenCalled();
+		} else if (waitAt === 'navigation') {
 			expect(server.payload.prompt).toBe('at-click');
 			expect([...records.values()].some((row) => row.temporary)).toBe(true);
 			expect(goto).not.toHaveBeenCalled();

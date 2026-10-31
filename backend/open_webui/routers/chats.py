@@ -136,13 +136,23 @@ async def can_read_shared_chat(user, shared, db: AsyncSession) -> bool:
     )
 
 
-async def shared_chat_response(chat, user=None, db=None):
+async def private_chat_response(chat, viewer_id, db=None, *, portable=False):
+    from open_webui.utils.oi.native_privacy import project_native
+
+    result = ChatResponse.model_validate(chat, from_attributes=True).model_copy(deep=True)
+    await project_native(result.chat, chat.user_id, viewer_id, db, portable=portable)
+    return result
+
+
+async def shared_chat_response(chat, user=None, db=None, *, portable=False):
     from open_webui.models.users import Users
 
     data = ChatResponse.model_validate(chat, from_attributes=True).model_dump()
     from open_webui.utils.oi.history import decorate_conversation
+    from open_webui.utils.oi.native_privacy import project_native
 
     data['chat'] = await decorate_conversation(db, chat.id, data['chat'])
+    await project_native(data['chat'], chat.user_id, user.id if user else None, db, portable=portable)
     if user is None or chat.user_id != user.id:
         data['variables'] = {}
         for key in ('params', 'tool_servers', 'tool_ids', 'filter_ids', 'variables'):
@@ -158,11 +168,6 @@ async def shared_chat_response(chat, user=None, db=None):
             message['user_id'] = author_id
             if author.get('id') == author_id and author.get('name'):
                 authors[author_id] = {'id': author_id, 'name': author['name']}
-        if user is None or chat.user_id != user.id:
-            # Raw envelopes can echo private provider instructions/configuration.
-            # Visible output remains shared; server-side replay reads trusted stored history.
-            message.pop('oi_native', None)
-            message.pop('oi_native_state', None)
         if user is None or (message.get('user_id') or chat.user_id) != user.id:
             message.pop('meta', None)
     missing_ids = {message['user_id'] for message in messages if message.get('role') == 'user'} - authors.keys()
@@ -896,7 +901,7 @@ async def create_new_chat(
             subject_id=chat.id,
             data={'title': chat.title, 'folder_id': chat.folder_id},
         )
-        return ChatResponse.model_validate(chat, from_attributes=True)
+        return await private_chat_response(chat, user.id, db)
     except HTTPException:
         await db.rollback()
         raise
@@ -1124,7 +1129,7 @@ async def generate_chat_export_ndjson(user_id: str):
 
         for chat in result.items:
             try:
-                yield ChatResponse.model_validate(chat, from_attributes=True).model_dump_json() + '\n'
+                yield (await private_chat_response(chat, user_id, portable=True)).model_dump_json() + '\n'
             except Exception as e:
                 log.exception(f'Error serializing chat {chat.id}: {e}')
 
@@ -1150,7 +1155,7 @@ async def get_user_chats(user=Depends(get_verified_user)):
 @router.get('/all/archived', response_model=list[ChatResponse])
 async def get_user_archived_chats(user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)):
     return [
-        ChatResponse.model_validate(chat, from_attributes=True)
+        await private_chat_response(chat, user.id, db)
         for chat in await Chats.get_archived_chats_by_user_id(user.id, db=db)
     ]
 
@@ -1179,7 +1184,7 @@ async def get_all_user_tags(user=Depends(get_verified_user), db: AsyncSession = 
 async def get_all_user_chats_in_db(user=Depends(get_admin_user), db: AsyncSession = Depends(get_async_session)):
     if not ENABLE_ADMIN_EXPORT:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.ACCESS_PROHIBITED)
-    return [ChatResponse.model_validate(chat, from_attributes=True) for chat in await Chats.get_chats(db=db)]
+    return [await private_chat_response(chat, user.id, db, portable=True) for chat in await Chats.get_chats(db=db)]
 
 
 ############################
@@ -1558,7 +1563,7 @@ async def update_chat_by_id(
         )
         if chat.user_id != user.id:
             return await shared_chat_response(chat, user, db=db)
-        return ChatResponse.model_validate(chat, from_attributes=True)
+        return await private_chat_response(chat, user.id, db)
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -1700,7 +1705,7 @@ async def update_chat_message_by_id(
         subject_id=message_id,
         data={'chat_id': id, 'content_preview': (form_data.content or '')[:300]},
     )
-    return ChatResponse.model_validate(chat, from_attributes=True)
+    return await private_chat_response(chat, user.id, db)
 
 
 @router.delete('/{id}/messages/{message_id}', response_model=ChatResponse | None)
@@ -1739,7 +1744,7 @@ async def delete_chat_message_by_id(
         subject_id=message_id,
         data={'chat_id': id},
     )
-    return ChatResponse.model_validate(chat, from_attributes=True)
+    return await private_chat_response(chat, user.id, db)
 
 
 ############################
@@ -1984,8 +1989,14 @@ async def fork_chat_by_id(
             'messages': fork_messages,
         }
     )
+    from open_webui.utils.oi.native_privacy import project_native
+    import copy
+
+    portable_chat = await project_native(copy.deepcopy(updated_chat), chat.user_id, user.id, db, portable=True)
     if not is_owner:
-        updated_chat = (await shared_chat_response(chat.model_copy(update={'chat': updated_chat}), user, db=db))['chat']
+        updated_chat = (await shared_chat_response(chat.model_copy(update={'chat': portable_chat}), user, db=db))[
+            'chat'
+        ]
         messages = list((updated_chat.get('history', {}).get('messages') or {}).values())
         messages.extend(updated_chat.get('messages') or [])
         for message in messages:
@@ -1993,6 +2004,8 @@ async def fork_chat_by_id(
                 message['user_id'] = user.id
                 if message.get('role') == 'user':
                     message['user'] = {'id': user.id, 'name': user.name}
+    else:
+        updated_chat = portable_chat
     meta = {
         **((chat.meta or {}) if is_owner else {}),
         'forked_from': chat.id,
@@ -2045,7 +2058,7 @@ async def fork_chat_by_id(
         subject_id=fork.id,
         data={'original_chat_id': id, 'forked_from_message_id': source_message_id},
     )
-    return ChatResponse.model_validate(fork, from_attributes=True)
+    return await private_chat_response(fork, user.id, db)
 
 
 @router.post('/{id}/clone', response_model=ChatResponse | None)
@@ -2092,7 +2105,7 @@ async def clone_chat_by_id(
                 subject_id=chat.id,
                 data={'original_chat_id': id},
             )
-            return ChatResponse.model_validate(chat, from_attributes=True)
+            return await private_chat_response(chat, user.id, db)
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -2147,7 +2160,7 @@ async def clone_shared_chat_by_id(
         )
 
     updated_chat = {
-        **(await shared_chat_response(chat, user, db=db))['chat'],
+        **(await shared_chat_response(chat, user, db=db, portable=True))['chat'],
         'originalChatId': chat.id,
         'branchPointMessageId': chat.chat['history']['currentId'],
         'title': f'Clone of {chat.title}',
@@ -2178,7 +2191,7 @@ async def clone_shared_chat_by_id(
 
     if chats:
         chat = chats[0]
-        return ChatResponse.model_validate(chat, from_attributes=True)
+        return await private_chat_response(chat, user.id, db)
     else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -2217,7 +2230,7 @@ async def archive_chat_by_id(
             subject_id=id,
             subject_type='chat',
         )
-        return ChatResponse.model_validate(chat, from_attributes=True)
+        return await private_chat_response(chat, user.id, db)
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT())
 
@@ -2252,7 +2265,7 @@ async def share_chat_by_id(
                 subject_id=id,
                 data={'share_id': chat.share_id, 'updated': True},
             )
-            return ChatResponse.model_validate(chat, from_attributes=True)
+            return await private_chat_response(chat, user.id, db)
 
     # Create a new share
     shared = await SharedChats.create(id, user.id, db=db, share_mode=form_data.share_mode if form_data else None)
@@ -2270,7 +2283,7 @@ async def share_chat_by_id(
         subject_id=id,
         data={'share_id': shared.id},
     )
-    return ChatResponse.model_validate(chat, from_attributes=True)
+    return await private_chat_response(chat, user.id, db)
 
 
 # --- Delete Shared Chat ---
@@ -2345,7 +2358,7 @@ async def update_shared_chat_access_by_id(
 
     await refresh_chat_access(id)
 
-    return ChatResponse.model_validate(chat, from_attributes=True)
+    return await private_chat_response(chat, user.id, db)
 
 
 ############################
@@ -2442,7 +2455,7 @@ async def update_chat_folder_id_by_id(
         )
         if chat.user_id != user.id:
             return await shared_chat_response(chat, user, db=db)
-        return ChatResponse.model_validate(chat, from_attributes=True)
+        return await private_chat_response(chat, user.id, db)
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT())
 

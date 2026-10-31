@@ -861,6 +861,7 @@
 	let initializingDraft: AbortSignal | null = null;
 	let clearingSubmittedInput = false;
 	let savingTemporaryChat = false;
+	let temporarySaveEpoch = 0;
 	const submittedDrafts = new Map<string, { manager: DraftManager; ticket: DraftTicket }>();
 
 	const applyDraftInput = async (input: any) => {
@@ -932,7 +933,10 @@
 		await draftRestore;
 		return hasDraftInput(manager.payload);
 	};
-	onDestroy(() => draftManager?.dispose());
+	onDestroy(() => {
+		temporarySaveEpoch += 1;
+		draftManager?.dispose();
+	});
 	// Toggling temporary mode on an unsent chat does not navigate/remount Chat.
 	// An explicit mode change starts a new identity; only initial page loading recovers drafts.
 	$: if (draftManager && $user && !draftManager.matchesContext($user.id, !!$temporaryChatEnabled)) {
@@ -1755,7 +1759,11 @@
 					for (const msg of outletMessages) {
 						if (msg?.id && history.messages[msg.id]) {
 							const existing = history.messages[msg.id];
-							if (existing.content !== msg.content) {
+							if (
+								existing.content !== msg.content ||
+								JSON.stringify(existing.output) !== JSON.stringify(msg.output) ||
+								msg.oi_native_invalidated
+							) {
 								history.messages[msg.id] = {
 									...existing,
 									originalContent: existing.content,
@@ -2543,6 +2551,7 @@
 		return () => bridge?.end();
 	});
 	beforeNavigate(() => {
+		temporarySaveEpoch += 1;
 		bridge?.end();
 		pendingUrlActions = null;
 	});
@@ -5516,11 +5525,17 @@
 							onSaveTempChat={async () => {
 								if (savingTemporaryChat) return;
 								savingTemporaryChat = true;
+								const saveEpoch = ++temporarySaveEpoch;
+								const draftOwnerId = $user?.id;
+								const sourceDraft = draftManager;
 								try {
 									await tick(); // Apply inert before any asynchronous save or input transfer.
-									const draftOwnerId = $user?.id;
-									const sourceDraft = draftManager;
-									if (!draftOwnerId) return;
+									if (
+										!draftOwnerId ||
+										saveEpoch !== temporarySaveEpoch ||
+										sourceDraft !== draftManager
+									)
+										return;
 									if (!history?.currentId || !Object.keys(history.messages).length) {
 										toast.error($i18n.t('No conversation to save'));
 										return;
@@ -5546,7 +5561,12 @@
 									);
 
 									if (savedChat) {
-										if (sourceDraft !== draftManager || $user?.id !== draftOwnerId) return;
+										if (
+											saveEpoch !== temporarySaveEpoch ||
+											sourceDraft !== draftManager ||
+											$user?.id !== draftOwnerId
+										)
+											return;
 										const pendingDraft = structuredClone(getChatInputDraft());
 										// Persist the destination draft before navigation mounts another Chat.
 										// Read the editor directly: its debounced draft callback may still be pending.
@@ -5561,11 +5581,21 @@
 											});
 											try {
 												await destinationDraft.load();
-												if (sourceDraft !== draftManager || $user?.id !== draftOwnerId) return;
+												if (
+													saveEpoch !== temporarySaveEpoch ||
+													sourceDraft !== draftManager ||
+													$user?.id !== draftOwnerId
+												)
+													return;
 												// Include any last editor/upload event already queued before inert applied.
 												let transferred;
 												do {
-													if (sourceDraft !== draftManager || $user?.id !== draftOwnerId) return;
+													if (
+														saveEpoch !== temporarySaveEpoch ||
+														sourceDraft !== draftManager ||
+														$user?.id !== draftOwnerId
+													)
+														return;
 													transferred = structuredClone(getChatInputDraft());
 													if (!(await destinationDraft.edit(transferred)))
 														throw new Error('Could not preserve the unsent draft');
@@ -5577,11 +5607,28 @@
 												destinationDraft.dispose();
 											}
 										}
-										if (sourceDraft !== draftManager || $user?.id !== draftOwnerId) return;
+										if (
+											saveEpoch !== temporarySaveEpoch ||
+											sourceDraft !== draftManager ||
+											$user?.id !== draftOwnerId
+										)
+											return;
 										await sourceDraft?.retireTemporary();
+										if (
+											saveEpoch !== temporarySaveEpoch ||
+											sourceDraft !== draftManager ||
+											$user?.id !== draftOwnerId
+										)
+											return;
+										await refreshChatList(localStorage.token);
+										if (
+											saveEpoch !== temporarySaveEpoch ||
+											sourceDraft !== draftManager ||
+											$user?.id !== draftOwnerId
+										)
+											return;
 										temporaryChatEnabled.set(false);
 										chatId.set(savedChat.id);
-										await refreshChatList(localStorage.token);
 										await goto(`/c/${savedChat.id}`);
 										toast.success($i18n.t('Conversation saved successfully'));
 									}

@@ -50,6 +50,9 @@ async def export_records(db, user_id, chat_id, directory=None):
     body.setdefault('history', {})['messages'] = await ChatMessages.get_messages_map_by_chat_id(
         chat_id, db=db
     ) or body.get('history', {}).get('messages', {})
+    from open_webui.utils.oi.native_privacy import project_native
+
+    await project_native(body, chat.user_id, user_id, db, portable=True)
     body.pop('share_id', None)
     body.pop('share_mode', None)
     messages = body['history']['messages']

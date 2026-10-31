@@ -222,7 +222,6 @@ async def test_save_as_copy_invalidates_original_native_body(db, monkeypatch):
     monkeypatch.setattr(chats.Chats, 'get_chat_by_id_and_user_id', AsyncMock(return_value=fake_chat))
     monkeypatch.setattr(chats.Chats, '_chat_transaction', transaction)
     monkeypatch.setattr(chats, 'publish_event', AsyncMock())
-    monkeypatch.setattr(chats, 'ChatResponse', SimpleNamespace(model_validate=lambda *args, **kwargs: fake_chat))
     form = ChatForm(chat={'history': {'messages': {'original': original, 'copy': edited}, 'currentId': 'copy'}})
     await chats.update_chat_by_id(SimpleNamespace(), 'chat', form, SimpleNamespace(id='u'), db)
     reconstructed = process_messages_with_output([form.chat['history']['messages']['copy']])

@@ -314,3 +314,8 @@ New temporary conversations have new identities; retry fingerprints reject chang
 ## P50 — Ownership, privacy and asynchronous transfer boundaries
 
 Freeze the chat editor while saving a temporary conversation, retain pending input before retiring its source, and reject stale navigation contexts. Ledger ownership follows the stored Chat owner; each generation retains its authenticated caller and existing model permissions. Non-owner shared views receive visible outputs without raw native envelopes; trusted server history remains available for replay. Ollama accounting accepts only numeric metering fields. Gemini pricing uses reported modality/cache classifications and keeps incomplete rates unknown. Legacy archive restores receive an editable unknown imported-history baseline and exclude duplicate statistics. Map existing penalty controls to native generationConfig fields.
+
+
+## P51 — Native privacy, replay and operation lifecycle
+
+Distinguish native caller-private metadata from protocol replay content. Shared reads use actual caller ownership; forks and archives carry a safe replay projection without private configuration. Outlet rewrites invalidate stale native state, including temporary responses. Media-only replies remain valid history. All Gemini media paths share conservative metering rules. Temporary saves verify their source context after every awaited transition before mutating global state or navigating.

@@ -62,3 +62,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R65/P50 repairs the seven third-review findings. Read docs/customization/review-round3-remediation.md and its acceptance record. Preserve shared ledger/caller separation, native-state privacy, metering-only temporary ledgers and guarded draft transfer. R50/U49/R59 remain.
 
 - R65/P50 is verified on isolated preview. Preserve the guarded temporary save, chat-owned/caller-attributed ledger, non-owner native projection and metering-only Ollama usage. Original review reports remain historical, and existing records were not retrospectively rewritten. R50 and the R59 supplier gap remain.
+
+- R66/P51 repairs the six fourth-review boundaries; read review-round4-remediation.md and its acceptance record. Separate private provider metadata from portable replay, preserve pure media history, invalidate outlet changes and guard the complete temporary save lifecycle. R50/U49/R59 remain.

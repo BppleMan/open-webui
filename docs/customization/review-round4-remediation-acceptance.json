@@ -1,0 +1,52 @@
+{
+  "requirement": "R66",
+  "prototype": "P51",
+  "status": "local_verified_ci_pending",
+  "source_baseline": "6a3e832e63b9ced52cf7b75f1ab0e683ce4fbc5f",
+  "findings": {
+    "CR4-01": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR4-02": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR4-03": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR4-04": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR4-05": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    },
+    "CR4-06": {
+      "implementation": "fixed",
+      "verification": "regression_passed"
+    }
+  },
+  "local": {
+    "backend": 467,
+    "frontend": 77,
+    "new_type_diagnostics": 0,
+    "existing_type_diagnostics": 5695,
+    "production_build": "passed",
+    "HTTP": "private caller visibility, NDJSON export, shared fork and clone, pure-image next-turn streaming and nonstreaming",
+    "PostgreSQL": "caller privacy, portable signed archive restore and inherited cost",
+    "browser": "controlled list refresh wait; sidebar navigation retained; destination draft preserved"
+  },
+  "deployment": {
+    "status": "pending",
+    "scope": "isolated_preview_only"
+  },
+  "boundaries": [
+    "R50 production hold",
+    "R59 actual CPA readable-summary gap remains open",
+    "No real supplier requests",
+    "No historical data reconstruction or cleanup"
+  ]
+}

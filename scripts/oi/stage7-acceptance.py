@@ -100,6 +100,12 @@ try:
         check=True,
         timeout=45,
     )
+    subprocess.run(
+        [sys.executable, 'scripts/oi/round4-postgres-acceptance.py'],
+        env={**env, 'ENABLE_DB_MIGRATIONS': 'false'},
+        check=True,
+        timeout=45,
+    )
     (repo / '.oi-local').mkdir(exist_ok=True)
     (repo / '.oi-local/stage7-state.txt').write_text(str(state))
     print(f'Stage7 PostgreSQL billing/archive scenarios passed. Evidence: {state}')

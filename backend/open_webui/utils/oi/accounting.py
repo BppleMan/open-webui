@@ -87,6 +87,29 @@ def gemini_modalities(raw, result, fields):
     result['unknown_modality_breakdown'] = unknown
 
 
+def gemini_metering(usage, response, *, request=None, input_media=False, output_media=False):
+    """Shared chat/capability boundary: observed media must never become text-priced.
+
+    Carry only a boolean into accounting, never prompt or media bytes.
+    """
+    import copy
+
+    def media_parts(contents):
+        return any(
+            part.get(key)
+            for content in contents
+            for part in content.get('parts', [])
+            for key in ('inlineData', 'fileData', 'inline_data', 'file_data')
+        )
+
+    raw = copy.deepcopy(usage or {})
+    input_media = input_media or media_parts((request or {}).get('contents', []))
+    output_media = output_media or media_parts([c.get('content', {}) for c in response.get('candidates', [])])
+    if (input_media and 'promptTokensDetails' not in raw) or (output_media and 'candidatesTokensDetails' not in raw):
+        raw['_oi_missing_modality_breakdown'] = True
+    return raw
+
+
 def normalize_usage(raw, protocol='openai'):
     """Canonical totals include cache/reasoning subsets; absence is not zero."""
     if not isinstance(raw, dict):

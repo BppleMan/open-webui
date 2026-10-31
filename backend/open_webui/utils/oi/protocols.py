@@ -598,18 +598,9 @@ class NativeStream:
         self.input_media = False
 
     def metering(self):
-        usage = copy.deepcopy(self.usage)
         if self.protocol in {'gemini', 'cpa-agy'}:
-            output_media = any(
-                part.get('inlineData') or part.get('fileData') or part.get('inline_data') or part.get('file_data')
-                for candidate in (self.body.get('candidates') or [])
-                for part in candidate.get('content', {}).get('parts', [])
-            )
-            if (self.input_media and 'promptTokensDetails' not in usage) or (
-                output_media and 'candidatesTokensDetails' not in usage
-            ):
-                usage['_oi_missing_modality_breakdown'] = True
-        return usage
+            return accounting.gemini_metering(self.usage, self.body, input_media=self.input_media)
+        return copy.deepcopy(self.usage)
 
     def _usage(self):
         return accounting.normalize_usage(self.metering(), self.protocol)
@@ -955,7 +946,9 @@ class NativeStream:
         }
 
 
-async def save_native(metadata, binding, call_id, body, replayable=True):
+async def save_native(
+    metadata, binding, call_id, body, replayable=True, *, caller_id=None, configuration_owner_id=None
+):
     chat_id, message_id = metadata.get('chat_id'), metadata.get('message_id')
     if metadata.get('task') or not is_saved_chat_id(chat_id) or not message_id or not body:
         return
@@ -968,6 +961,8 @@ async def save_native(metadata, binding, call_id, body, replayable=True):
             'protocol': binding.protocol,
             'body': body,
             'replayable': replayable,
+            'caller_id': caller_id,
+            'configuration_owner_id': configuration_owner_id,
         }
     )
     await Chats.upsert_message_to_chat_by_id_and_message_id(chat_id, message_id, {'oi_native': calls}, touch=False)
@@ -1041,7 +1036,14 @@ async def generate(request, form, user, binding, connection, call_id, transport=
             body = response.json()
             result = state.nonstream(body)
             remember()
-            await save_native(metadata, binding, call_id, state.body)
+            await save_native(
+                metadata,
+                binding,
+                call_id,
+                state.body,
+                caller_id=user.id,
+                configuration_owner_id=getattr(connection, 'owner_id', user.id),
+            )
             if not is_saved_chat_id(metadata.get('chat_id')):
                 from open_webui.utils.oi.temporary_native import response_state
 
@@ -1140,6 +1142,14 @@ async def generate(request, form, user, binding, connection, call_id, transport=
             remember()
             await response.aclose()
             await client.aclose()
-            await save_native(metadata, binding, call_id, state.body, state.finished and not state.body.get('error'))
+            await save_native(
+                metadata,
+                binding,
+                call_id,
+                state.body,
+                state.finished and not state.body.get('error'),
+                caller_id=user.id,
+                configuration_owner_id=getattr(connection, 'owner_id', user.id),
+            )
 
     return StreamingResponse(stream(), media_type='text/event-stream')

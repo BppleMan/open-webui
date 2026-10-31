@@ -155,7 +155,15 @@ async def request(
         if not isinstance(result, dict):
             raise HTTPException(502, 'The provider returned an invalid capability response')
         if target.binding.protocol in {'gemini', 'gemini-interactions', 'cpa-agy'}:
-            result['oi_usage'] = result.get('usageMetadata') or {}
+            from open_webui.utils.oi.accounting import gemini_metering
+
+            result['oi_usage'] = gemini_metering(
+                result.get('usageMetadata'),
+                result,
+                request=body,
+                input_media=capability == 'image_edit',
+                output_media=capability in {'image_generation', 'image_edit'} and bool(image_outputs(result)),
+            )
             result['oi_usage_protocol'] = 'gemini'
         elif target.binding.protocol == 'ollama':
             result['oi_usage'] = {key: result[key] for key in ('prompt_eval_count', 'eval_count') if key in result}

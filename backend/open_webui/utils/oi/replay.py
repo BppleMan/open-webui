@@ -3,6 +3,38 @@
 import copy
 
 
+def native_messages(saved):
+    """A media-only native turn is nonempty even without canonical text items."""
+    if saved.get('oi_native_invalidated') or saved.get('role') != 'assistant':
+        return []
+    from open_webui.utils.oi.protocols import NativeStream
+    from open_webui.utils.oi.native_privacy import replay_envelope
+
+    messages = []
+    for native in saved.get('oi_native') or []:
+        if not isinstance(native, dict) or not native.get('binding_id') or not native.get('replayable', True):
+            continue
+        safe = replay_envelope(native)
+        if not safe or not any(safe['body'].values()):
+            continue
+        projected = NativeStream(native['protocol']).nonstream(copy.deepcopy(native['body']))['choices'][0]['message']
+        messages.append({**projected, 'oi_native': copy.deepcopy(native)})
+    return messages
+
+
+def replace_output_text(output, text):
+    """Replace prose while retaining reasoning, media and tool/result blocks."""
+    output = copy.deepcopy(output or [])
+    text_items = [item for item in output if item.get('type') == 'message']
+    for item in text_items:
+        item['content'] = [part for part in item.get('content', []) if part.get('type') not in {'text', 'output_text'}]
+    if text_items:
+        text_items[-1]['content'].append({'type': 'output_text', 'text': text})
+    else:
+        output.append({'type': 'message', 'role': 'assistant', 'content': [{'type': 'output_text', 'text': text}]})
+    return output
+
+
 def attach_native(saved, messages):
     if saved.get('oi_native_invalidated'):
         return

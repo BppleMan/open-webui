@@ -204,3 +204,8 @@ Verify and repair CR2-01..11, preserve R50 and existing accounting, identity, pr
 ## U64 / R65 — Third review remediation
 
 2026-10-31: Verify the seven CR3 findings supplied by the user and repair confirmed defects under the existing remediation request. Preserve R50, U49 and the separate R59 supplier gap; no production or paid supplier changes. Original reports remain historical evidence.
+
+
+## U65 / R66 — Fourth review remediation
+
+2026-10-31: The user explicitly delegated the fourth review to this implementation conversation for verification and repair. Address CR4-01..06 together; preserve private caller configuration separately from shareable native replay. Keep R50/U49/R59 and the original review evidence unchanged.

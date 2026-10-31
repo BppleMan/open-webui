@@ -1929,10 +1929,17 @@ async def load_messages_from_db(chat_id: str, message_id: str) -> Optional[list[
         if skills_create and skills_create.get('original_text') == get_content_from_message(msg):
             set_last_user_message_content(skills_create['expanded_text'], [msg])
 
+    from open_webui.utils.oi.replay import native_messages
+
     return [
         {k: v for k, v in msg.items() if k in MESSAGE_REPLAY_KEYS}
         for msg in db_messages
-        if not (msg.get('role') == 'assistant' and not msg.get('content') and not msg.get('output'))
+        if not (
+            msg.get('role') == 'assistant'
+            and not msg.get('content')
+            and not msg.get('output')
+            and not native_messages(msg)
+        )
     ]
 
 
@@ -2033,9 +2040,24 @@ def process_messages_with_output(
                 processed.extend(output_messages)
                 processed.extend(speech)
                 continue
+            from open_webui.utils.oi.replay import native_messages
+
+            native_output = native_messages(message)
+            if native_output:
+                processed.extend(native_output)
+                processed.extend(speech)
+                continue
             if not message.get('content'):
                 continue
 
+        if message.get('role') == 'assistant' and isinstance(message.get('oi_native'), list):
+            from open_webui.utils.oi.replay import native_messages
+
+            native_output = native_messages(message)
+            if native_output:
+                processed.extend(native_output)
+                processed.extend(speech)
+                continue
         clean_message = dict(message)
         for key in ('id', 'output', 'model', 'contextSummary', 'context_summary', 'usage', 'meta'):
             clean_message.pop(key, None)
@@ -3911,31 +3933,39 @@ async def outlet_filter_handler(ctx):
             outlet_result = outlet_data
 
         if outlet_result and outlet_result.get('messages'):
-            if not is_unsaved_chat and messages_map:
-                for message in outlet_result['messages']:
-                    outlet_message_id = message.get('id')
-                    if outlet_message_id and outlet_message_id in messages_map:
-                        original_message = messages_map[outlet_message_id]
-                        original_content = original_message.get('content') or get_output_text(
-                            original_message.get('output')
+            from open_webui.utils.oi.replay import invalidate_native, replace_output_text
+
+            originals = messages_map or {m.get('id'): m for m in message_list if m.get('id')}
+            for message in outlet_result['messages']:
+                outlet_message_id = message.get('id')
+                original = originals.get(outlet_message_id)
+                if not original:
+                    continue
+                original_content = original.get('content') or get_output_text(original.get('output'))
+                message_content = (
+                    message.get('content') if 'content' in message else get_output_text(message.get('output'))
+                )
+                content_changed = original_content != message_content
+                output_changed = 'output' in message and message['output'] != original.get('output')
+                if content_changed or output_changed:
+                    if content_changed and not output_changed and original.get('output'):
+                        # Text-only outlets must not leave a stale structured text projection.
+                        message['output'] = replace_output_text(original['output'], message_content or '')
+                        output_changed = True
+                    message_update = {'originalContent': original_content}
+                    if output_changed:
+                        message_update['output'] = message['output']
+                    if content_changed:
+                        message_update['content'] = message_content or ''
+                    if original.get('role') == 'assistant':
+                        invalidate_native(message_update)
+                        # Explicit nulls clear browser-held state when the outlet patch is merged.
+                        message_update.update(oi_native_state=None, previous_response_id=None, response_id=None)
+                        message.update(message_update)
+                    if not is_unsaved_chat:
+                        await Chats.upsert_message_to_chat_by_id_and_message_id(
+                            chat_id, outlet_message_id, message_update
                         )
-                        message_content = message.get('content') or get_output_text(message.get('output'))
-                        content_changed = original_content != message_content
-                        output_changed = message.get('output') and message.get('output') != original_message.get(
-                            'output'
-                        )
-                        if content_changed or output_changed:
-                            message_update = {
-                                'originalContent': original_content,
-                                **({'output': message['output']} if output_changed else {}),
-                            }
-                            if content_changed:
-                                message_update['content'] = message_content or ''
-                            await Chats.upsert_message_to_chat_by_id_and_message_id(
-                                chat_id,
-                                outlet_message_id,
-                                message_update,
-                            )
 
             if event_emitter:
                 await event_emitter(
