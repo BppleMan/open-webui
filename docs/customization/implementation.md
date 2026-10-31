@@ -104,3 +104,7 @@ R64/P49 is verified on isolated preview. Exact-source CI passed 423 backend and 
 ## R65 / P50 — Third review remediation
 
 The seven findings and the adjacent navigation-during-transfer case are repaired and verified on isolated preview. Exact-source CI passed 449 backend and 74 frontend tests, type delta and build, plus real HTTP/socket and PostgreSQL boundaries. The built-in browser verified input freezing during a controlled pending draft request and recovery after save/reload. See review-round3-remediation.md and its acceptance record. No schema migration, historical ledger rewrite or production change occurred.
+
+## R66 / P51 — Fourth review remediation
+
+The six findings are repaired and verified by 467 backend and 77 frontend tests, zero new type diagnostics, a production build and exact-source integration CI. Local HTTP/PostgreSQL and built-in browser acceptance passed. The isolated preview GitOps image is committed, but ArgoCD cannot fetch GitHub; cluster rollout and post-deployment verification remain pending. Automated sync may apply it when egress recovers. See review-round4-remediation.md and its acceptance record. Production and network configuration are unchanged.

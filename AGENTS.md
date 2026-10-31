@@ -64,3 +64,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R65/P50 is verified on isolated preview. Preserve the guarded temporary save, chat-owned/caller-attributed ledger, non-owner native projection and metering-only Ollama usage. Original review reports remain historical, and existing records were not retrospectively rewritten. R50 and the R59 supplier gap remain.
 
 - R66/P51 repairs the six fourth-review boundaries; read review-round4-remediation.md and its acceptance record. Separate private provider metadata from portable replay, preserve pure media history, invalidate outlet changes and guard the complete temporary save lifecycle. R50/U49/R59 remain.
+
+- R66/P51 code and exact-source CI are verified; isolated preview publication is pending a GitHub egress failure. GitOps already points to the new image and automated sync may apply it when network access recovers. Recheck runtime and browser before marking deployed. Do not change shared proxy/production routes under R50. See review-round4-remediation-acceptance.json.

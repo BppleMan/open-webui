@@ -1,7 +1,7 @@
 {
   "requirement": "R66",
   "prototype": "P51",
-  "status": "local_verified_ci_pending",
+  "status": "code_and_CI_verified_preview_pending_network",
   "source_baseline": "6a3e832e63b9ced52cf7b75f1ab0e683ce4fbc5f",
   "findings": {
     "CR4-01": {
@@ -40,13 +40,50 @@
     "browser": "controlled list refresh wait; sidebar navigation retained; destination draft preserved"
   },
   "deployment": {
-    "status": "pending",
-    "scope": "isolated_preview_only"
+    "status": "gitops_committed_waiting_for_network",
+    "scope": "isolated_preview_only",
+    "gitops": "5d6e78e838329aef64799c94ef7447291966c561",
+    "target_image": "ghcr.io/bppleman/open-webui-oi:sha-144f19003c056944170cd02fbb080d53f68e8f01@sha256:4672deb267718b32fba7e06ff7493d39a0543227fcaac19bd49e0ebd0269d7b8",
+    "current_image": "ghcr.io/bppleman/open-webui-oi:sha-1665423cd93a18557b4ff7a38cebc3c910a86bee@sha256:7a618f30803c71d6f54571b7a3f79119dcda7a111e9cc1993b957d00b9ed5611",
+    "argocd": "Unknown/Healthy; GitHub fetch EOF",
+    "automatic_sync": true,
+    "production_unchanged": true,
+    "network_configuration_unchanged": true
   },
   "boundaries": [
     "R50 production hold",
     "R59 actual CPA readable-summary gap remains open",
     "No real supplier requests",
     "No historical data reconstruction or cleanup"
+  ],
+  "source_commit": "144f19003c056944170cd02fbb080d53f68e8f01",
+  "ci": "https://github.com/BppleMan/open-webui/actions/runs/41196755997",
+  "checks": {
+    "backend_CI": 467,
+    "frontend_CI": 77,
+    "new_type_diagnostics": 0,
+    "existing_upstream_diagnostics": 5695,
+    "production_build": "passed",
+    "all_existing_integration_gates": "passed",
+    "new_HTTP_and_PostgreSQL_cases": "passed",
+    "real_supplier_requests": 0
+  },
+  "browser": {
+    "controlled_refresh_navigation": "passed",
+    "normal_save": "passed",
+    "destination_draft": "preserved",
+    "deployment_under_test": "local production build with synthetic provider; not the new cluster preview"
+  },
+  "restore": {
+    "tables_verified": 63,
+    "attachments_verified": 3,
+    "schema": "oi0000000007",
+    "HTTP_against_restore_copy": false
+  },
+  "limitations": [
+    "New cluster preview runtime and post-deployment browser verification are pending GitHub egress recovery.",
+    "Argo automated sync may apply the committed staging image when GitHub access recovers.",
+    "Previously exported files and already stripped native state in old forks are not rewritten or reconstructed.",
+    "No real supplier requests; R59 actual CPA readable-summary gap remains open."
   ]
 }
