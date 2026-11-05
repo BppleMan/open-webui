@@ -942,7 +942,7 @@ async def import_chats(
             subject_type='chat.import',
             data={'count': len(chats), 'chat_ids': [chat.id for chat in chats]},
         )
-        return chats
+        return [await private_chat_response(chat, user.id, db) for chat in chats]
     except HTTPException:
         await db.rollback()
         raise
@@ -1053,7 +1053,7 @@ async def get_chats_by_folder_id(
         folder_ids.extend([folder.id for folder in children_folders])
 
     return [
-        ChatResponse.model_validate(chat, from_attributes=True)
+        await private_chat_response(chat, user.id, db)
         for chat in await Chats.get_chats_by_folder_ids_and_user_id(folder_ids, user.id, db=db)
     ]
 
@@ -1896,7 +1896,7 @@ async def pin_chat_by_id(
             subject_id=id,
             subject_type='chat',
         )
-        return chat
+        return await private_chat_response(chat, user.id, db)
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT())
 

@@ -139,3 +139,94 @@ it.each(['GET', 'PUT', 'navigation', 'retire', 'refresh-list', 'navigation-inten
 		manager.dispose();
 	}
 );
+
+it.each(['503', 'network'])(
+	'keeps typing durable after saving when the sidebar fails with %s',
+	async (failure) => {
+		const { refreshChatList, resetChatListState } = await import('../stores/chatList');
+		resetChatListState();
+		const records = new Map<string, LocalDraft>();
+		vi.spyOn(browserDraftStore, 'all').mockImplementation(async () => [...records.values()]);
+		vi.spyOn(browserDraftStore, 'put').mockImplementation(async (row) => {
+			records.set(row.key, structuredClone(row));
+		});
+		vi.spyOn(browserDraftStore, 'replace').mockImplementation(async (row, consumed) => {
+			records.set(row.key, structuredClone(row));
+			for (const old of consumed) if (old.key !== row.key) records.delete(old.key);
+		});
+		vi.spyOn(browserDraftStore, 'remove').mockImplementation(async (key) => {
+			records.delete(key);
+		});
+		let server = { revision: 0, payload: {} as any, mutation_id: '' };
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url, init = {}) => {
+				if (String(url).includes('/chats/?')) {
+					if (failure === 'network') throw new TypeError('Synthetic offline');
+					return Response.json({ detail: 'Synthetic sidebar unavailable' }, { status: 503 });
+				}
+				if (init.method === 'PUT') {
+					const form = JSON.parse(init.body);
+					server = {
+						revision: server.revision + 1,
+						payload: form.payload,
+						mutation_id: form.mutation_id
+					};
+				}
+				return Response.json(server);
+			})
+		);
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		const options = { userId: 'u', onState() {}, onRestore() {}, onAllocated() {} };
+		const manager = new DraftManager({ ...options, temporary: true });
+		await manager.load();
+		const editor = { prompt: 'preserve-before-save', files: [], selectedModels: ['model'] };
+		await manager.edit(editor);
+		const goto = vi.fn(),
+			errors = vi.fn();
+		const env = {
+			savingTemporaryChat: false,
+			temporarySaveEpoch: 0,
+			tick: async () => {},
+			$user: { id: 'u' },
+			history: { currentId: 'reply', messages: { reply: { id: 'reply' } } },
+			createMessagesList: () => [{ role: 'user', content: 'question' }],
+			$i18n: { t: (v: string) => v },
+			createNewChat: async () => ({ id: 'saved' }),
+			selectedModels: ['model'],
+			params: {},
+			chatVariables: {},
+			draftManager: manager,
+			getChatInputDraft: () => editor,
+			hasDraftInput,
+			DraftManager,
+			temporaryChatEnabled: { set: vi.fn() },
+			chatId: { set: vi.fn() },
+			refreshChatList,
+			goto,
+			toast: { error: errors, success: vi.fn() },
+			uuidv4: () => crypto.randomUUID()
+		};
+		const harness = new Function(
+			...Object.keys(env),
+			`return {run:(${handler}), busy:()=>savingTemporaryChat};`
+		)(...Object.values(env));
+		await harness.run();
+		expect(goto).toHaveBeenCalledWith('/c/saved');
+		expect(errors).not.toHaveBeenCalled();
+		expect(env.temporaryChatEnabled.set).toHaveBeenCalledWith(false);
+		expect(env.chatId.set).toHaveBeenCalledWith('saved');
+		expect(harness.busy()).toBe(false);
+		const destination = new DraftManager({ ...options, temporary: false, chatId: 'saved' });
+		await destination.load();
+		expect(destination.payload.prompt).toBe(editor.prompt);
+		expect(await destination.edit({ ...editor, prompt: 'typed-after-sidebar-error' })).toBe(true);
+		await destination.flush();
+		destination.dispose();
+		const reloaded = new DraftManager({ ...options, temporary: false, chatId: 'saved' });
+		await reloaded.load();
+		expect(reloaded.payload.prompt).toBe('typed-after-sidebar-error');
+		reloaded.dispose();
+		manager.dispose();
+	}
+);

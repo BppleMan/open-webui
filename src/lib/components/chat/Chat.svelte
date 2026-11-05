@@ -5620,7 +5620,11 @@
 											$user?.id !== draftOwnerId
 										)
 											return;
-										await refreshChatList(localStorage.token);
+										// The transcript and destination draft are already saved. A sidebar
+										// outage must not strand this page with its retired temporary manager.
+										await refreshChatList(localStorage.token).catch((error) => {
+											console.error('Failed to refresh the chat list after saving:', error);
+										});
 										if (
 											saveEpoch !== temporarySaveEpoch ||
 											sourceDraft !== draftManager ||

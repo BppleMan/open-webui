@@ -587,14 +587,14 @@ def inline_images(parts):
 
 
 class NativeStream:
-    def __init__(self, protocol):
+    def __init__(self, protocol, *, generated_tool_ids=None):
         self.protocol = protocol
         self.body = {}
         self.blocks = {}
         self.usage = {}
         self.finished = False
         self.tool_index = 0
-        self.generated_tool_ids = {}
+        self.generated_tool_ids = {int(k): v for k, v in (generated_tool_ids or {}).items()}
         self.input_media = False
 
     def metering(self):
@@ -947,7 +947,15 @@ class NativeStream:
 
 
 async def save_native(
-    metadata, binding, call_id, body, replayable=True, *, caller_id=None, configuration_owner_id=None
+    metadata,
+    binding,
+    call_id,
+    body,
+    replayable=True,
+    *,
+    caller_id=None,
+    configuration_owner_id=None,
+    generated_tool_ids=None,
 ):
     chat_id, message_id = metadata.get('chat_id'), metadata.get('message_id')
     if metadata.get('task') or not is_saved_chat_id(chat_id) or not message_id or not body:
@@ -963,6 +971,7 @@ async def save_native(
             'replayable': replayable,
             'caller_id': caller_id,
             'configuration_owner_id': configuration_owner_id,
+            'generated_tool_ids': copy.deepcopy(generated_tool_ids or {}),
         }
     )
     await Chats.upsert_message_to_chat_by_id_and_message_id(chat_id, message_id, {'oi_native': calls}, touch=False)
@@ -1027,6 +1036,7 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                 'binding_id': binding.id,
                 'protocol': binding.protocol,
                 'body': state.body,
+                'generated_tool_ids': copy.deepcopy(state.generated_tool_ids),
                 'replayable': not form.get('stream') or (state.finished and not state.body.get('error')),
             },
         )
@@ -1043,6 +1053,7 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                 state.body,
                 caller_id=user.id,
                 configuration_owner_id=getattr(connection, 'owner_id', user.id),
+                generated_tool_ids=state.generated_tool_ids,
             )
             if not is_saved_chat_id(metadata.get('chat_id')):
                 from open_webui.utils.oi.temporary_native import response_state
@@ -1129,9 +1140,9 @@ async def generate(request, form, user, binding, connection, call_id, transport=
             if not is_saved_chat_id(metadata.get('chat_id')):
                 from open_webui.utils.oi.temporary_native import response_state
 
-                projection = NativeStream(binding.protocol).nonstream(copy.deepcopy(state.body))['choices'][0][
-                    'message'
-                ]
+                projection = NativeStream(binding.protocol, generated_tool_ids=state.generated_tool_ids).nonstream(
+                    copy.deepcopy(state.body)
+                )['choices'][0]['message']
                 yield (
                     'data: '
                     + compact({'oi_native_state': response_state(request, metadata, user, projection)})
@@ -1150,6 +1161,7 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                 state.finished and not state.body.get('error'),
                 caller_id=user.id,
                 configuration_owner_id=getattr(connection, 'owner_id', user.id),
+                generated_tool_ids=state.generated_tool_ids,
             )
 
     return StreamingResponse(stream(), media_type='text/event-stream')

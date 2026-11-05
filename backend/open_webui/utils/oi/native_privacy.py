@@ -18,13 +18,16 @@ def replay_envelope(envelope):
     if protocol == 'openai-responses':
         projected = {'output': copy.deepcopy(body.get('output', []))}
     elif protocol == 'anthropic':
-        projected = {'content': copy.deepcopy(body.get('content', []))}
+        projected = {'content': copy.deepcopy(body.get('content', [])), 'stop_reason': body.get('stop_reason')}
     elif protocol in {'gemini', 'cpa-agy'}:
         projected = {
-            'candidates': [{'content': copy.deepcopy(c.get('content', {}))} for c in body.get('candidates', [])]
+            'candidates': [
+                {key: copy.deepcopy(c[key]) for key in ('content', 'finishReason', 'cpaFinishReasonSource') if key in c}
+                for c in body.get('candidates', [])
+            ]
         }
     elif protocol == 'gemini-interactions':
-        projected = {key: copy.deepcopy(body[key]) for key in ('steps', 'outputs') if key in body}
+        projected = {key: copy.deepcopy(body[key]) for key in ('steps', 'outputs', 'status') if key in body}
     elif protocol in {'openai-chat', 'ollama'}:
         message = body.get('message') if protocol == 'ollama' else (body.get('choices') or [{}])[0].get('message')
         message = message or {}
@@ -52,7 +55,11 @@ def replay_envelope(envelope):
     else:
         return None
     return {
-        **{k: copy.deepcopy(envelope[k]) for k in ('call_id', 'binding_id', 'protocol', 'replayable') if k in envelope},
+        **{
+            k: copy.deepcopy(envelope[k])
+            for k in ('call_id', 'binding_id', 'protocol', 'replayable', 'generated_tool_ids')
+            if k in envelope
+        },
         'body': projected,
         'replay_projection': True,
     }

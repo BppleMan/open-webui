@@ -209,3 +209,8 @@ Verify and repair CR2-01..11, preserve R50 and existing accounting, identity, pr
 ## U65 / R66 — Fourth review remediation
 
 2026-10-31: The user explicitly delegated the fourth review to this implementation conversation for verification and repair. Address CR4-01..06 together; preserve private caller configuration separately from shareable native replay. Keep R50/U49/R59 and the original review evidence unchanged.
+
+
+## R67 / U66 — Fifth review remediation
+
+2026-11-05: Independently verify and repair CR5-01..04 under the explicit implementation-thread handoff. Apply native privacy to every full-chat response; retain safe terminal semantics and stable generated tool IDs across continuation, fork and archive; sidebar refresh failures must not strand a retired temporary draft manager. Preserve R50/U49/R59.

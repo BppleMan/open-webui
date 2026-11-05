@@ -135,6 +135,16 @@ async def main():
         writer_view = await req(writer, 'GET', '/api/v1/chats/' + cid)
         assert 'round4-writer-private' not in json.dumps(owner_view)
         assert 'round4-writer-private' in json.dumps(writer_view)
+        # Every full-chat response must enforce the same caller/configuration boundary.
+        pinned = await req(owner, 'POST', f'/api/v1/chats/{cid}/pin')
+        assert 'round4-writer-private' not in json.dumps(pinned)
+        folder = await req(owner, 'POST', '/api/v1/folders/', {'name': 'Round5 privacy'})
+        moved = await req(owner, 'POST', f'/api/v1/chats/{cid}/folder', {'folder_id': folder['id']})
+        assert 'round4-writer-private' not in json.dumps(moved)
+        folder_chats = await req(owner, 'GET', f'/api/v1/chats/folder/{folder["id"]}')
+        assert any(chat['id'] == cid for chat in folder_chats)
+        assert 'round4-writer-private' not in json.dumps(folder_chats)
+        assert 'round4-writer-private' in json.dumps(await req(writer, 'GET', '/api/v1/chats/' + cid))
         exported = await c.get('/api/v1/chats/all', headers={'Authorization': 'Bearer ' + owner['token']})
         assert exported.is_success and 'round4-writer-private' not in exported.text
         for stream in [False, True]:
@@ -155,6 +165,7 @@ async def main():
             {
                 'caller_private_instructions': 'passed',
                 'owner_json_export_privacy': 'passed',
+                'pin_folder_move_privacy_and_writer_retention': 'passed',
                 'nonowner_pure_image_fork_next_turn_stream_and_nonstream': 'passed',
                 'supplier': 'loopback synthetic only',
             },

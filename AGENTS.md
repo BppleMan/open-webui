@@ -66,3 +66,5 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 - R66/P51 repairs the six fourth-review boundaries; read review-round4-remediation.md and its acceptance record. Separate private provider metadata from portable replay, preserve pure media history, invalidate outlet changes and guard the complete temporary save lifecycle. R50/U49/R59 remain.
 
 - R66/P51 code and exact-source CI are verified; isolated preview publication is pending a GitHub egress failure. GitOps already points to the new image and automated sync may apply it when network access recovers. Recheck runtime and browser before marking deployed. Do not change shared proxy/production routes under R50. See review-round4-remediation-acceptance.json.
+
+- R67/P52 repairs the four fifth-review boundaries. Read review-round5-remediation.md and its acceptance record. Preserve complete response privacy, terminal semantics, generated tool-ID sidecars and successful-save transitions despite sidebar failures. R50/U49/R59 remain.

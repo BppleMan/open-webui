@@ -1,13 +1,45 @@
 """Reconnect canonical tool results to matching, unedited native assistant blocks."""
 
 import copy
+import json
+
+
+def replay_message(native, expected_tools=None):
+    """Decode stored output with stable canonical IDs, without changing signed parts.
+
+    Older envelopes lack the ID sidecar. Recover those IDs only from the same
+    unedited canonical tool sequence after matching the function and arguments.
+    This projects history; normal live decoding still enforces terminal status.
+    """
+    from open_webui.utils.oi.protocols import NativeStream
+
+    tool_ids = dict(native.get('generated_tool_ids') or {})
+    if native['protocol'] in {'gemini', 'cpa-agy'} and expected_tools is not None:
+        blocks = (native['body'].get('candidates') or [{}])[0].get('content', {}).get('parts', [])
+        canonical = iter(expected_tools)
+        for index, block in enumerate(blocks):
+            call = block.get('functionCall')
+            if not call:
+                continue
+            expected = next(canonical, None)
+            if call.get('id') or index in tool_ids or str(index) in tool_ids:
+                continue
+            if (
+                expected is None
+                or expected['function']['name'] != call['name']
+                or json.loads(expected['function'].get('arguments') or '{}') != call.get('args', {})
+            ):
+                raise ValueError('Native tool does not match the saved output')
+            tool_ids[index] = expected['id']
+    return NativeStream(native['protocol'], generated_tool_ids=tool_ids).nonstream(copy.deepcopy(native['body']))[
+        'choices'
+    ][0]['message']
 
 
 def native_messages(saved):
     """A media-only native turn is nonempty even without canonical text items."""
     if saved.get('oi_native_invalidated') or saved.get('role') != 'assistant':
         return []
-    from open_webui.utils.oi.protocols import NativeStream
     from open_webui.utils.oi.native_privacy import replay_envelope
 
     messages = []
@@ -17,7 +49,7 @@ def native_messages(saved):
         safe = replay_envelope(native)
         if not safe or not any(safe['body'].values()):
             continue
-        projected = NativeStream(native['protocol']).nonstream(copy.deepcopy(native['body']))['choices'][0]['message']
+        projected = replay_message(native)
         messages.append({**projected, 'oi_native': copy.deepcopy(native)})
     return messages
 
@@ -45,7 +77,7 @@ def attach_native(saved, messages):
     if len(calls) != len(assistants):
         # Continue may merge consecutive assistant outputs into one display message.
         # Recover call boundaries from native projections, checking visible text/tool IDs.
-        from open_webui.utils.oi.protocols import NativeStream, content_text
+        from open_webui.utils.oi.protocols import content_text
 
         pending, rebuilt = list(calls), []
         remaining_assistants = len(assistants)
@@ -59,8 +91,7 @@ def attach_native(saved, messages):
             text, tools, group = '', set(), []
             while pending:
                 native = pending.pop(0)
-                projection = NativeStream(native['protocol']).nonstream(copy.deepcopy(native['body']))
-                projected = projection['choices'][0]['message']
+                projected = replay_message(native, message.get('tool_calls', [])[len(tools) :])
                 text += ''.join(content_text(projected.get('content')).split())
                 tools.update(t['id'] for t in projected.get('tool_calls', []))
                 group.append({**projected, 'oi_native': copy.deepcopy(native)})

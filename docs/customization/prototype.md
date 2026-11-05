@@ -319,3 +319,8 @@ Freeze the chat editor while saving a temporary conversation, retain pending inp
 ## P51 — Native privacy, replay and operation lifecycle
 
 Distinguish native caller-private metadata from protocol replay content. Shared reads use actual caller ownership; forks and archives carry a safe replay projection without private configuration. Outlet rewrites invalidate stale native state, including temporary responses. Media-only replies remain valid history. All Gemini media paths share conservative metering rules. Temporary saves verify their source context after every awaited transition before mutating global state or navigating.
+
+
+## P52 — Complete response projection and durable continuation
+
+Private metadata follows caller and configuration ownership on every full-chat response. Portable native history retains terminal markers and canonical tool-ID sidecars without modifying signed provider blocks. Legacy missing IDs can be recovered only from a matching unedited canonical function sequence. A successful temporary save transitions to the saved conversation even when sidebar refresh fails, subject to the existing navigation guards.

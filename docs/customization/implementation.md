@@ -108,3 +108,7 @@ The seven findings and the adjacent navigation-during-transfer case are repaired
 ## R66 / P51 — Fourth review remediation
 
 The six findings are repaired and verified by 467 backend and 77 frontend tests, zero new type diagnostics, a production build and exact-source integration CI. Local HTTP/PostgreSQL and built-in browser acceptance passed. The isolated preview GitOps image is committed, but ArgoCD cannot fetch GitHub; cluster rollout and post-deployment verification remain pending. Automated sync may apply it when egress recovers. See review-round4-remediation.md and its acceptance record. Production and network configuration are unchanged.
+
+### R67 / P52 — Fifth review boundary repairs
+
+Apply caller-private response projection to pin/folder/import, retain portable terminal markers, persist generated Gemini tool IDs outside signed blocks, and recover legacy IDs only from matching canonical functions. A successful temporary save survives sidebar refresh failures without weakening newer-navigation guards. Verification and preview delivery are recorded in review-round5-remediation-acceptance.json.
