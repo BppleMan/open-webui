@@ -3175,7 +3175,7 @@
       }
     },
     "checks": {
-      "backend": 579,
+      "backend": 581,
       "frontend": 79,
       "original_review_cases": 34,
       "new_type_diagnostics": 0,
@@ -3183,7 +3183,8 @@
       "HTTP": "seven protocol matrix, generated image model switch and real saved-caption edit passed",
       "PostgreSQL": "existing billing/archive/discovery/actor gates passed",
       "build": "passed",
-      "real_supplier_requests": 0
+      "real_supplier_requests": 0,
+      "adjacent_ollama_parallel_tools": "two regression cases passed"
     },
     "browser": {
       "status": "pending",

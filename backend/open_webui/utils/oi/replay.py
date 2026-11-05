@@ -66,9 +66,9 @@ def project_native_tools(native, canonical_tools, known_tools=None):
     canonical_tools = canonical_tools or []
     allowed = {tool['id']: tool for tool in canonical_tools}
 
-    def identity(call, call_id=None):
+    def identity(call, call_id=None, used=(), unique=True):
         if call_id:
-            return call_id if call_id in allowed else None
+            return call_id if call_id in allowed and call_id not in used else None
         name = call.get('name')
         arguments = call.get('args', call.get('arguments', {}))
         if isinstance(arguments, str):
@@ -76,9 +76,11 @@ def project_native_tools(native, canonical_tools, known_tools=None):
         matches = [
             tool['id']
             for tool in canonical_tools
-            if tool['function']['name'] == name and json.loads(tool['function'].get('arguments') or '{}') == arguments
+            if tool['id'] not in used
+            and tool['function']['name'] == name
+            and json.loads(tool['function'].get('arguments') or '{}') == arguments
         ]
-        if len(matches) > 1:
+        if len(matches) > 1 and unique:
             raise ValueError('Ambiguous native tool identity; cannot safely replay this history')
         return matches[0] if matches else None
 
@@ -129,7 +131,15 @@ def project_native_tools(native, canonical_tools, known_tools=None):
     elif protocol in {'openai-chat', 'ollama'}:
         message = body.get('message') if protocol == 'ollama' else (body.get('choices') or [{}])[0].get('message')
         if message and 'tool_calls' in message:
-            message['tool_calls'] = [t for t in message['tool_calls'] if identity(t.get('function', {}), t.get('id'))]
+            kept, used = [], set()
+            for tool in message['tool_calls']:
+                # Ollama has no native call IDs; consume identical functions in
+                # order, once per surviving canonical result.
+                tool_id = identity(tool.get('function', {}), tool.get('id'), used, unique=False)
+                if tool_id:
+                    kept.append(tool)
+                    used.add(tool_id)
+            message['tool_calls'] = kept
     return native
 
 

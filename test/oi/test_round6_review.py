@@ -522,3 +522,29 @@ def test_edited_visible_image_fallback_uses_target_protocol_or_explicit_rejectio
     assert 'invalid-old-signature' not in encoded and 'Old caption' not in encoded
     if protocol == 'openai-responses':
         TypeAdapter(EasyInputMessageParam).validate_python(payload['input'][0])
+
+
+@pytest.mark.parametrize('retained', [1, 2])
+def test_ollama_identical_parallel_tools_are_retained_once_per_canonical_call(retained):
+    body = {
+        'message': {
+            'role': 'assistant',
+            'content': 'prefix',
+            'tool_calls': [
+                {'function': {'name': 'lookup', 'arguments': {}}},
+                {'function': {'name': 'lookup', 'arguments': {}}},
+            ],
+        },
+        'done': True,
+    }
+    native = {'protocol': 'ollama', 'binding_id': 'oi:leaf', 'body': body}
+    tools = [
+        {'id': f't{i}', 'type': 'function', 'function': {'name': 'lookup', 'arguments': '{}'}} for i in range(retained)
+    ]
+    messages = [
+        {'role': 'assistant', 'content': 'prefix', 'tool_calls': tools, 'oi_native': native},
+        *[{'role': 'tool', 'tool_call_id': tool['id'], 'content': 'result'} for tool in tools],
+    ]
+    _, payload = build_request({'messages': messages}, binding('ollama'), connection('ollama'))
+    assert len(payload['messages'][0]['tool_calls']) == retained
+    assert len(body['message']['tool_calls']) == 2
