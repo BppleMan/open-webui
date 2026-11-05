@@ -3216,7 +3216,7 @@
   "review_round7_remediation": {
     "requirement": "R69",
     "prototype": "P54",
-    "status": "local_checks_verified_browser_pending",
+    "status": "code_and_CI_verified_browser_pending",
     "source_baseline": "4130963424eae0b7fc6dc7e85b8718f431863459",
     "findings": {
       "CR7-01": {
@@ -3243,7 +3243,11 @@
       "HTTP": "existing seven-protocol, temporary-state, shared/privacy and media gates passed",
       "PostgreSQL": "existing billing/archive/shared/discovery gates passed",
       "real_supplier_requests": 0,
-      "real_tool_execution_in_new_regressions": false
+      "real_tool_execution_in_new_regressions": false,
+      "backend_CI": 676,
+      "frontend_CI": 79,
+      "all_existing_integration_gates": "passed",
+      "image_build": "passed"
     },
     "browser": {
       "status": "pending",
@@ -3255,13 +3259,19 @@
       ]
     },
     "deployment": {
-      "status": "not_changed",
-      "scope": "isolated_preview_only"
+      "status": "not_published_pending_browser_acceptance",
+      "scope": "isolated_preview_only",
+      "candidate_image": "ghcr.io/bppleman/open-webui-oi:sha-42d28268695ec332a658f10cd2bd45a8005071f5@sha256:88c245f4d35671feae1f32473483a7c41f9acd1ed68d0fdc399570fffda34813",
+      "current_source": "144f19003c056944170cd02fbb080d53f68e8f01",
+      "runtime_observation": "Synced/Healthy, read-only on 2026-11-05",
+      "carry_forward": "R67/R68 browser flows remain required before combined R67/R68/R69 preview publication"
     },
     "limitations": [
       "No real supplier requests; R59 remains open.",
       "Required browser acceptance and the combined preview publication are pending.",
       "No retrospective rewrite of stored history or existing exports."
-    ]
+    ],
+    "source_commit": "42d28268695ec332a658f10cd2bd45a8005071f5",
+    "ci": "https://github.com/BppleMan/open-webui/actions/runs/42008900051"
   }
 }

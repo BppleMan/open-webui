@@ -78,3 +78,6 @@ R67/P52 code and exact-source CI are verified (507 backend/79 frontend). Browser
 R68/P53 code and exact-source CI are verified (581 backend/79 frontend). The required in-app browser is still not connected; R67/R68 browser acceptance and combined preview publication remain pending. Do not use an external browser or claim tests are browser acceptance.
 
 - R69/P54 repairs the three seventh-review findings. Read review-round7-remediation.md and its acceptance record. Keep explicit thinking changes, provider-function identity, stable Ollama IDs, cancellation and legacy capsule integrity. R67/R68 browser/publication gates carry forward; only the built-in browser is allowed. R50/U49/R59 remain.
+
+
+R69/P54 code and exact-source CI are verified (676 backend/79 frontend). The required in-app browser remains unavailable; R67/R68 browser acceptance and the combined R67/R68/R69 preview publication are pending. Preserve v1 capsule validation and strict tool-history mismatch checks.
