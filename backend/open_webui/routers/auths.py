@@ -258,7 +258,13 @@ async def refresh_session(
         raise HTTPException(401, ERROR_MESSAGES.INVALID_TOKEN)
     # The helper reads current permissions but writes its old cookie only to a discarded response.
     result = await get_session_user(request, Response(), user, db)
+    # Logout may have won while permissions were loading. Never issue a usable
+    # descendant after revocation; all descendants also retain the same sid.
+    if not await is_valid_token(claims, getattr(request.app.state, 'redis', None)):
+        raise HTTPException(401, ERROR_MESSAGES.INVALID_TOKEN)
     payload = {key: value for key, value in claims.items() if key not in {'exp', 'iat', 'jti'}}
+    # Bootstrap pre-lineage JWTs using their existing token identity.
+    payload['sid'] = claims.get('sid') or claims['jti']
     expires_delta = parse_duration(await Config.get('auth.jwt_expiry'))
     renewed = create_token(payload, expires_delta=expires_delta)
     expires_at = (decode_token(renewed) or {}).get('exp')

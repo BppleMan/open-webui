@@ -564,7 +564,7 @@ async def leave_room_for_users(room: str, user_ids: list[str]):
             log.debug('Failed to make session %s leave room %s: %s', sid, room, e)
 
 
-async def disconnect_user_sessions(user_id: str, *, refresh_access: bool = False):
+async def disconnect_user_sessions(user_id: str, *, refresh_access: bool = False, login_id: str | None = None):
     """Disconnect all Socket.IO sessions belonging to a user.
 
     Call this when a user's role is changed or the user is deleted so that
@@ -572,14 +572,18 @@ async def disconnect_user_sessions(user_id: str, *, refresh_access: bool = False
     The client will automatically reconnect and re-authenticate with
     fresh data from the database.
     """
-    session_ids = await disconnect_sessions_for_users([user_id], refresh_access=refresh_access)
+    session_ids = await disconnect_sessions_for_users([user_id], refresh_access=refresh_access, login_id=login_id)
     if session_ids:
         log.info('Requested disconnect of %s session(s) for user %s', len(session_ids), user_id)
 
 
-async def disconnect_sessions_for_users(user_ids: list[str], *, refresh_access: bool = False) -> list[str]:
+async def disconnect_sessions_for_users(
+    user_ids: list[str], *, refresh_access: bool = False, login_id: str | None = None
+) -> list[str]:
     """Disconnect all Socket.IO sessions belonging to these users and return their session IDs."""
     session_ids = get_session_ids_by_user_ids(user_ids)
+    if login_id is not None:
+        session_ids = [sid for sid in session_ids if (SESSION_POOL.get(sid) or {}).get('login_id') == login_id]
     for sid in session_ids:
         if refresh_access:
             try:
@@ -629,6 +633,9 @@ async def connect(sid, environ, auth):
                 ),
                 'last_seen_at': int(time.time()),
             }
+            from open_webui.utils.auth import decode_token, login_session_id
+
+            socket_user['login_id'] = login_session_id(decode_token(auth['token']))
             SESSION_POOL[sid] = socket_user
             await sio.save_session(sid, {'user': socket_user, 'token': auth['token']})
             LOCAL_AUTHENTICATED_SIDS.add(sid)
@@ -669,6 +676,9 @@ async def user_join(sid, data):
         'last_seen_at': int(time.time()),
     }
 
+    from open_webui.utils.auth import decode_token, login_session_id
+
+    socket_user['login_id'] = login_session_id(decode_token(auth['token']))
     SESSION_POOL[sid] = {**(SESSION_POOL.get(sid) or {}), **socket_user}
     await sio.save_session(sid, {'user': socket_user, 'token': auth['token']})
     LOCAL_AUTHENTICATED_SIDS.add(sid)

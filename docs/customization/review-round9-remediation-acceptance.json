@@ -1,0 +1,52 @@
+{
+	"requirement": "R71",
+	"prototype": "P56",
+	"status": "local_checks_passed_CI_browser_pending",
+	"source_baseline": "16a4f894be9e24f6393cf6398e800003e0268dff",
+	"findings": {
+		"CR9-01": {
+			"implementation": "fixed",
+			"verification": "targeted_passed"
+		},
+		"CR9-02": {
+			"implementation": "fixed",
+			"verification": "targeted_passed"
+		},
+		"CR9-03": {
+			"implementation": "fixed",
+			"verification": "targeted_passed"
+		},
+		"CR9-04": {
+			"implementation": "fixed",
+			"verification": "targeted_passed"
+		}
+	},
+	"checks": {
+		"independent_before": {
+			"failed": 14,
+			"passed": 37
+		},
+		"original_review_cases": 51,
+		"backend": 809,
+		"frontend": 79,
+		"new_regressions": 99,
+		"new_type_diagnostics": 0,
+		"existing_upstream_diagnostics": 5695,
+		"production_build": "passed",
+		"HTTP_Redis_PostgreSQL": "passed including sibling token revocation and independent login control",
+		"real_supplier_requests": 0
+	},
+	"browser": {
+		"status": "connected_acceptance_pending",
+		"constraint": "built-in browser only",
+		"carry_forward": [
+			"R67 temporary save/sidebar 503 then type and reload",
+			"R68 generated image/model switch and caption edit"
+		]
+	},
+	"deployment": {
+		"status": "not_published_pending_validation",
+		"scope": "isolated_preview_only",
+		"combined_rounds": ["R67", "R68", "R69", "R70", "R71"]
+	}
+}

@@ -3,6 +3,7 @@
 import copy
 import hashlib
 import json
+from collections import Counter
 
 
 def _digest(value):
@@ -156,10 +157,33 @@ def native_function_slots(native):
     """Positions refer to the saved raw block order, not provider stream indexes."""
     from open_webui.utils.misc import get_provider_function
 
-    if native['protocol'] == 'ollama':
+    body, protocol = native['body'], native['protocol']
+    if protocol in {'ollama', 'openai-chat'}:
+        message = (
+            body.get('message', {}) if protocol == 'ollama' else (body.get('choices') or [{}])[0].get('message', {})
+        )
         return [
             (index, call.get('id'), get_provider_function(call.get('function', {})))
-            for index, call in enumerate(native['body'].get('message', {}).get('tool_calls') or [])
+            for index, call in enumerate(message.get('tool_calls') or [])
+        ]
+    if protocol == 'anthropic':
+        return [
+            (
+                index,
+                block.get('id'),
+                get_provider_function({'name': block['name'], 'arguments': block.get('input', {})}),
+            )
+            for index, block in enumerate(body.get('content', []))
+            if block.get('type') == 'tool_use'
+        ]
+    if protocol in {'openai-responses', 'gemini-interactions'}:
+        blocks = (
+            body.get('output', []) if protocol == 'openai-responses' else body.get('steps', body.get('outputs', []))
+        )
+        return [
+            (index, block.get('call_id') or block.get('id'), get_provider_function(block))
+            for index, block in enumerate(blocks)
+            if block.get('type') == 'function_call'
         ]
     if native['protocol'] in {'gemini', 'cpa-agy'}:
         blocks = (native['body'].get('candidates') or [{}])[0].get('content', {}).get('parts', [])
@@ -311,11 +335,115 @@ def replace_output_text(output, text):
     return output
 
 
+def match_native_text(projected, saved_output, expected):
+    """Accept only a tag projection witnessed by the saved canonical output.
+
+    The live parser is chunk-sensitive: a later opening tag can be consumed in
+    an earlier chunk. Try whole and tag-boundary chunks, then recorded block
+    boundaries. Every accepted result must preserve both visible text and the
+    exact parsed reasoning/attributes. Provider bytes remain untouched.
+    """
+    import re
+    from open_webui.utils.oi.protocols import content_text
+    from open_webui.utils.misc import convert_output_to_messages
+    from open_webui.utils.output_tags import (
+        DEFAULT_REASONING_TAGS,
+        DEFAULT_SOLUTION_TAGS,
+        create_tag_output_handler,
+        _start_tag_pattern,
+    )
+
+    def compact_text(value):
+        return ''.join(content_text(value).split())
+
+    raw = content_text(projected.get('content'))
+    if expected.endswith(compact_text(raw)):
+        return projected
+
+    def identity(item):
+        return (
+            item.get('type'),
+            item.get('start_tag'),
+            item.get('end_tag'),
+            # Solution text can merge with a later Continue. It is checked
+            # against the remaining visible text, rather than this metadata.
+            compact_text(item.get('content') or item.get('summary')) if item['type'] == 'reasoning' else '',
+            json.dumps(item.get('attributes') or {}, sort_keys=True),
+        )
+
+    witnesses = [item for item in saved_output or [] if item.get('start_tag') and item.get('end_tag')]
+    allowed = Counter(identity(item) for item in witnesses)
+    tags = {'reasoning': list(DEFAULT_REASONING_TAGS), 'solution': list(DEFAULT_SOLUTION_TAGS)}
+    for item in witnesses:
+        kind = 'reasoning' if item['type'] == 'reasoning' else 'solution' if item['type'] == 'message' else None
+        pair = (item['start_tag'], item['end_tag'])
+        if kind and pair not in tags[kind]:
+            tags[kind].append(pair)
+
+    def variants():
+        yield [raw]
+        matches = [
+            (kind, start, end, match)
+            for kind, pairs in tags.items()
+            for start, end in pairs
+            for match in re.finditer(_start_tag_pattern(start), raw)
+        ]
+
+        def split_at(points):
+            edges = sorted({0, len(raw), *points})
+            return [raw[left:right] for left, right in zip(edges, edges[1:])]
+
+        yield split_at(match.start() for _, _, _, match in matches)
+        boundaries = []
+        for kind, start, end, match in matches:
+            close = raw.find(end, match.end())
+            inner = raw[match.end() : close if close >= 0 else len(raw)]
+            inner = re.sub(_start_tag_pattern(start), '', inner)
+            if any(
+                key[0] == ('reasoning' if kind == 'reasoning' else 'message')
+                and key[1:3] == (start, end)
+                and (kind != 'reasoning' or key[3] == compact_text(inner))
+                for key in allowed
+            ):
+                boundaries.append(match.start())
+        yield split_at(boundaries)
+
+    for chunks in variants():
+        parse, output = create_tag_output_handler(), []
+        for chunk in chunks:
+            if not output or output[-1]['type'] not in {'message', 'reasoning'}:
+                output.append({'type': 'message', 'content': [{'type': 'output_text', 'text': ''}]})
+            item = output[-1]
+            parts = item.setdefault('content', [])
+            if not parts:
+                parts.append({'type': 'output_text', 'text': ''})
+            parts[-1]['text'] += chunk
+            for kind, pairs in tags.items():
+                parse(kind, pairs, output)
+        observed = Counter(identity(item) for item in output if item.get('start_tag') and item.get('end_tag'))
+        if observed - allowed:
+            continue
+        messages = convert_output_to_messages(output, raw=True, reasoning_format='reasoning_content')
+        content = '\n'.join(content_text(message.get('content')) for message in messages)
+        if expected.endswith(compact_text(content)):
+            result = {**projected, 'content': content}
+            reasoning = '\n'.join(
+                message['reasoning_content'] for message in messages if message.get('reasoning_content')
+            )
+            if reasoning:
+                result['reasoning_content'] = '\n'.join(filter(None, [result.get('reasoning_content'), reasoning]))
+            return result
+    raise ValueError('Native continuation does not match the saved output')
+
+
 def attach_native(saved, messages):
     if saved.get('oi_native_invalidated'):
         return
     calls = prepare_native_calls(saved)
     assistants = [m for m in messages if m.get('role') == 'assistant']
+    # Canonical cancellation is authoritative before identifying call boundaries.
+    surviving_tools = [tool for message in assistants for tool in message.get('tool_calls', [])]
+    calls = [project_native_tools(native, surviving_tools) for native in calls]
     if not calls:
         return
     if len(calls) != len(assistants) or (
@@ -323,7 +451,7 @@ def attach_native(saved, messages):
     ):
         # Continue can merge call outputs; imported history can lack envelopes.
         # Match from the newest call backwards, retaining any canonical prefix.
-        from open_webui.utils.oi.protocols import content_text
+        from open_webui.utils.oi.protocols import content_text, _contains_opaque_native
 
         pending, rebuilt = list(calls), []
         for message in reversed(messages):
@@ -336,7 +464,12 @@ def attach_native(saved, messages):
             while pending:
                 native = project_native_tools(pending[-1], remaining_tools)
                 projected = replay_message(native, remaining_tools)
-                has_output = any(projected.get(key) for key in ('content', 'tool_calls', 'reasoning_content', 'images'))
+                positions = [i for i, char in enumerate(remaining_text) if not char.isspace()]
+                expected = ''.join(remaining_text[i] for i in positions)
+                projected = match_native_text(projected, saved.get('output'), expected)
+                has_output = any(
+                    projected.get(key) for key in ('content', 'tool_calls', 'reasoning_content', 'images')
+                ) or (native.get('replayable', True) and _contains_opaque_native(native['body']))
                 # Respect the canonical converter's selected reasoning format.
                 # Rebuilding call boundaries must not add a higher-priority alias
                 # that later masks an explicit filter edit.
@@ -351,10 +484,7 @@ def attach_native(saved, messages):
                 if count and tool_ids != [t['id'] for t in remaining_tools[-count:]]:
                     raise ValueError('Native tool does not match the saved output')
                 text = ''.join(content_text(projected.get('content')).split())
-                positions = [i for i, char in enumerate(remaining_text) if not char.isspace()]
-                expected = ''.join(remaining_text[i] for i in positions)
-                if not expected.endswith(text):
-                    raise ValueError('Native continuation does not match the saved output')
+
                 if text:
                     remaining_text = remaining_text[: positions[-len(text)]].rstrip()
                 if count:
@@ -373,8 +503,14 @@ def attach_native(saved, messages):
                     # canonical assistant. Do not strand their signed blocks.
                     if not pending:
                         break
-                    preceding = replay_message(project_native_tools(pending[-1], []))
-                    if content_text(preceding.get('content')).strip() or native_function_slots(pending[-1]):
+                    if native_function_slots(pending[-1]):
+                        break
+                    preceding = replay_message(pending[-1])
+                    try:
+                        preceding = match_native_text(preceding, saved.get('output'), '')
+                    except ValueError:
+                        break
+                    if content_text(preceding.get('content')).strip():
                         break
             if remaining_text.strip() or remaining_tools:
                 prefix = {**message, 'content': remaining_text}

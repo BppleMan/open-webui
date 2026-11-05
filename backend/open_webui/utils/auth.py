@@ -234,9 +234,18 @@ def create_token(data: dict, expires_delta: Union[timedelta, None] = None) -> st
 
     jti = str(uuid.uuid4())
     payload.update({'jti': jti, 'iat': datetime.now(UTC)})
+    if payload.get('typ', 'session') == 'session':
+        payload.setdefault('sid', jti)
 
     encoded_jwt = jwt.encode(payload, SESSION_SECRET, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+def login_session_id(claims):
+    """Legacy tokens join their first renewal chain using their original jti."""
+    if not claims or claims.get('typ', 'session') != 'session':
+        return None
+    return claims.get('sid') or claims.get('jti')
 
 
 def decode_token(token: str) -> dict | None:
@@ -296,6 +305,12 @@ async def is_valid_token(decoded, redis=None) -> bool:
         return True
 
     try:
+        # A refresh rotates jti but remains in the same independently revocable
+        # login. Checking it at every gate also closes concurrent refresh/logout.
+        session_id = login_session_id(decoded)
+        if session_id and await redis.get(f'{REDIS_KEY_PREFIX}:auth:session:{session_id}:revoked'):
+            return False
+
         # Per-token revocation
         jti = decoded.get('jti')
         if jti:
@@ -329,31 +344,25 @@ async def invalidate_token(request, token):
     if not decoded:
         return
 
-    # Require Redis to store revoked tokens
-    if request.app.state.redis:
-        jti = decoded.get('jti')
-        exp = decoded.get('exp')
+    redis = getattr(request.app.state, 'redis', None)
+    if not redis or not await is_valid_token(decoded, redis):
+        return
+    session_id = login_session_id(decoded)
+    if session_id:
+        # Sliding renewals have no fixed family expiry. A TTL based on this
+        # token would let longer-lived siblings become valid again. Keep this
+        # opaque revocation marker for the login's lifetime; it contains no JWT.
+        await redis.set(f'{REDIS_KEY_PREFIX}:auth:session:{session_id}:revoked', '1')
+    jti, exp = decoded.get('jti'), decoded.get('exp')
+    if jti and exp:
+        ttl = exp - int(datetime.now(UTC).timestamp())
+        if ttl > 0:
+            await redis.set(f'{REDIS_KEY_PREFIX}:auth:token:{jti}:revoked', '1', ex=ttl)
+    user_id = decoded.get('id')
+    if user_id:
+        from open_webui.socket.main import disconnect_user_sessions
 
-        if jti and exp:
-            ttl = exp - int(datetime.now(UTC).timestamp())  # Calculate time-to-live for the token
-
-            if ttl > 0:
-                # Revoked tokens must not be able to disconnect newer sessions.
-                if not await is_valid_token(decoded, request.app.state.redis):
-                    return
-
-                # Store the revoked token in Redis with an expiration time
-                await request.app.state.redis.set(
-                    f'{REDIS_KEY_PREFIX}:auth:token:{jti}:revoked',
-                    '1',
-                    ex=ttl,
-                )
-
-                user_id = decoded.get('id')
-                if user_id:
-                    from open_webui.socket.main import disconnect_user_sessions
-
-                    await disconnect_user_sessions(user_id)
+        await disconnect_user_sessions(user_id, login_id=session_id)
 
 
 async def revoke_user_tokens(request, user_id: str):

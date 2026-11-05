@@ -287,6 +287,8 @@ async def generate_chat_completion(
                     return response
                 return StreamingResponse(
                     stream_wrapper(response.body_iterator),
+                    status_code=response.status_code,
+                    headers={k: v for k, v in response.headers.items() if k.lower() != 'content-length'},
                     media_type='text/event-stream',
                     background=response.background,
                 )

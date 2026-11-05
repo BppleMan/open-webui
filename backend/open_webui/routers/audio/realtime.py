@@ -362,6 +362,11 @@ def renewed_human_session(previous_claims, token):
         return False
     if previous_claims.get('typ', 'session') != 'session':
         return False
+    from open_webui.utils.auth import login_session_id
+
+    previous_login = login_session_id(previous_claims)
+    if previous_login and login_session_id(current) != previous_login:
+        return False
     return all(
         current.get(key) == previous_claims.get(key)
         for key in ('id', 'session_stamp', 'auth_time', 'auth_method', 'mfa_verified')

@@ -125,3 +125,8 @@ Request consistency includes Ollama thinking/reasoning fields and preserves expl
 ### R70 / P55 — Native suffixes and consumer-assigned tool IDs
 
 Retain canonical legacy prefixes and reconstruct merged native call boundaries from the end. Exclude undispatched Gemini/CPA tools from matching. Apply consumer ID changes to the exact live adapter state, persisting the positional sidecar into ordinary and temporary replay; translate provider result IDs without changing signed blocks. See review-round8-remediation.md and its acceptance record.
+
+
+### R71 / P56 — Session-family logout and cross-protocol replay
+
+Stable login lineage revokes all refresh siblings while keeping independent logins. Native tool boundary detection covers all seven adapters, including opaque-only reasoning. Shared consumer tag projection validates recorded content rather than treating normal parsing as editing. Arena keeps native response identity. See review-round9-remediation.md and its acceptance record.

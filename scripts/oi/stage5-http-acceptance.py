@@ -252,6 +252,19 @@ async def main():
         await req('POST', '/api/v1/auths/signout', token=writer['token'])
         await req('POST', '/api/v1/auths/refresh', token=writer['token'], expected=401)
         report['A04_revocation'] = {'password_change': 401, 'admin_revoke': 401, 'redis_token_logout': 401}
+        # A login's sibling refreshes all end at logout; independent login survives.
+        first = await login(reader, password + '-changed')
+        independent = await login(reader, password + '-changed')
+        second = (await req('POST', '/api/v1/auths/refresh', token=first['token'])).json()
+        third = (await req('POST', '/api/v1/auths/refresh', token=first['token'])).json()
+        assert len({claims(t['token'])['jti'] for t in (first, second, third)}) == 3
+        assert len({claims(t['token'])['sid'] for t in (first, second, third)}) == 1
+        await req('POST', '/api/v1/auths/signout', token=second['token'])
+        for token in (first['token'], second['token'], third['token']):
+            await req('GET', '/api/v1/auths/', token=token, expected=401)
+            await req('POST', '/api/v1/auths/refresh', token=token, expected=401)
+        await req('POST', '/api/v1/auths/refresh', token=independent['token'])
+        report['A05_renewal_chain_logout'] = {'three_sibling_tokens_revoked': True, 'independent_login_preserved': True}
         # MFA policy and factor replacement through real human-authenticated endpoints.
         settings = (await req('GET', '/api/v1/auths/admin/config')).json()
         settings['ENABLE_MFA'] = True

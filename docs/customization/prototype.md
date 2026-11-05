@@ -339,3 +339,8 @@ Compare explicit thinking/reasoning field changes at request-filter boundaries a
 ## P55 — Native call boundaries and consumer tool identity
 
 Recover the native suffix against canonical history while retaining older canonical output. Suppressed Gemini/CPA function blocks do not consume tool positions. The streaming consumer records canonical ID changes in the exact live adapter's positional sidecar; cache, saved envelopes and authenticated temporary capsules use that same mapping. Outbound function results translate canonical IDs back to each retained provider call ID. Preserve raw signatures and canonical reasoning-format choices.
+
+
+## P56 — Session lineage and complete native replay boundaries
+
+Session JWTs receive a stable login sid while jti rotates; logout checks the entire family, and socket/voice refresh respects login identity. Keep session-family revocation markers without a token-derived TTL because renewal is sliding. Recognize tool boundaries for all seven protocols before lookahead, retaining opaque-only blocks and canonical cancellation. Use the same streaming tag parser for witnessed historical projections, checking both visible text and parsed reasoning/attributes. Arena forwards native transport identity and status/headers.

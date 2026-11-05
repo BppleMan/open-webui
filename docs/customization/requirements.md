@@ -229,3 +229,8 @@ Verify and repair CR2-01..11, preserve R50 and existing accounting, identity, pr
 ## R70 / U69 — Eighth review remediation
 
 2026-11-05: Independently reproduce and repair CR8-01/02. Keep canonical legacy prefixes and undispatched terminal blocks distinct from native tool-call boundaries. Synchronize consumer-renumbered tool IDs per live call and position without rewriting signed bodies. Preserve strict function validation, cancellation, R50/U49/R59 and built-in browser only; carry forward the pending browser and combined preview gates.
+
+
+## R71 / U70 — Ninth review remediation
+
+2026-11-06: Independently reproduce and repair CR9-01..04. A login renewal chain must remain revocable without revoking independent logins; preserve authentication age, MFA and account revocation. Retain signed/encrypted native blocks in their original tool/result order across all protocols, reconcile legitimate tag parsing, and preserve native call identity through Arena wrappers. Expand composition regressions rather than accepting tool-name presence alone. R50/U49/R59 and in-app browser only remain.
