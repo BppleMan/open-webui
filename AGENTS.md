@@ -83,3 +83,5 @@ R68/P53 code and exact-source CI are verified (581 backend/79 frontend). The req
 R69/P54 code and exact-source CI are verified (676 backend/79 frontend). The required in-app browser remains unavailable; R67/R68 browser acceptance and the combined R67/R68/R69 preview publication are pending. Preserve v1 capsule validation and strict tool-history mismatch checks.
 
 - R70/P55 repairs the two eighth-review findings. Read review-round8-remediation.md and its acceptance record. Preserve legacy canonical prefixes, undispatched-tool exclusion, per-call consumer ID mappings, raw signatures and strict function checks. R67/R68 browser acceptance and combined preview publication remain pending; built-in browser only. R50/U49/R59 remain.
+
+R70/P55 code and exact-source CI are verified (710 backend/79 frontend). The required in-app browser remains unavailable; R67/R68 interaction checks and combined R67-R70 preview publication are pending. Preserve raw signatures and exact per-call canonical/provider ID correspondence.

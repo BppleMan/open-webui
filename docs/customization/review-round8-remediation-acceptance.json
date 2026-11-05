@@ -1,7 +1,7 @@
 {
 	"requirement": "R70",
 	"prototype": "P55",
-	"status": "local_checks_passed_CI_pending",
+	"status": "code_and_CI_verified_browser_pending",
 	"source_baseline": "c94be14791fdaf807229e3e8c325aee5ca2e4c14",
 	"findings": {
 		"CR8-01": {
@@ -28,7 +28,11 @@
 		"HTTP": "seven-protocol and temporary/shared/privacy/media gates passed",
 		"real_supplier_requests": 0,
 		"synthetic_in_process_tool_execution": true,
-		"production_build": "passed"
+		"production_build": "passed",
+		"backend_CI": 710,
+		"frontend_CI": 79,
+		"all_existing_integration_gates": "passed",
+		"image_build": "passed"
 	},
 	"browser": {
 		"status": "pending",
@@ -43,6 +47,15 @@
 		"status": "not_published_pending_browser_acceptance",
 		"scope": "isolated_preview_only",
 		"current_source": "144f19003c056944170cd02fbb080d53f68e8f01",
-		"runtime_observation": "Synced/Healthy, read-only on 2026-11-05"
-	}
+		"runtime_observation": "Synced/Healthy, read-only on 2026-11-05",
+		"candidate_image": "ghcr.io/bppleman/open-webui-oi:sha-f8e8e2f5e09b8ba73af76b6dd26c3895f564bb85@sha256:aa7ce57e104e435589dafd6e25d34005ccf74a5c40054d62351232ef616d769b",
+		"carry_forward": "R67/R68 browser flows remain required before combined R67-R70 preview publication"
+	},
+	"source_commit": "f8e8e2f5e09b8ba73af76b6dd26c3895f564bb85",
+	"ci": "https://github.com/BppleMan/open-webui/actions/runs/42023168308",
+	"limitations": [
+		"No real supplier requests; R59 remains open.",
+		"Required built-in-browser acceptance and combined preview publication remain pending.",
+		"No retrospective rewrite of stored history or existing exports."
+	]
 }

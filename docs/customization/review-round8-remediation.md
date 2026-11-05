@@ -9,3 +9,5 @@ This batch repairs native history matching and tool-ID remapping at the real str
 Thirty-four synthetic regression cases cover the reported failure/control paths plus temporary parallel reused IDs, raw-position offsets, capsule roundtrips, portable replay, merged text-only legacy prefixes, reasoning-only calls and altered-function rejection, and cancellation after ID remapping. Supplier responses use MockTransport and any executed tool is an in-process fixture. Original private review evidence remains unchanged.
 
 Checks and delivery are tracked separately in review-round8-remediation-acceptance.json. The required built-in browser remains unavailable; R67/R68 interaction checks and the combined preview publication are pending. R50/U49/R59 remain.
+
+Final source `f8e8e2f5e09b8ba73af76b6dd26c3895f564bb85` passed [exact-source CI](https://github.com/BppleMan/open-webui/actions/runs/42023168308): 710 backend/79 frontend tests, zero new type/a11y diagnostics (5695 upstream remain), production build, all existing integration gates and image publication. The in-app browser is still not connected; browser acceptance and combined preview publication remain pending.
