@@ -1,7 +1,7 @@
 {
   "requirement": "R67",
   "prototype": "P52",
-  "status": "code_and_local_checks_verified_browser_pending",
+  "status": "code_and_CI_verified_browser_pending",
   "source_baseline": "1b3211e921f2c8645f653e1b58ac8fce4517089c",
   "findings": {
     "CR5-01": {
@@ -32,15 +32,21 @@
     "production_build": "passed",
     "HTTP": "seven native protocols, private caller retention, pin/folder/move/export filtering, temporary state and media history passed",
     "PostgreSQL": "existing billing/archive/shared caller and concurrent discovery gates passed",
-    "real_supplier_requests": 0
+    "real_supplier_requests": 0,
+    "backend_CI": 507,
+    "frontend_CI": 79,
+    "all_existing_integration_gates": "passed",
+    "image_build": "passed"
   },
   "browser": {
     "status": "pending",
-    "reason": "In-app browser unavailable; Codex open request queued; no external browser used"
+    "reason": "In-app browser is not connected; open request queued. User requires the built-in browser only. No external browser used."
   },
   "deployment": {
-    "status": "not_changed",
-    "scope": "isolated_preview_only"
+    "status": "not_published_pending_browser_acceptance",
+    "scope": "isolated_preview_only",
+    "current_source": "144f19003c056944170cd02fbb080d53f68e8f01",
+    "current_runtime_observed": "Synced/Healthy on 2026-11-05; prior network blocker is no longer active"
   },
   "restore": {
     "tables_verified": 63,
@@ -52,5 +58,7 @@
     "Previously exported projections with missing terminal fields cannot be reconstructed without intact source data.",
     "No real supplier request; R59 readable-summary acceptance remains open.",
     "R50 production hold remains unchanged."
-  ]
+  ],
+  "source_commit": "c8fb1f71b9402d2a1f31a51635b3e4713520495c",
+  "ci": "https://github.com/BppleMan/open-webui/actions/runs/41971196684"
 }
