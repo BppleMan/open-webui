@@ -1874,6 +1874,24 @@ async def convert_url_images_to_base64(form_data, user=None):
                 log.debug('Error converting image URL to base64: %s', e)
                 new_content.append(item)
 
+        if message.get('role') == 'assistant':
+            # Generated media can have both a stored file URL and an inline
+            # native fallback. Their identity is known only after hydration.
+            # Keep the first visible part and preserve distinct images/text.
+            seen_images, unique_content = set(), []
+            for item in new_content:
+                url = (
+                    item.get('image_url')
+                    if isinstance(item, dict) and item.get('type') in {'image_url', 'input_image'}
+                    else None
+                )
+                url = url.get('url') if isinstance(url, dict) else url
+                if url:
+                    if url in seen_images:
+                        continue
+                    seen_images.add(url)
+                unique_content.append(item)
+            new_content = unique_content
         message['content'] = new_content
 
     return form_data

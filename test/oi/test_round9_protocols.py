@@ -492,3 +492,71 @@ def test_opaque_only_reasoning_survives_continue_without_crossing_a_tool_result(
     encoded = json.dumps(payload)
     assert 'opaque-retained' in encoded and encoded.index('opaque-retained') < encoded.index('answer')
     assert 'lookup' not in encoded
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('edited', [False, True])
+async def test_generated_file_and_native_inline_alias_are_sent_once_after_hydration(monkeypatch, edited):
+    url = 'data:image/png;base64,eA=='
+    saved = {
+        'role': 'assistant',
+        'files': [{'type': 'image', 'url': '/api/v1/files/synthetic/content'}],
+        'content': 'caption' if edited else '',
+        'oi_native_invalidated': edited,
+        'oi_native': [
+            {
+                'call_id': 'image',
+                'binding_id': 'oi:source',
+                'protocol': 'gemini',
+                'body': {
+                    'candidates': [
+                        {
+                            'content': {
+                                'role': 'model',
+                                'parts': [{'inlineData': {'mimeType': 'image/png', 'data': 'eA=='}}],
+                            },
+                            'finishReason': 'STOP',
+                        }
+                    ]
+                },
+            }
+        ],
+    }
+    before = copy.deepcopy(saved)
+    resolver = AsyncMock(return_value=url)
+    monkeypatch.setattr(middleware, 'get_image_base64_from_url', resolver)
+    user = SimpleNamespace(id='owner')
+    form = await middleware.convert_url_images_to_base64({'messages': process_messages_with_output([saved])}, user=user)
+    _, body = build_request(form, binding('gemini'), connection('gemini'))
+    assert sum('inlineData' in p for c in body['contents'] for p in c['parts']) == 1
+    resolver.assert_awaited_once_with('/api/v1/files/synthetic/content', user=user)
+    assert saved == before
+    if edited:
+        assert 'caption' in json.dumps(body)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('role', ['user', 'assistant'])
+async def test_hydrated_media_dedup_keeps_distinct_images_and_user_multiplicity(monkeypatch, role):
+    first = 'data:image/png;base64,eA=='
+    second = 'data:image/png;base64,eQ=='
+    monkeypatch.setattr(middleware, 'get_image_base64_from_url', AsyncMock(return_value=first))
+    form = {
+        'messages': [
+            {
+                'role': role,
+                'content': [
+                    {'type': 'image_url', 'image_url': {'url': '/api/v1/files/synthetic/content', 'detail': 'high'}},
+                    {'type': 'image_url', 'image_url': {'url': first}},
+                    {'type': 'text', 'text': 'caption'},
+                    {'type': 'image_url', 'image_url': {'url': second}},
+                ],
+            }
+        ]
+    }
+    result = await middleware.convert_url_images_to_base64(form, user=SimpleNamespace(id='owner'))
+    parts = result['messages'][0]['content']
+    assert len(parts) == (3 if role == 'assistant' else 4)
+    assert parts[0]['image_url']['detail'] == 'high'
+    assert parts[-1]['image_url']['url'] == second
+    assert {'type': 'text', 'text': 'caption'} in parts

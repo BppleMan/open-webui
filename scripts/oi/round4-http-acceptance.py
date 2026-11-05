@@ -167,7 +167,7 @@ async def main():
                 await req(owner, 'POST', f'/api/v1/chats/{cid}/messages/{mid}', {'content': 'Updated image caption'})
             await ask(owner, cid, gemini if edited else alternate['id'], parent=mid)
             event = (await c.get(provider + '/events')).json()[-1]
-            assert 'inlineData' in json.dumps(event['body']['contents']), event
+            assert sum('inlineData' in part for item in event['body']['contents'] for part in item['parts']) == 1, event
             if edited:
                 assert 'Updated image caption' in json.dumps(event['body']['contents'])
         for stream in [False, True]:

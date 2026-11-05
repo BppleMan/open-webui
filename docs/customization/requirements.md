@@ -234,3 +234,6 @@ Verify and repair CR2-01..11, preserve R50 and existing accounting, identity, pr
 ## R71 / U70 — Ninth review remediation
 
 2026-11-06: Independently reproduce and repair CR9-01..04. A login renewal chain must remain revocable without revoking independent logins; preserve authentication age, MFA and account revocation. Retain signed/encrypted native blocks in their original tool/result order across all protocols, reconcile legitimate tag parsing, and preserve native call identity through Arena wrappers. Expand composition regressions rather than accepting tool-name presence alone. R50/U49/R59 and in-app browser only remain.
+
+
+R71 browser acceptance additionally confirmed duplicate generated-image aliases after switching models. Deduplicate assistant media after authorized URL hydration, preserving distinct images and user-message multiplicity. Revalidate before publishing the combined preview.
