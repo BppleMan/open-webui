@@ -338,7 +338,10 @@ def build_request(form, binding, connection):
         from open_webui.utils.payload import convert_payload_openai_to_ollama
 
         source.pop('store', None)
-        source['messages'] = [clean_message(m) for m in messages]
+        source['messages'] = [
+            {**clean_message(m), **{key: copy.deepcopy(m[key]) for key in ('thinking', 'reasoning') if key in m}}
+            for m in messages
+        ]
         payload = convert_payload_openai_to_ollama(source)
         for key in ('think', 'format', 'keep_alive'):
             if key in source:
@@ -649,6 +652,14 @@ class NativeStream:
         self.generated_tool_ids = {int(k): v for k, v in (generated_tool_ids or {}).items()}
         self.input_media = False
 
+    def ollama_tools_with_ids(self, tools, offset=0):
+        """Give the conversion copy stable IDs; retain the provider body verbatim."""
+        tools = copy.deepcopy(tools)
+        for index, tool in enumerate(tools, offset):
+            if not tool.get('id'):
+                tool['id'] = self.generated_tool_ids.setdefault(index, 'call_' + str(uuid4()))
+        return tools
+
     def metering(self):
         if self.protocol in {'gemini', 'cpa-agy'}:
             return accounting.gemini_metering(self.usage, self.body, input_media=self.input_media)
@@ -954,7 +965,11 @@ class NativeStream:
         if self.protocol == 'ollama':
             from open_webui.utils.response import convert_response_ollama_to_openai
 
-            return convert_response_ollama_to_openai(body)
+            normalized = copy.deepcopy(self.body)
+            message = normalized.get('message') or {}
+            if message.get('tool_calls'):
+                message['tool_calls'] = self.ollama_tools_with_ids(message['tool_calls'])
+            return convert_response_ollama_to_openai(normalized)
         self.usage = self.body.get('usageMetadata') or self.body.get('usage') or {}
         blocks = (
             self.body.get('content', [])
@@ -1144,7 +1159,10 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                         calls = copy.deepcopy(delta['tool_calls'])
                         for index, call in enumerate(calls):
                             call.setdefault('index', call.get('function', {}).get('index', tool_count + index))
-                        delta['tool_calls'] = convert_ollama_tool_call_to_openai(calls)
+                        offset = len(saved['tool_calls']) - len(calls)
+                        delta['tool_calls'] = convert_ollama_tool_call_to_openai(
+                            state.ollama_tools_with_ids(calls, offset)
+                        )
                         tool_count = max(tool_count, max(call['index'] for call in delta['tool_calls']) + 1)
                     finish = data.get('done_reason', 'stop') if data.get('done') else None
                     if finish == 'stop' and tool_count:

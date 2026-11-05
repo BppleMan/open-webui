@@ -219,3 +219,8 @@ Verify and repair CR2-01..11, preserve R50 and existing accounting, identity, pr
 ## R68 / U67 — Sixth review remediation
 
 2026-11-05: Repair CR6-01..03 after independent reproduction. Request filters must control outbound history, cancelled tool calls must not reappear through native replay, and visible generated media must survive native invalidation/model changes. Preserve unchanged signatures and original stored history. R50/U49/R59 and built-in browser only remain.
+
+
+## R69 / U68 — Seventh review remediation
+
+2026-11-05: Repair the three CR7 findings after independent reproduction: explicit Ollama reasoning fields must survive filter invalidation, legacy dispatched tools must use their original provider function, and Ollama canonical tool IDs must remain stable across generation and history replay. Keep R50/U49/R59 and built-in browser only; previous browser/publication tasks remain pending.

@@ -32,6 +32,7 @@ def seal(calls, value, user_id, temporary_id, message_id):
                     'user': user_id,
                     'temporary': temporary_id,
                     'message': message_id,
+                    'projection_version': 2,
                     'projection': digest(projection(value) if isinstance(value, dict) else value),
                     'calls': calls,
                 },
@@ -42,8 +43,8 @@ def seal(calls, value, user_id, temporary_id, message_id):
     )
 
 
-def projection(message):
-    return (
+def projection(message, *, legacy=False):
+    value = (
         message['output']
         if isinstance(message.get('output'), list)
         else {
@@ -66,6 +67,12 @@ def projection(message):
             if key in message
         }
     )
+    if not legacy and isinstance(value, dict) and isinstance(value.get('tool_calls'), list):
+        value['tool_calls'] = [
+            {key: val for key, val in tool.items() if key != 'index'} if isinstance(tool, dict) else tool
+            for tool in value['tool_calls']
+        ]
+    return value
 
 
 def restore(message, user_id, temporary_id):
@@ -77,11 +84,14 @@ def restore(message, user_id, temporary_id):
         if not isinstance(capsule, str) or len(capsule) > 16 * 1024 * 1024:
             raise ValueError()
         data = json.loads(cipher().decrypt(capsule.encode()))
+        version = data.get('projection_version', 1)
+        if version not in {1, 2}:
+            raise ValueError()
         if (data['user'], data['temporary'], data['message']) != (user_id, temporary_id, message.get('id')):
             raise ValueError()
     except (InvalidToken, ValueError, KeyError, TypeError):
         raise HTTPException(403, 'Native continuation state is invalid for this conversation') from None
-    if data['projection'] != digest(projection(message)):
+    if data['projection'] != digest(projection(message, legacy=version == 1)):
         message['oi_native_invalidated'] = True
         return []
     calls = copy.deepcopy(data['calls'])

@@ -329,3 +329,8 @@ Private metadata follows caller and configuration ownership on every full-chat r
 ## P53 — Canonical and native request consistency
 
 Snapshot native request content around filters and invalidate changed request copies only. Restrict outbound native tool blocks to the canonical surviving tool chain, preserving retained signed blocks. Keep generated images as generic content alongside native envelopes so edits and compatible model changes retain visible media. Unsupported targets must fail explicitly instead of dropping images.
+
+
+## P54 — Protocol fields and stable tool identity
+
+Compare explicit thinking/reasoning field changes at request-filter boundaries and retain their selected values in Ollama conversion. Use the same provider-function normalization for canonical output and native history. Persist positional tool-ID sidecars outside raw provider bodies for both stream and nonstream Ollama, restore validated legacy IDs, and reject mismatches rather than inventing new history IDs.

@@ -116,3 +116,7 @@ Apply caller-private response projection to pin/folder/import, retain portable t
 ### R68 / P53 — Filter, tool-pair and visible-media consistency
 
 Request-stage filters invalidate changed native request copies while keeping untouched signatures. Tool replay is restricted by canonical pairing, including cancelled parallel calls and native-only API histories. Visible generated images survive native invalidation through generic content conversion; unsupported targets fail explicitly. See review-round6-remediation.md and its acceptance record. R67 browser acceptance and preview publication remain pending until the required in-app browser is available.
+
+### R69 / P54 — Native fields, dispatch metadata and stable Ollama IDs
+
+Request consistency includes Ollama thinking/reasoning fields and preserves explicit native-field clearing. Legacy call sequences use get_provider_function. Ollama IDs are persisted in sidecars and restored through strict provider-function matching, including temporary API history. Versioned capsule projection separates transport indexes without accepting edited content or breaking v1 validation. See review-round7-remediation.md and its acceptance record.

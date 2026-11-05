@@ -20,6 +20,8 @@ def _request_projection(message):
             'tool_call_id',
             'function_call',
             'reasoning_content',
+            'reasoning',
+            'thinking',
             'reasoning_details',
             'reasoning_items',
             'provider_specific_fields',
@@ -131,16 +133,93 @@ def project_native_tools(native, canonical_tools, known_tools=None):
     elif protocol in {'openai-chat', 'ollama'}:
         message = body.get('message') if protocol == 'ollama' else (body.get('choices') or [{}])[0].get('message')
         if message and 'tool_calls' in message:
-            kept, used = [], set()
-            for tool in message['tool_calls']:
+            kept, used, remapped = [], set(), {}
+            ids = (
+                {int(k): v for k, v in (native.get('generated_tool_ids') or {}).items()} if protocol == 'ollama' else {}
+            )
+            for index, tool in enumerate(message['tool_calls']):
                 # Ollama has no native call IDs; consume identical functions in
                 # order, once per surviving canonical result.
-                tool_id = identity(tool.get('function', {}), tool.get('id'), used, unique=False)
+                tool_id = identity(tool.get('function', {}), tool.get('id') or ids.get(index), used, unique=False)
                 if tool_id:
+                    if protocol == 'ollama' and not tool.get('id'):
+                        remapped[len(kept)] = tool_id
                     kept.append(tool)
                     used.add(tool_id)
             message['tool_calls'] = kept
+            if protocol == 'ollama':
+                native['generated_tool_ids'] = remapped
     return native
+
+
+def native_function_slots(native):
+    """Positions refer to the saved raw block order, not provider stream indexes."""
+    from open_webui.utils.misc import get_provider_function
+
+    if native['protocol'] == 'ollama':
+        return [
+            (index, call.get('id'), get_provider_function(call.get('function', {})))
+            for index, call in enumerate(native['body'].get('message', {}).get('tool_calls') or [])
+        ]
+    if native['protocol'] in {'gemini', 'cpa-agy'}:
+        blocks = (native['body'].get('candidates') or [{}])[0].get('content', {}).get('parts', [])
+        return [
+            (
+                index,
+                block['functionCall'].get('id'),
+                get_provider_function(
+                    {'name': block['functionCall']['name'], 'arguments': block['functionCall'].get('args', {})}
+                ),
+            )
+            for index, block in enumerate(blocks)
+            if block.get('functionCall')
+        ]
+    return []
+
+
+def prepare_native_calls(saved):
+    from open_webui.utils.misc import get_provider_function
+
+    calls = saved.get('oi_native') or []
+    if not all(native.get('protocol') in {'gemini', 'cpa-agy', 'ollama'} for native in calls):
+        return calls
+    known_tools = [
+        {'id': item['call_id'], 'function': get_provider_function(item)}
+        for item in saved.get('output', [])
+        if item.get('type') == 'function_call'
+    ]
+    if not known_tools and not isinstance(saved.get('output'), list):
+        known_tools = [
+            {'id': tool['id'], 'function': get_provider_function(tool.get('provider_function') or tool['function'])}
+            for tool in saved.get('tool_calls') or []
+        ]
+    if not known_tools:
+        return calls
+    prepared, offset = [], 0
+    for native in calls:
+        slots = native_function_slots(native)
+        count = len(slots)
+        segment = known_tools[offset : offset + count]
+        pending = list(segment)
+        ids = {int(k): v for k, v in (native.get('generated_tool_ids') or {}).items()}
+        for index, provider_id, function in slots:
+            tool_id = provider_id or ids.get(index)
+            match = next(
+                (
+                    tool
+                    for tool in pending
+                    if (not tool_id or tool['id'] == tool_id)
+                    and tool['function']['name'] == function['name']
+                    and json.loads(tool['function']['arguments']) == json.loads(function['arguments'])
+                ),
+                None,
+            )
+            if match is None:
+                raise ValueError('Native tool does not match the saved output')
+            pending.remove(match)
+        prepared.append(project_native_tools(native, segment, segment))
+        offset += count
+    return prepared
 
 
 def replay_message(native, expected_tools=None):
@@ -153,20 +232,16 @@ def replay_message(native, expected_tools=None):
     from open_webui.utils.oi.protocols import NativeStream
 
     tool_ids = dict(native.get('generated_tool_ids') or {})
-    if native['protocol'] in {'gemini', 'cpa-agy'} and expected_tools is not None:
-        blocks = (native['body'].get('candidates') or [{}])[0].get('content', {}).get('parts', [])
-        canonical = iter(expected_tools)
-        for index, block in enumerate(blocks):
-            call = block.get('functionCall')
-            if not call:
-                continue
+    if native['protocol'] in {'gemini', 'cpa-agy', 'ollama'}:
+        canonical = iter(expected_tools or [])
+        for index, provider_id, function in native_function_slots(native):
             expected = next(canonical, None)
-            if call.get('id') or index in tool_ids or str(index) in tool_ids:
+            if provider_id or index in tool_ids or str(index) in tool_ids:
                 continue
             if (
                 expected is None
-                or expected['function']['name'] != call['name']
-                or json.loads(expected['function'].get('arguments') or '{}') != call.get('args', {})
+                or expected['function']['name'] != function['name']
+                or json.loads(expected['function'].get('arguments') or '{}') != json.loads(function['arguments'])
             ):
                 raise ValueError('Native tool does not match the saved output')
             tool_ids[index] = expected['id']
@@ -182,7 +257,7 @@ def native_messages(saved):
     from open_webui.utils.oi.native_privacy import replay_envelope
 
     messages = []
-    for native in saved.get('oi_native') or []:
+    for native in prepare_native_calls(saved):
         if not isinstance(native, dict) or not native.get('binding_id') or not native.get('replayable', True):
             continue
         safe = replay_envelope(native)
@@ -209,25 +284,10 @@ def replace_output_text(output, text):
 def attach_native(saved, messages):
     if saved.get('oi_native_invalidated'):
         return
-    calls = saved.get('oi_native') or []
+    calls = prepare_native_calls(saved)
     assistants = [m for m in messages if m.get('role') == 'assistant']
     if not calls or len(calls) < len(assistants):
         return
-    if all(native.get('protocol') in {'gemini', 'cpa-agy'} for native in calls):
-        known_tools = [
-            {'id': item['call_id'], 'function': {'name': item['name'], 'arguments': item.get('arguments') or '{}'}}
-            for item in saved.get('output', [])
-            if item.get('type') == 'function_call'
-        ]
-        if known_tools:
-            prepared, offset = [], 0
-            for native in calls:
-                blocks = (native['body'].get('candidates') or [{}])[0].get('content', {}).get('parts', [])
-                count = sum(bool(part.get('functionCall')) for part in blocks)
-                segment = known_tools[offset : offset + count]
-                prepared.append(project_native_tools(native, segment, segment))
-                offset += count
-            calls = prepared
     if len(calls) != len(assistants):
         # Continue may merge consecutive assistant outputs into one display message.
         # Recover call boundaries from native projections, checking visible text/tool IDs.
