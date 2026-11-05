@@ -73,3 +73,6 @@ Read docs/customization/requirements.md, prototype.md, implementation.md and fea
 R67/P52 code and exact-source CI are verified (507 backend/79 frontend). Browser acceptance and preview publication are pending the required in-app browser connection. Do not use an external browser. R66 is now observed Synced/Healthy; preserve its original historical evidence. See review-round5-remediation-acceptance.json.
 
 - R68/P53 repairs the three sixth-review findings. Read review-round6-remediation.md and its acceptance record. Preserve filtered request content, surviving tool pairs, visible media and unchanged native signatures. R67 built-in-browser acceptance is carried forward before a combined isolated preview update. R50/U49/R59 remain.
+
+
+R68/P53 code and exact-source CI are verified (581 backend/79 frontend). The required in-app browser is still not connected; R67/R68 browser acceptance and combined preview publication remain pending. Do not use an external browser or claim tests are browser acceptance.

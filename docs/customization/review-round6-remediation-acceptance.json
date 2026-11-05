@@ -1,7 +1,7 @@
 {
   "requirement": "R68",
   "prototype": "P53",
-  "status": "local_checks_verified_browser_pending",
+  "status": "code_and_CI_verified_browser_pending",
   "source_baseline": "240c8846f3ae7467be7c49a0c4de5aa60884a6e2",
   "findings": {
     "CR6-01": {
@@ -27,21 +27,32 @@
     "PostgreSQL": "existing billing/archive/discovery/actor gates passed",
     "build": "passed",
     "real_supplier_requests": 0,
-    "adjacent_ollama_parallel_tools": "two regression cases passed"
+    "adjacent_ollama_parallel_tools": "two regression cases passed",
+    "backend_CI": 581,
+    "frontend_CI": 79,
+    "all_existing_integration_gates": "passed",
+    "image_build": "passed"
   },
   "browser": {
     "status": "pending",
     "constraint": "built-in browser only",
-    "required_flow": "R67 temporary save/sidebar 503 followed by typing/reload; R68 generated-image follow-up"
+    "required_flow": "R67 temporary save/sidebar 503 followed by typing/reload; R68 generated-image follow-up",
+    "reason": "Required in-app browser is not connected; no external browser used"
   },
   "deployment": {
-    "status": "not_changed",
-    "scope": "isolated_preview_only"
+    "status": "not_published_pending_browser_acceptance",
+    "scope": "isolated_preview_only",
+    "current_source": "144f19003c056944170cd02fbb080d53f68e8f01",
+    "runtime_observation": "Synced/Healthy, read-only on 2026-11-05",
+    "carry_forward": "R67 save/sidebar 503 and R68 media follow-up browser acceptance before one preview update",
+    "candidate_image": "ghcr.io/bppleman/open-webui-oi:sha-1f672196fab3c2e830772ade96cc6d0f295c0b7c@sha256:cef9264b48bb2dda12bcbc880e7752af78a4d1716e264ebf790b50fd1a73f006"
   },
   "limitations": [
     "No real supplier request; R59 remains open.",
     "Browser acceptance and the combined R67/R68 preview publication remain pending.",
     "Chat Completions generic assistant image history is rejected explicitly; use a compatible connection.",
     "No retrospective rewrite of stored chats or exports."
-  ]
+  ],
+  "source_commit": "1f672196fab3c2e830772ade96cc6d0f295c0b7c",
+  "ci": "https://github.com/BppleMan/open-webui/actions/runs/41993951781"
 }
