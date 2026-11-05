@@ -130,3 +130,6 @@ Retain canonical legacy prefixes and reconstruct merged native call boundaries f
 ### R71 / P56 — Session-family logout and cross-protocol replay
 
 Stable login lineage revokes all refresh siblings while keeping independent logins. Native tool boundary detection covers all seven adapters, including opaque-only reasoning. Shared consumer tag projection validates recorded content rather than treating normal parsing as editing. Arena keeps native response identity. See review-round9-remediation.md and its acceptance record.
+
+
+2026-11-06: R71/P56 is verified on the isolated preview, including the carried-forward R67-R70 delivery. Source `223addfa331a0bcefc33ceb6ba9498d680c96689` passed 813 backend and 79 frontend cases, zero new type diagnostics and the full exact-source CI. Built-in-browser checks covered temporary save after a sidebar 503, continued draft editing/reload, generated-image model switching and caption editing at 430 x 932. The final preview streamed a loopback synthetic answer and thought summary and preserved both after reload. GitOps `71f376bf717d0a5c0bdaa8dda068b7de18464ea4` is Synced/Healthy at the recorded immutable image. Original review evidence remains historical; R50 and the R59 real-provider gap remain. See review-round9-remediation-acceptance.json.

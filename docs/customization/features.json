@@ -3396,7 +3396,7 @@
   "review_round9_remediation": {
     "requirement": "R71",
     "prototype": "P56",
-    "status": "local_checks_passed_final_CI_pending",
+    "status": "verified_on_isolated_preview",
     "source_baseline": "16a4f894be9e24f6393cf6398e800003e0268dff",
     "findings": {
       "CR9-01": {
@@ -3430,10 +3430,16 @@
       "production_build": "passed",
       "HTTP_Redis_PostgreSQL": "passed including sibling token revocation and independent login control",
       "real_supplier_requests": 0,
-      "HTTP_media": "exactly one generated image after model switch or caption edit"
+      "HTTP_media": "exactly one generated image after model switch or caption edit",
+      "ci": "passed on exact source; first backend attempt failed before tests because runner port 55432 was occupied; same-source retry passed",
+      "fresh_restore": "63 tables and 3 attachments restored to an isolated test database before publication",
+      "original_evidence_preserved": {
+        "files": 26,
+        "all_hashes_unchanged": true
+      }
     },
     "browser": {
-      "status": "connected_acceptance_pending",
+      "status": "passed",
       "constraint": "built-in browser only",
       "carry_forward": [
         "R67 temporary save/sidebar 503 then type and reload",
@@ -3444,11 +3450,16 @@
         "problem": "stored file URL and native inline media duplicated after model switch",
         "before_image_parts": 2,
         "expected": 1,
-        "implementation": "fixed_and_reproduced_in_browser"
-      }
+        "implementation": "fixed_and_reproduced_in_browser",
+        "after_image_parts": 1,
+        "verification": "actual built-in browser model switch and caption edit, plus HTTP regression and four focused tests"
+      },
+      "carry_forward_status": "R67/R68 required interactions completed in the built-in browser on the final local candidate",
+      "preview": "deployed image streamed synthetic reply and thought summary; reload preserved both and usage",
+      "real_supplier_requests": 0
     },
     "deployment": {
-      "status": "not_published_pending_validation",
+      "status": "deployed_and_verified",
       "scope": "isolated_preview_only",
       "combined_rounds": [
         "R67",
@@ -3456,7 +3467,30 @@
         "R69",
         "R70",
         "R71"
-      ]
-    }
+      ],
+      "image": "ghcr.io/bppleman/open-webui-oi:sha-223addfa331a0bcefc33ceb6ba9498d680c96689@sha256:19a41cfd493b8b920b405612869385a4921cc5c4f8b4639072676e1bf442ca8b",
+      "gitops_commit": "71f376bf717d0a5c0bdaa8dda068b7de18464ea4",
+      "argocd": "Synced/Healthy",
+      "pod_restarts": 0,
+      "schema": "oi0000000007",
+      "original_attachments_unchanged": 3,
+      "production_unchanged": true
+    },
+    "source_commit": "223addfa331a0bcefc33ceb6ba9498d680c96689",
+    "ci": "https://github.com/BppleMan/open-webui/actions/runs/42077542849",
+    "cleanup": {
+      "test_connection_disabled": true,
+      "loopback_fixtures_stopped": true,
+      "test_account_preferences_restored": true,
+      "global_direct_connections_unchanged": true,
+      "original_evidence_retained": true
+    },
+    "limitations": [
+      "R50 stage8A only; no production OI/CPA, routing or business database migration.",
+      "R59 real CPA readable thought-summary gap remains open; no real supplier requests.",
+      "5695 existing upstream type diagnostics remain; this batch adds zero.",
+      "Original earlier acceptance files remain historical; this R71 record closes the carried-forward R67-R70 browser/publication gates.",
+      "Legacy independently issued tokens without a common login lineage cannot be retroactively linked."
+    ]
   }
 }
