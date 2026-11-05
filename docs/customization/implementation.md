@@ -112,3 +112,7 @@ The six findings are repaired and verified by 467 backend and 77 frontend tests,
 ### R67 / P52 — Fifth review boundary repairs
 
 Apply caller-private response projection to pin/folder/import, retain portable terminal markers, persist generated Gemini tool IDs outside signed blocks, and recover legacy IDs only from matching canonical functions. A successful temporary save survives sidebar refresh failures without weakening newer-navigation guards. Verification and preview delivery are recorded in review-round5-remediation-acceptance.json.
+
+### R68 / P53 — Filter, tool-pair and visible-media consistency
+
+Request-stage filters invalidate changed native request copies while keeping untouched signatures. Tool replay is restricted by canonical pairing, including cancelled parallel calls and native-only API histories. Visible generated images survive native invalidation through generic content conversion; unsupported targets fail explicitly. See review-round6-remediation.md and its acceptance record. R67 browser acceptance and preview publication remain pending until the required in-app browser is available.

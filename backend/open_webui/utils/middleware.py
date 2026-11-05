@@ -1938,6 +1938,7 @@ async def load_messages_from_db(chat_id: str, message_id: str) -> Optional[list[
             msg.get('role') == 'assistant'
             and not msg.get('content')
             and not msg.get('output')
+            and not msg.get('files')
             and not native_messages(msg)
         )
     ]
@@ -1997,6 +1998,44 @@ def process_messages_with_output(
     """
     processed = []
 
+    def append_visible(items, saved):
+        # Generated images are visible history even after editing the caption or
+        # switching bindings. Keep a protocol-neutral fallback beside native replay.
+        images = (
+            [
+                {'type': 'image_url', 'image_url': {'url': file['url']}}
+                for file in saved.get('files') or []
+                if file.get('url')
+                and (file.get('type') == 'image' or is_raster_image_content_type(file.get('content_type')))
+            ]
+            if saved.get('role') == 'assistant'
+            else []
+        )
+        for item in items:
+            if item.get('role') == 'assistant':
+                images.extend(item.pop('images', []) or [])
+        if images:
+            target = next((item for item in reversed(items) if item.get('role') == 'assistant'), None)
+            if target is None:
+                target = {'role': 'assistant', 'content': ''}
+                items.append(target)
+            content = copy.deepcopy(target.get('content') or [])
+            if isinstance(content, str):
+                content = [{'type': 'text', 'text': content}]
+
+            def image_url(part):
+                value = part.get('image_url') or {}
+                return value if isinstance(value, str) else value.get('url')
+
+            existing = {image_url(part) for part in content if part.get('type') == 'image_url'}
+            for image in images:
+                url = image_url(image)
+                if url and url not in existing:
+                    content.append(copy.deepcopy(image))
+                    existing.add(url)
+            target['content'] = content
+        processed.extend(items)
+
     for message in messages:
         meta = message.get('meta')
         voice = meta.get('voice') if isinstance(meta, dict) else None
@@ -2037,17 +2076,17 @@ def process_messages_with_output(
                 from open_webui.utils.oi.replay import attach_native
 
                 attach_native(message, output_messages)
-                processed.extend(output_messages)
+                append_visible(output_messages, message)
                 processed.extend(speech)
                 continue
             from open_webui.utils.oi.replay import native_messages
 
             native_output = native_messages(message)
             if native_output:
-                processed.extend(native_output)
+                append_visible(native_output, message)
                 processed.extend(speech)
                 continue
-            if not message.get('content'):
+            if not message.get('content') and not message.get('files'):
                 continue
 
         if message.get('role') == 'assistant' and isinstance(message.get('oi_native'), list):
@@ -2055,7 +2094,7 @@ def process_messages_with_output(
 
             native_output = native_messages(message)
             if native_output:
-                processed.extend(native_output)
+                append_visible(native_output, message)
                 processed.extend(speech)
                 continue
         clean_message = dict(message)
@@ -2063,7 +2102,7 @@ def process_messages_with_output(
             clean_message.pop(key, None)
         if clean_message.get('oi_native_invalidated') or not isinstance(clean_message.get('oi_native'), dict):
             clean_message.pop('oi_native', None)
-        processed.append(clean_message)
+        append_visible([clean_message], message)
         processed.extend(speech)
 
     if include_file_context:
@@ -2262,6 +2301,13 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         include_file_context=metadata['include_file_context'],
     )
     form_data['messages'] = sanitize_tool_pairs(form_data['messages'])
+    if (model.get('info', {}).get('meta', {}).get('capabilities') or {}).get('vision') is False and any(
+        message.get('role') == 'assistant'
+        and isinstance(message.get('content'), list)
+        and any(part.get('type') == 'image_url' for part in message['content'])
+        for message in form_data['messages']
+    ):
+        raise HTTPException(422, 'This history contains generated images, but the selected model has vision disabled')
 
     system_message = get_system_message(form_data.get('messages', []))
     if system_message:  # Chat Controls/User Settings
@@ -2384,7 +2430,11 @@ async def process_chat_payload(request, form_data, user, metadata, model):
 
     # Process the form_data through the pipeline
     try:
+        from open_webui.utils.oi.replay import snapshot_request_native, reconcile_request_native
+
+        native_snapshot = snapshot_request_native(form_data)
         form_data = await process_pipeline_inlet_filter(request, form_data, user, models)
+        form_data = reconcile_request_native(form_data, native_snapshot)
     except Exception as e:
         raise e
 

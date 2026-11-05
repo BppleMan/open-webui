@@ -147,6 +147,29 @@ async def main():
         assert 'round4-writer-private' in json.dumps(await req(writer, 'GET', '/api/v1/chats/' + cid))
         exported = await c.get('/api/v1/chats/all', headers={'Authorization': 'Bearer ' + owner['token']})
         assert exported.is_success and 'round4-writer-private' not in exported.text
+        # Image files remain visible context without a usable original native envelope.
+        gemini = seed['bindings']['gemini']['id']
+        alternate = await req(
+            owner,
+            'POST',
+            '/api/v1/model-bindings',
+            {
+                'connection_id': seed['bindings']['gemini']['connection_id'],
+                'upstream_id': 'alternate-fixture',
+                'name': 'Round6 alternate',
+                'capabilities': {'chat': True, 'vision': True},
+            },
+        )
+        for edited in (False, True):
+            cid = await chat(gemini)
+            mid = await ask(owner, cid, gemini, options={'fixture_case': 'image_unsigned'})
+            if edited:
+                await req(owner, 'POST', f'/api/v1/chats/{cid}/messages/{mid}', {'content': 'Updated image caption'})
+            await ask(owner, cid, gemini if edited else alternate['id'], parent=mid)
+            event = (await c.get(provider + '/events')).json()[-1]
+            assert 'inlineData' in json.dumps(event['body']['contents']), event
+            if edited:
+                assert 'Updated image caption' in json.dumps(event['body']['contents'])
         for stream in [False, True]:
             gemini = seed['bindings']['gemini']['id']
             cid = await chat(gemini)
@@ -166,6 +189,7 @@ async def main():
                 'caller_private_instructions': 'passed',
                 'owner_json_export_privacy': 'passed',
                 'pin_folder_move_privacy_and_writer_retention': 'passed',
+                'unsigned_image_model_switch_and_saved_caption_edit': 'passed',
                 'nonowner_pure_image_fork_next_turn_stream_and_nonstream': 'passed',
                 'supplier': 'loopback synthetic only',
             },

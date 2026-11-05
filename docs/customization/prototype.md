@@ -324,3 +324,8 @@ Distinguish native caller-private metadata from protocol replay content. Shared 
 ## P52 — Complete response projection and durable continuation
 
 Private metadata follows caller and configuration ownership on every full-chat response. Portable native history retains terminal markers and canonical tool-ID sidecars without modifying signed provider blocks. Legacy missing IDs can be recovered only from a matching unedited canonical function sequence. A successful temporary save transitions to the saved conversation even when sidebar refresh fails, subject to the existing navigation guards.
+
+
+## P53 — Canonical and native request consistency
+
+Snapshot native request content around filters and invalidate changed request copies only. Restrict outbound native tool blocks to the canonical surviving tool chain, preserving retained signed blocks. Keep generated images as generic content alongside native envelopes so edits and compatible model changes retain visible media. Unsupported targets must fail explicitly instead of dropping images.

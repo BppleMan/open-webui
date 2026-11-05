@@ -136,7 +136,7 @@ async def generate(protocol: str, path: str, request: Request):
         if case == 'blocked':
             body = {'promptFeedback': {'blockReason': 'SAFETY'}, 'usageMetadata': {'promptTokenCount': 3}}
             frames = [body]
-        elif case in {'reasoning_only', 'image_only', 'mixed_image'}:
+        elif case in {'reasoning_only', 'image_only', 'mixed_image', 'image_unsigned'}:
             png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+y9bUAAAAASUVORK5CYII='
             parts = (
                 [{'thought': True, 'text': 'Synthetic brief thought.', 'thoughtSignature': 'opaque'}]
@@ -145,6 +145,8 @@ async def generate(protocol: str, path: str, request: Request):
             )
             if case == 'mixed_image':
                 parts.insert(0, {'text': 'Synthetic generated image.'})
+            if case == 'image_unsigned':
+                parts[0].pop('thoughtSignature')
             body['candidates'][0]['content']['parts'] = parts
             body['candidates'][0]['finishReason'] = 'MAX_TOKENS' if case == 'reasoning_only' else 'STOP'
             body['usageMetadata'].update(

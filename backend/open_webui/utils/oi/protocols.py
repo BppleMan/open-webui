@@ -106,9 +106,11 @@ def split_system(messages):
 
 
 def native_for(message, protocol, binding_id):
+    from open_webui.utils.oi.replay import project_native_tools
+
     native = message.get('oi_native') or {}
     return (
-        copy.deepcopy(native.get('body'))
+        project_native_tools(native, message.get('tool_calls', []))['body']
         if isinstance(native, dict)
         and not message.get('oi_native_invalidated')
         and native.get('replayable', True)
@@ -158,14 +160,18 @@ def response_items(messages, binding):
             )
             continue
         content = []
+        input_media = any(part.get('type') in {'image_url', 'file'} for part in parts(message.get('content')))
         for part in parts(message.get('content')):
             kind = part.get('type')
             if kind in {'text', 'input_text', 'output_text'}:
                 content.append(
-                    {'type': 'output_text' if role == 'assistant' else 'input_text', 'text': part.get('text', '')}
+                    {
+                        'type': 'output_text' if role == 'assistant' and not input_media else 'input_text',
+                        'text': part.get('text', ''),
+                    }
                 )
             elif kind == 'image_url':
-                content.append({'type': 'input_image', **part['image_url']})
+                content.append({'type': 'input_image', 'detail': 'auto', **part['image_url']})
                 content[-1]['image_url'] = content[-1].pop('url')
             elif kind == 'file':
                 content.append({'type': 'input_file', **part['file']})
@@ -195,6 +201,41 @@ def build_request(form, binding, connection):
     protocol = binding.protocol
     source = copy.deepcopy(form)
     messages = source.pop('messages', [])
+    # Native-only API history has no canonical projection yet. Decode it before
+    # checking pairs; normalized/filtered messages already have content/tool fields
+    # and must never have removed calls reconstructed here.
+    from open_webui.utils.misc import get_paired_tool_call_ids
+    from open_webui.utils.oi.replay import replay_message, project_native_tools
+
+    for message in messages:
+        native = message.get('oi_native')
+        if (
+            isinstance(native, dict)
+            and 'content' not in message
+            and 'tool_calls' not in message
+            and not message.get('oi_native_invalidated')
+            and native.get('binding_id') == binding.id
+            and canonical_protocol(native.get('protocol')) == canonical_protocol(protocol)
+        ):
+            message.update(replay_message(native))
+    if any(message.get('oi_native') for message in messages):
+        paired = get_paired_tool_call_ids(messages)
+        retained_messages = []
+        for message, ids in zip(messages, paired):
+            if message.get('oi_native') and message.get('tool_calls'):
+                tools = [tool for tool in message['tool_calls'] if tool['id'] in ids]
+                message['oi_native'] = project_native_tools(message['oi_native'], tools)
+                if tools:
+                    message['tool_calls'] = tools
+                else:
+                    message.pop('tool_calls', None)
+                    remaining = replay_message(message['oi_native'])
+                    if not message.get('content') and not any(
+                        remaining.get(key) for key in ('content', 'reasoning_content', 'images')
+                    ):
+                        continue
+            retained_messages.append(message)
+        messages = retained_messages
     stream = bool(source.get('stream', False))
     # OI orchestration fields are never provider extensions.
     for field in (
@@ -251,10 +292,21 @@ def build_request(form, binding, connection):
     except ValueError as error:
         raise HTTPException(422, str(error)) from None
     if protocol == 'openai-chat':
-        source['messages'] = [
-            clean_message(((native_for(m, protocol, binding.id) or {}).get('choices') or [{}])[0].get('message') or m)
-            for m in messages
-        ]
+        source['messages'] = []
+        for message in messages:
+            native_message = ((native_for(message, protocol, binding.id) or {}).get('choices') or [{}])[0].get(
+                'message'
+            )
+            if (
+                not native_message
+                and message.get('role') == 'assistant'
+                and any(part.get('type') == 'image_url' for part in parts(message.get('content')))
+            ):
+                raise HTTPException(
+                    422,
+                    'Chat Completions cannot replay generated images in assistant history; choose a compatible connection such as Responses',
+                )
+            source['messages'].append(clean_message(native_message or message))
         if stream:
             source['stream_options'] = {**(form.get('stream_options') or {}), 'include_usage': True}
         return url, source

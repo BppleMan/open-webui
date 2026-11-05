@@ -1,7 +1,136 @@
 """Reconnect canonical tool results to matching, unedited native assistant blocks."""
 
 import copy
+import hashlib
 import json
+
+
+def _digest(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def _request_projection(message):
+    return {
+        key: message[key]
+        for key in (
+            'role',
+            'content',
+            'name',
+            'tool_calls',
+            'tool_call_id',
+            'function_call',
+            'reasoning_content',
+            'reasoning_details',
+            'reasoning_items',
+            'provider_specific_fields',
+            'refusal',
+            'audio',
+            'images',
+            'annotations',
+            'files',
+            'output',
+        )
+        if key in message
+    }
+
+
+def snapshot_request_native(form):
+    """Record request-only replay content before an external filter runs."""
+    snapshots = {}
+    for message in form.get('messages', []) if isinstance(form, dict) else []:
+        if message.get('oi_native'):
+            snapshots.setdefault(_digest(message['oi_native']), set()).add(_digest(_request_projection(message)))
+    return snapshots
+
+
+def reconcile_request_native(form, snapshots):
+    for message in form.get('messages', []) if isinstance(form, dict) else []:
+        native = message.get('oi_native')
+        if native and _digest(_request_projection(message)) not in snapshots.get(_digest(native), set()):
+            invalidate_native(message)
+            message.pop('oi_native', None)
+            message.pop('oi_native_state', None)
+    return form
+
+
+def project_native_tools(native, canonical_tools, known_tools=None):
+    """Keep only canonical tool calls in a detached outbound native projection.
+
+    Cancellation/pair cleanup is authoritative. Keep retained signed blocks
+    untouched, and never mutate the stored provider response.
+    """
+    native = copy.deepcopy(native)
+    if not isinstance(native, dict) or not isinstance(native.get('body'), dict):
+        return native
+    body, protocol = native['body'], native['protocol']
+    canonical_tools = canonical_tools or []
+    allowed = {tool['id']: tool for tool in canonical_tools}
+
+    def identity(call, call_id=None):
+        if call_id:
+            return call_id if call_id in allowed else None
+        name = call.get('name')
+        arguments = call.get('args', call.get('arguments', {}))
+        if isinstance(arguments, str):
+            arguments = json.loads(arguments or '{}')
+        matches = [
+            tool['id']
+            for tool in canonical_tools
+            if tool['function']['name'] == name and json.loads(tool['function'].get('arguments') or '{}') == arguments
+        ]
+        if len(matches) > 1:
+            raise ValueError('Ambiguous native tool identity; cannot safely replay this history')
+        return matches[0] if matches else None
+
+    if protocol == 'anthropic':
+        body['content'] = [b for b in body.get('content', []) if b.get('type') != 'tool_use' or b.get('id') in allowed]
+    elif protocol in {'gemini', 'cpa-agy'}:
+        candidate = (body.get('candidates') or [{}])[0]
+        parts = candidate.get('content', {}).get('parts', [])
+        ids = {int(k): v for k, v in (native.get('generated_tool_ids') or {}).items()}
+        function_parts = [(index, part['functionCall']) for index, part in enumerate(parts) if part.get('functionCall')]
+        ordered = canonical_tools if known_tools is None else known_tools
+        # Legacy responses have no ID sidecar. The saved output order includes
+        # cancelled calls too, so identical parallel functions remain distinguishable.
+        if len(function_parts) == len(ordered) and all(
+            call['name'] == tool['function']['name']
+            and call.get('args', {}) == json.loads(tool['function'].get('arguments') or '{}')
+            for (_, call), tool in zip(function_parts, ordered)
+        ):
+            for (index, call), tool in zip(function_parts, ordered):
+                if not call.get('id'):
+                    ids.setdefault(index, tool['id'])
+        kept, remapped, seen = [], {}, set()
+        for index, part in enumerate(parts):
+            call = part.get('functionCall')
+            if call:
+                tool_id = identity(call, call.get('id') or ids.get(index))
+                if not tool_id:
+                    continue
+                if tool_id in seen:
+                    raise ValueError('Ambiguous native tool identity; cannot safely replay this history')
+                seen.add(tool_id)
+                if not call.get('id'):
+                    remapped[len(kept)] = tool_id
+            kept.append(part)
+        if 'content' in candidate:
+            candidate['content']['parts'] = kept
+        native['generated_tool_ids'] = remapped
+    elif protocol == 'gemini-interactions':
+        for key in ('steps', 'outputs'):
+            if key in body:
+                body[key] = [b for b in body[key] if b.get('type') != 'function_call' or b.get('id') in allowed]
+    elif protocol == 'openai-responses':
+        body['output'] = [
+            b
+            for b in body.get('output', [])
+            if b.get('type') != 'function_call' or (b.get('call_id') or b.get('id')) in allowed
+        ]
+    elif protocol in {'openai-chat', 'ollama'}:
+        message = body.get('message') if protocol == 'ollama' else (body.get('choices') or [{}])[0].get('message')
+        if message and 'tool_calls' in message:
+            message['tool_calls'] = [t for t in message['tool_calls'] if identity(t.get('function', {}), t.get('id'))]
+    return native
 
 
 def replay_message(native, expected_tools=None):
@@ -74,6 +203,21 @@ def attach_native(saved, messages):
     assistants = [m for m in messages if m.get('role') == 'assistant']
     if not calls or len(calls) < len(assistants):
         return
+    if all(native.get('protocol') in {'gemini', 'cpa-agy'} for native in calls):
+        known_tools = [
+            {'id': item['call_id'], 'function': {'name': item['name'], 'arguments': item.get('arguments') or '{}'}}
+            for item in saved.get('output', [])
+            if item.get('type') == 'function_call'
+        ]
+        if known_tools:
+            prepared, offset = [], 0
+            for native in calls:
+                blocks = (native['body'].get('candidates') or [{}])[0].get('content', {}).get('parts', [])
+                count = sum(bool(part.get('functionCall')) for part in blocks)
+                segment = known_tools[offset : offset + count]
+                prepared.append(project_native_tools(native, segment, segment))
+                offset += count
+            calls = prepared
     if len(calls) != len(assistants):
         # Continue may merge consecutive assistant outputs into one display message.
         # Recover call boundaries from native projections, checking visible text/tool IDs.
@@ -91,13 +235,18 @@ def attach_native(saved, messages):
             text, tools, group = '', set(), []
             while pending:
                 native = pending.pop(0)
-                projected = replay_message(native, message.get('tool_calls', [])[len(tools) :])
+                remaining_tools = (message.get('tool_calls') or [])[len(tools) :]
+                native = project_native_tools(native, remaining_tools)
+                projected = replay_message(native, remaining_tools)
                 text += ''.join(content_text(projected.get('content')).split())
                 tools.update(t['id'] for t in projected.get('tool_calls', []))
-                group.append({**projected, 'oi_native': copy.deepcopy(native)})
+                if any(projected.get(key) for key in ('content', 'tool_calls', 'reasoning_content', 'images')):
+                    group.append({**projected, 'oi_native': copy.deepcopy(native)})
                 if text == expected and tools == expected_tools and remaining_assistants:
                     break
-            if text != expected or tools != expected_tools:
+            if tools != expected_tools:
+                raise ValueError('Native tool does not match the saved output')
+            if text != expected:
                 raise ValueError('Native continuation does not match the saved output')
             rebuilt.extend(group)
         if pending:
@@ -108,7 +257,7 @@ def attach_native(saved, messages):
         # The display model can be a preset (including a chain of presets).
         # The outbound adapter checks the actual binding and protocol instead.
         if isinstance(native, dict) and native.get('binding_id') and isinstance(native.get('body'), dict):
-            message['oi_native'] = copy.deepcopy(native)
+            message['oi_native'] = project_native_tools(native, message.get('tool_calls'))
 
 
 def invalidate_native(message):

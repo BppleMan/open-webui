@@ -228,6 +228,9 @@ async def process_filter_functions(
         if not function:
             continue
 
+        from open_webui.utils.oi.replay import snapshot_request_native, reconcile_request_native
+
+        native_snapshot = snapshot_request_native(form_data) if filter_type in {'inlet', 'request'} else None
         form_data, valves_by_id, file_handler = await process_filter_function(
             request,
             function,
@@ -238,6 +241,8 @@ async def process_filter_functions(
             valves_by_id,
             filter_ids,
         )
+        if native_snapshot is not None:
+            form_data = reconcile_request_native(form_data, native_snapshot)
         skip_files = skip_files or file_handler
 
     # Handle file cleanup for inlet

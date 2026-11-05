@@ -214,3 +214,8 @@ Verify and repair CR2-01..11, preserve R50 and existing accounting, identity, pr
 ## R67 / U66 — Fifth review remediation
 
 2026-11-05: Independently verify and repair CR5-01..04 under the explicit implementation-thread handoff. Apply native privacy to every full-chat response; retain safe terminal semantics and stable generated tool IDs across continuation, fork and archive; sidebar refresh failures must not strand a retired temporary draft manager. Preserve R50/U49/R59.
+
+
+## R68 / U67 — Sixth review remediation
+
+2026-11-05: Repair CR6-01..03 after independent reproduction. Request filters must control outbound history, cancelled tool calls must not reappear through native replay, and visible generated media must survive native invalidation/model changes. Preserve unchanged signatures and original stored history. R50/U49/R59 and built-in browser only remain.
