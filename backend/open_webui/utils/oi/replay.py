@@ -108,13 +108,13 @@ def project_native_tools(native, canonical_tools, known_tools=None):
         for index, part in enumerate(parts):
             call = part.get('functionCall')
             if call:
-                tool_id = identity(call, call.get('id') or ids.get(index))
+                tool_id = identity(call, ids.get(index) or call.get('id'))
                 if not tool_id:
                     continue
                 if tool_id in seen:
                     raise ValueError('Ambiguous native tool identity; cannot safely replay this history')
                 seen.add(tool_id)
-                if not call.get('id'):
+                if index in ids or not call.get('id'):
                     remapped[len(kept)] = tool_id
             kept.append(part)
         if 'content' in candidate:
@@ -140,9 +140,9 @@ def project_native_tools(native, canonical_tools, known_tools=None):
             for index, tool in enumerate(message['tool_calls']):
                 # Ollama has no native call IDs; consume identical functions in
                 # order, once per surviving canonical result.
-                tool_id = identity(tool.get('function', {}), tool.get('id') or ids.get(index), used, unique=False)
+                tool_id = identity(tool.get('function', {}), ids.get(index) or tool.get('id'), used, unique=False)
                 if tool_id:
-                    if protocol == 'ollama' and not tool.get('id'):
+                    if protocol == 'ollama' and (index in ids or not tool.get('id')):
                         remapped[len(kept)] = tool_id
                     kept.append(tool)
                     used.add(tool_id)
@@ -177,6 +177,30 @@ def native_function_slots(native):
     return []
 
 
+def without_undispatched_tools(native):
+    """A retained provider block is not proof that it reached the executor."""
+    from open_webui.utils.oi.protocols import NativeStream
+
+    if native.get('protocol') in {'gemini', 'cpa-agy'}:
+        state = NativeStream(native['protocol'])
+        state.body = native['body']
+        if not native.get('replayable', True) or state.ending(True)['normalized'] != 'tool_calls':
+            return project_native_tools(native, [])
+    return native
+
+
+def remap_stream_tool(request, response, index, original_id, canonical_id):
+    """Apply a consumer-assigned ID only to the exact server-owned live call.
+
+    The registry holds the adapter state until its iterator's finally block saves
+    it. Thus immediate replay, persistence and temporary capsules share one map.
+    """
+    call_id = response.headers.get('x-oi-native-call-id')
+    state = getattr(request.state, 'oi_native_streams', {}).get(call_id)
+    if state is not None:
+        state.remap_tool_id(index, original_id, canonical_id)
+
+
 def prepare_native_calls(saved):
     from open_webui.utils.misc import get_provider_function
 
@@ -194,8 +218,14 @@ def prepare_native_calls(saved):
             for tool in saved.get('tool_calls') or []
         ]
     if not known_tools:
-        return calls
-    prepared, offset = [], 0
+        return [without_undispatched_tools(native) for native in calls]
+    # Older/imported output may precede the first native call. Only the native
+    # suffix participates in positional recovery; undispatched raw blocks do not.
+    calls = [without_undispatched_tools(native) for native in calls]
+    offset = len(known_tools) - sum(len(native_function_slots(native)) for native in calls)
+    if offset < 0:
+        raise ValueError('Native tool does not match the saved output')
+    prepared = []
     for native in calls:
         slots = native_function_slots(native)
         count = len(slots)
@@ -203,7 +233,7 @@ def prepare_native_calls(saved):
         pending = list(segment)
         ids = {int(k): v for k, v in (native.get('generated_tool_ids') or {}).items()}
         for index, provider_id, function in slots:
-            tool_id = provider_id or ids.get(index)
+            tool_id = ids.get(index) or provider_id
             match = next(
                 (
                     tool
@@ -286,39 +316,75 @@ def attach_native(saved, messages):
         return
     calls = prepare_native_calls(saved)
     assistants = [m for m in messages if m.get('role') == 'assistant']
-    if not calls or len(calls) < len(assistants):
+    if not calls:
         return
-    if len(calls) != len(assistants):
-        # Continue may merge consecutive assistant outputs into one display message.
-        # Recover call boundaries from native projections, checking visible text/tool IDs.
+    if len(calls) != len(assistants) or (
+        saved.get('output') and all(native.get('protocol') in {'gemini', 'cpa-agy', 'ollama'} for native in calls)
+    ):
+        # Continue can merge call outputs; imported history can lack envelopes.
+        # Match from the newest call backwards, retaining any canonical prefix.
         from open_webui.utils.oi.protocols import content_text
 
         pending, rebuilt = list(calls), []
-        remaining_assistants = len(assistants)
-        for message in messages:
-            if message.get('role') != 'assistant':
-                rebuilt.append(message)
+        for message in reversed(messages):
+            if message.get('role') != 'assistant' or not pending:
+                rebuilt.insert(0, message)
                 continue
-            remaining_assistants -= 1
-            expected = ''.join(content_text(message.get('content')).split())
-            expected_tools = {t['id'] for t in message.get('tool_calls', [])}
-            text, tools, group = '', set(), []
+            remaining_text = content_text(message.get('content'))
+            remaining_tools = list(message.get('tool_calls') or [])
+            group = []
             while pending:
-                native = pending.pop(0)
-                remaining_tools = (message.get('tool_calls') or [])[len(tools) :]
-                native = project_native_tools(native, remaining_tools)
+                native = project_native_tools(pending[-1], remaining_tools)
                 projected = replay_message(native, remaining_tools)
-                text += ''.join(content_text(projected.get('content')).split())
-                tools.update(t['id'] for t in projected.get('tool_calls', []))
-                if any(projected.get(key) for key in ('content', 'tool_calls', 'reasoning_content', 'images')):
-                    group.append({**projected, 'oi_native': copy.deepcopy(native)})
-                if text == expected and tools == expected_tools and remaining_assistants:
-                    break
-            if tools != expected_tools:
-                raise ValueError('Native tool does not match the saved output')
-            if text != expected:
-                raise ValueError('Native continuation does not match the saved output')
-            rebuilt.extend(group)
+                has_output = any(projected.get(key) for key in ('content', 'tool_calls', 'reasoning_content', 'images'))
+                # Respect the canonical converter's selected reasoning format.
+                # Rebuilding call boundaries must not add a higher-priority alias
+                # that later masks an explicit filter edit.
+                reasoning = projected.pop('reasoning_content', None)
+                if reasoning is not None:
+                    for field in ('thinking', 'reasoning_content', 'reasoning'):
+                        if field in message:
+                            projected[field] = reasoning
+                            break
+                tool_ids = [t['id'] for t in projected.get('tool_calls', [])]
+                count = len(tool_ids)
+                if count and tool_ids != [t['id'] for t in remaining_tools[-count:]]:
+                    raise ValueError('Native tool does not match the saved output')
+                text = ''.join(content_text(projected.get('content')).split())
+                positions = [i for i, char in enumerate(remaining_text) if not char.isspace()]
+                expected = ''.join(remaining_text[i] for i in positions)
+                if not expected.endswith(text):
+                    raise ValueError('Native continuation does not match the saved output')
+                if text:
+                    remaining_text = remaining_text[: positions[-len(text)]].rstrip()
+                if count:
+                    remaining_tools = remaining_tools[:-count]
+                pending.pop()
+                if has_output:
+                    group.insert(
+                        0,
+                        {
+                            **projected,
+                            **({'oi_native': copy.deepcopy(native)} if native.get('replayable', True) else {}),
+                        },
+                    )
+                if not remaining_text.strip() and not remaining_tools:
+                    # Reasoning-only calls can precede the text in this same
+                    # canonical assistant. Do not strand their signed blocks.
+                    if not pending:
+                        break
+                    preceding = replay_message(project_native_tools(pending[-1], []))
+                    if content_text(preceding.get('content')).strip() or native_function_slots(pending[-1]):
+                        break
+            if remaining_text.strip() or remaining_tools:
+                prefix = {**message, 'content': remaining_text}
+                prefix.pop('oi_native', None)
+                if remaining_tools:
+                    prefix['tool_calls'] = remaining_tools
+                else:
+                    prefix.pop('tool_calls', None)
+                group.insert(0, prefix)
+            rebuilt[0:0] = group
         if pending:
             raise ValueError('Unmatched native continuation calls')
         messages[:] = rebuilt

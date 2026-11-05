@@ -224,3 +224,8 @@ Verify and repair CR2-01..11, preserve R50 and existing accounting, identity, pr
 ## R69 / U68 — Seventh review remediation
 
 2026-11-05: Repair the three CR7 findings after independent reproduction: explicit Ollama reasoning fields must survive filter invalidation, legacy dispatched tools must use their original provider function, and Ollama canonical tool IDs must remain stable across generation and history replay. Keep R50/U49/R59 and built-in browser only; previous browser/publication tasks remain pending.
+
+
+## R70 / U69 — Eighth review remediation
+
+2026-11-05: Independently reproduce and repair CR8-01/02. Keep canonical legacy prefixes and undispatched terminal blocks distinct from native tool-call boundaries. Synchronize consumer-renumbered tool IDs per live call and position without rewriting signed bodies. Preserve strict function validation, cancellation, R50/U49/R59 and built-in browser only; carry forward the pending browser and combined preview gates.

@@ -334,3 +334,8 @@ Snapshot native request content around filters and invalidate changed request co
 ## P54 — Protocol fields and stable tool identity
 
 Compare explicit thinking/reasoning field changes at request-filter boundaries and retain their selected values in Ollama conversion. Use the same provider-function normalization for canonical output and native history. Persist positional tool-ID sidecars outside raw provider bodies for both stream and nonstream Ollama, restore validated legacy IDs, and reject mismatches rather than inventing new history IDs.
+
+
+## P55 — Native call boundaries and consumer tool identity
+
+Recover the native suffix against canonical history while retaining older canonical output. Suppressed Gemini/CPA function blocks do not consume tool positions. The streaming consumer records canonical ID changes in the exact live adapter's positional sidecar; cache, saved envelopes and authenticated temporary capsules use that same mapping. Outbound function results translate canonical IDs back to each retained provider call ID. Preserve raw signatures and canonical reasoning-format choices.

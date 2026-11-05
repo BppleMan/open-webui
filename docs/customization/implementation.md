@@ -120,3 +120,8 @@ Request-stage filters invalidate changed native request copies while keeping unt
 ### R69 / P54 — Native fields, dispatch metadata and stable Ollama IDs
 
 Request consistency includes Ollama thinking/reasoning fields and preserves explicit native-field clearing. Legacy call sequences use get_provider_function. Ollama IDs are persisted in sidecars and restored through strict provider-function matching, including temporary API history. Versioned capsule projection separates transport indexes without accepting edited content or breaking v1 validation. See review-round7-remediation.md and its acceptance record.
+
+
+### R70 / P55 — Native suffixes and consumer-assigned tool IDs
+
+Retain canonical legacy prefixes and reconstruct merged native call boundaries from the end. Exclude undispatched Gemini/CPA tools from matching. Apply consumer ID changes to the exact live adapter state, persisting the positional sidecar into ordinary and temporary replay; translate provider result IDs without changing signed blocks. See review-round8-remediation.md and its acceptance record.

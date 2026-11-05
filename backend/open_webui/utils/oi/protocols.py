@@ -417,12 +417,22 @@ def build_request(form, binding, connection):
         return url, source
 
     if protocol in {'gemini', 'cpa-agy'}:
-        contents, names, provider_ids = [], {}, set()
+        contents, names, provider_ids, result_ids = [], {}, set(), {}
         for m in conversation:
             for tool in m.get('tool_calls') or []:
                 names[tool['id']] = tool['function']['name']
             native = native_for(m, protocol, binding.id)
             if native:
+                # Canonical IDs are unique across the display reply. Providers
+                # may reuse IDs across calls; results must use each raw call ID.
+                envelope = project_native_tools(m['oi_native'], m.get('tool_calls'))
+                ids = {int(k): v for k, v in (envelope.get('generated_tool_ids') or {}).items()}
+                for position, part in enumerate(
+                    (native.get('candidates') or [{}])[0].get('content', {}).get('parts', [])
+                ):
+                    call = part.get('functionCall')
+                    if call and call.get('id'):
+                        result_ids[ids.get(position, call['id'])] = call['id']
                 content = copy.deepcopy(
                     (native.get('candidates') or [{}])[0].get('content') or {'role': 'model', 'parts': []}
                 )
@@ -441,7 +451,11 @@ def build_request(form, binding, connection):
                         {
                             'functionResponse': {
                                 'name': m.get('name') or names.get(m['tool_call_id'], m['tool_call_id']),
-                                **({'id': m['tool_call_id']} if m['tool_call_id'] in provider_ids else {}),
+                                **(
+                                    {'id': result_ids.get(m['tool_call_id'], m['tool_call_id'])}
+                                    if m['tool_call_id'] in result_ids or m['tool_call_id'] in provider_ids
+                                    else {}
+                                ),
                                 'response': value if isinstance(value, dict) else {'result': value},
                             }
                         }
@@ -651,14 +665,21 @@ class NativeStream:
         self.tool_index = 0
         self.generated_tool_ids = {int(k): v for k, v in (generated_tool_ids or {}).items()}
         self.input_media = False
+        self.tool_positions = {}
 
     def ollama_tools_with_ids(self, tools, offset=0):
         """Give the conversion copy stable IDs; retain the provider body verbatim."""
         tools = copy.deepcopy(tools)
         for index, tool in enumerate(tools, offset):
-            if not tool.get('id'):
-                tool['id'] = self.generated_tool_ids.setdefault(index, 'call_' + str(uuid4()))
+            tool['id'] = self.generated_tool_ids.setdefault(index, tool.get('id') or 'call_' + str(uuid4()))
+            self.tool_positions[tool.get('index', index)] = index
         return tools
+
+    def remap_tool_id(self, index, original_id, canonical_id):
+        position = self.tool_positions.get(index)
+        if position is None or self.generated_tool_ids.get(position) != original_id:
+            raise ValueError('Native tool does not match the live output')
+        self.generated_tool_ids[position] = canonical_id
 
     def metering(self):
         if self.protocol in {'gemini', 'cpa-agy'}:
@@ -734,7 +755,8 @@ class NativeStream:
                 )
             elif block.get('functionCall'):
                 call = block['functionCall']
-                tool_id = call.get('id') or self.generated_tool_ids.setdefault(block_index, 'call_' + str(uuid4()))
+                tool_id = self.generated_tool_ids.setdefault(block_index, call.get('id') or 'call_' + str(uuid4()))
+                self.tool_positions[len(tools)] = block_index
                 tools.append(
                     {
                         'id': tool_id,
@@ -1131,6 +1153,12 @@ async def generate(request, form, user, binding, connection, call_id, transport=
             await response.aclose()
             await client.aclose()
 
+    streams = getattr(request.state, 'oi_native_streams', None)
+    if streams is None:
+        streams = request.state.oi_native_streams = {}
+    if binding.protocol in {'gemini', 'cpa-agy', 'ollama'}:
+        streams[call_id] = state
+
     async def stream():
         decoder = SSEDecoder()
         try:
@@ -1233,5 +1261,6 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                 configuration_owner_id=getattr(connection, 'owner_id', user.id),
                 generated_tool_ids=state.generated_tool_ids,
             )
+            streams.pop(call_id, None)
 
-    return StreamingResponse(stream(), media_type='text/event-stream')
+    return StreamingResponse(stream(), media_type='text/event-stream', headers={'x-oi-native-call-id': call_id})

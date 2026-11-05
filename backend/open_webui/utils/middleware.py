@@ -5174,7 +5174,17 @@ async def streaming_chat_response_handler(response, ctx):
                                                         and item.get('call_id') == delta_tool_call['id']
                                                         for item in full_output()
                                                     ):
+                                                        original_id = delta_tool_call['id']
                                                         delta_tool_call['id'] = output_id('fc')
+                                                        from open_webui.utils.oi.replay import remap_stream_tool
+
+                                                        remap_stream_tool(
+                                                            request,
+                                                            response,
+                                                            tool_call_index,
+                                                            original_id,
+                                                            delta_tool_call['id'],
+                                                        )
                                                     delta_arguments = delta_tool_call['function'].get('arguments')
                                                     if not isinstance(delta_arguments, str):
                                                         delta_tool_call['function']['arguments'] = (
