@@ -57,10 +57,18 @@ def replay_envelope(envelope):
     return {
         **{
             k: copy.deepcopy(envelope[k])
-            for k in ('call_id', 'binding_id', 'protocol', 'replayable', 'generated_tool_ids')
+            for k in (
+                'call_id',
+                'binding_id',
+                'protocol',
+                'replayable',
+                'generated_tool_ids',
+                'consumer_output',
+                'consumer_invalidated',
+            )
             if k in envelope
         },
-        'body': projected,
+        'body': {} if envelope.get('consumer_invalidated') else projected,
         'replay_projection': True,
     }
 

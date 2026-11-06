@@ -1,0 +1,54 @@
+{
+	"requirement": "R72",
+	"prototype": "P57",
+	"status": "local_verified_CI_pending",
+	"baseline": "081227460b779b5713139bc8cd67687886c43859",
+	"findings": {
+		"CR10-01": {
+			"implementation": "fixed",
+			"verification": "original_and_combination_regressions_passed"
+		},
+		"CR10-02": {
+			"implementation": "fixed",
+			"verification": "original_and_combination_regressions_passed"
+		},
+		"CR10-03": {
+			"implementation": "fixed",
+			"verification": "original_and_combination_regressions_passed"
+		},
+		"CR10-04": {
+			"implementation": "fixed",
+			"verification": "original_and_combination_regressions_passed"
+		}
+	},
+	"checks": {
+		"before": {
+			"failed": 39,
+			"passed": 65
+		},
+		"original_cases": 104,
+		"new_combination_cases": 100,
+		"deterministic_partitions": {
+			"cases": 200,
+			"failed": 0
+		},
+		"backend": 1017,
+		"frontend": 79,
+		"new_type_diagnostics": 0,
+		"existing_upstream_diagnostics": 5695,
+		"production_build": "passed",
+		"HTTP": "passed: seven stream filters, saved/temporary partitioned replay and actual Markdown image storage",
+		"built_in_browser": "passed: tag partitions, Continue, reload, filtered followup and captured outbound proof",
+		"original_evidence_unchanged": true
+	},
+	"deployment": {
+		"status": "pending_exact_source_CI",
+		"scope": "isolated_preview_only",
+		"previous_R71_preview": "verified; not regressed to pending"
+	},
+	"limitations": [
+		"No production OI/CPA, routing or business database migration.",
+		"No real supplier requests; R59 readable-summary supplier gap remains open.",
+		"Existing envelopes without consumer projections retain conservative legacy handling; missing historical conversion evidence is not fabricated."
+	]
+}

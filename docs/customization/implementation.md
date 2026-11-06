@@ -133,3 +133,8 @@ Stable login lineage revokes all refresh siblings while keeping independent logi
 
 
 2026-11-06: R71/P56 is verified on the isolated preview, including the carried-forward R67-R70 delivery. Source `223addfa331a0bcefc33ceb6ba9498d680c96689` passed 813 backend and 79 frontend cases, zero new type diagnostics and the full exact-source CI. Built-in-browser checks covered temporary save after a sidebar 503, continued draft editing/reload, generated-image model switching and caption editing at 430 x 932. The final preview streamed a loopback synthetic answer and thought summary and preserved both after reload. GitOps `71f376bf717d0a5c0bdaa8dda068b7de18464ea4` is Synced/Healthy at the recorded immutable image. Original review evidence remains historical; R50 and the R59 real-provider gap remain. See review-round9-remediation-acceptance.json.
+
+
+### R72 / P57 — Consumer projection and all-protocol tool identity
+
+Record actual per-call consumer output after filters, tag parsing and media storage; validate it before replay, preserving raw signatures. Invalidate only changed stream calls and omit their raw body from portable output. Share provider/canonical tool identity across all seven adapters and Responses event snapshots. Keep temporary state client-held and cancellation tied to the active stream. See review-round10-remediation.md and its acceptance record.

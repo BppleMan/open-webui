@@ -32,9 +32,18 @@ async def generate(protocol: str, path: str, request: Request):
             'rp': {k: request.headers.get(k) for k in ['x-rp-client', 'x-rp-user-id', 'x-rp-chat-id']},
         }
     )
+    last_content = (b.get('contents') or b.get('messages') or [{}])[-1]
+    fixture_prompt = json.dumps(last_content)
+    if 'R72_TAGS_STREAM' in fixture_prompt:
+        b['fixture_case'] = 'round10_tags'
+    elif 'R72_FILTER_STREAM' in fixture_prompt:
+        b['fixture_case'] = 'round10_filter'
     if b.get('fixture_error'):
         return JSONResponse({'error': {'message': 'Synthetic limit'}}, 429, headers={'Retry-After': '5'})
-    text = 'Native stage6 fixture.'
+    filter_fixture = b.get('fixture_case') == 'round10_filter' or (
+        protocol == 'ollama' and 'Synthetic round10_filter' in str((b.get('messages') or [{}])[-1].get('content', ''))
+    )
+    text = 'round10-original' if filter_fixture else 'Native stage6 fixture.'
     stream = b.get('stream', False) or 'streamGenerateContent' in path
     if protocol == 'openai-chat':
         body = {
@@ -132,6 +141,38 @@ async def generate(protocol: str, path: str, request: Request):
                     ],
                 },
             ]
+        if b.get('fixture_case') == 'round10_tags':
+            pieces = ['<reason>a</reason>x<think>b</think>y<re', 'ason>c</reason>z']
+            frames = [
+                {
+                    'candidates': [
+                        {
+                            'content': {
+                                'role': 'model',
+                                'parts': [
+                                    {
+                                        'text': piece,
+                                        **({'thoughtSignature': 'round10-signature'} if i == len(pieces) - 1 else {}),
+                                    }
+                                ],
+                            },
+                            **({'finishReason': 'STOP'} if i == len(pieces) - 1 else {}),
+                        }
+                    ]
+                }
+                for i, piece in enumerate(pieces)
+            ]
+        elif b.get('fixture_case') == 'round10_markdown':
+            import base64, io
+            from PIL import Image, PngImagePlugin
+
+            image = io.BytesIO()
+            info = PngImagePlugin.PngInfo()
+            info.add_text('fixture', 'synthetic image metadata ' * 60)
+            Image.new('RGB', (2, 2), 'white').save(image, format='PNG', pnginfo=info)
+            markdown = 'A picture: ![image](data:image/png;base64,' + base64.b64encode(image.getvalue()).decode() + ')'
+            body['candidates'][0]['content']['parts'] = [{'text': markdown}]
+            frames = [body]
         case = b.get('fixture_case')
         if case == 'blocked':
             body = {'promptFeedback': {'blockReason': 'SAFETY'}, 'usageMetadata': {'promptTokenCount': 3}}

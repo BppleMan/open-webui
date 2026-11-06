@@ -240,3 +240,8 @@ R71 browser acceptance additionally confirmed duplicate generated-image aliases 
 
 
 2026-11-06: R71/P56 is verified on the isolated preview, including the carried-forward R67-R70 delivery. Source `223addfa331a0bcefc33ceb6ba9498d680c96689` passed 813 backend and 79 frontend cases, zero new type diagnostics and the full exact-source CI. Built-in-browser checks covered temporary save after a sidebar 503, continued draft editing/reload, generated-image model switching and caption editing at 430 x 932. The final preview streamed a loopback synthetic answer and thought summary and preserved both after reload. GitOps `71f376bf717d0a5c0bdaa8dda068b7de18464ea4` is Synced/Healthy at the recorded immutable image. Original review evidence remains historical; R50 and the R59 real-provider gap remain. See review-round9-remediation-acceptance.json.
+
+
+## R72 / U71 — Tenth review remediation
+
+Repair CR10-01..04 after independent reproduction. Stream filters must govern replay; record actual consumer transformations instead of guessing chunk partitions; scope provider/canonical tool identities to each call across all seven protocols, including Responses; retain usable history after optional Markdown media storage. Preserve signatures, real-edit detection, cancellations and original evidence. R71 preview remains accepted; R50/U49/R59 and built-in browser only remain.

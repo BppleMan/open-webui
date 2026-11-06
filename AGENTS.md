@@ -89,3 +89,5 @@ R70/P55 code and exact-source CI are verified (710 backend/79 frontend). The req
 - R71/P56 repairs four ninth-review findings. Read review-round9-remediation.md and its acceptance record. Preserve single-login revocation, independent sessions, signed block order across all protocols, witnessed tag projection and Arena response identity. The built-in browser is connected again; complete carried-forward R67/R68 interactions before the combined R67-R71 preview update. R50/U49/R59 remain.
 
 - R71/P56 and the combined R67-R71 batch are verified on isolated preview. The required built-in browser is connected and carried-forward interactions passed. Read review-round9-remediation-acceptance.json for exact source/CI/image/GitOps and remaining limits. Earlier pending entries are historical. Keep R50/U49/R59.
+
+- R72/P57 repairs four tenth-review boundaries. Read review-round10-remediation.md and its acceptance record. Keep actual consumer projections, per-call stream invalidation, all-protocol tool IDs and sparse Responses indexes. R71 preview is already accepted; R72 checks and delivery are separate. R50/U49/R59 and built-in browser only remain.

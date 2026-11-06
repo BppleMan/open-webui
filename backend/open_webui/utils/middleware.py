@@ -4312,6 +4312,7 @@ async def streaming_chat_response_handler(response, ctx):
         # Handle as a background task
         async def response_handler(response, events):
             filter_context = FilterContext()
+            active_stream_response = response
             response_stream_task_id = metadata.get('task_id') or metadata.get('message_id')
 
             from open_webui.utils.output_tags import create_tag_output_handler
@@ -4516,6 +4517,8 @@ async def streaming_chat_response_handler(response, ctx):
                         )
 
                 async def stream_body_handler(response, current_form_data):
+                    nonlocal active_stream_response
+                    active_stream_response = response
                     nonlocal usage
                     nonlocal current_usage
                     nonlocal finish_reason
@@ -4525,6 +4528,39 @@ async def streaming_chat_response_handler(response, ctx):
                     nonlocal stream_size
 
                     response_tool_calls = []
+                    response_event_tool_ids = {}
+                    from open_webui.utils.oi.replay import (
+                        stream_event_projection,
+                        invalidate_stream_native,
+                        remap_stream_tool,
+                        record_consumer_output,
+                    )
+
+                    def canonical_response_tools(event):
+                        # Responses item events and completed snapshots describe the
+                        # same call. Deduplicate within this response, not across turns.
+                        event = copy.deepcopy(event)
+                        items = [(event.get('output_index', 0), event.get('item'))]
+                        items += list(enumerate((event.get('response') or {}).get('output') or []))
+                        prior_ids = {
+                            item.get('call_id') for item in prior_output if item.get('type') == 'function_call'
+                        }
+                        for index, item in items:
+                            if not isinstance(item, dict) or item.get('type') != 'function_call':
+                                continue
+                            provider_id = item.get('call_id') or item.get('id')
+                            identity = (index, provider_id)
+                            canonical_id = response_event_tool_ids.get(identity)
+                            if canonical_id is None:
+                                canonical_id = provider_id or output_id('fc')
+                                if canonical_id in prior_ids or canonical_id in response_event_tool_ids.values():
+                                    canonical_id = output_id('fc')
+                                response_event_tool_ids[identity] = canonical_id
+                                if canonical_id != provider_id:
+                                    remap_stream_tool(request, response, index, provider_id, canonical_id)
+                            item['call_id'] = canonical_id
+                        return event
+
                     prior_usage = usage
                     current_usage = {}
                     form_data['model'] = current_form_data['model']
@@ -4666,6 +4702,7 @@ async def streaming_chat_response_handler(response, ctx):
                             data = JSONCodec.loads(data)
 
                             if filter_functions:
+                                native_projection = copy.deepcopy(stream_event_projection(data))
                                 data, _ = await process_filter_functions(
                                     request=request,
                                     filter_context=filter_context,
@@ -4674,6 +4711,8 @@ async def streaming_chat_response_handler(response, ctx):
                                     form_data=data,
                                     extra_params=filter_extra_params,
                                 )
+                                if native_projection != stream_event_projection(data):
+                                    invalidate_stream_native(request, response)
 
                             if data:
                                 if 'event' in data and not getattr(request.state, 'direct', False):
@@ -4698,6 +4737,7 @@ async def streaming_chat_response_handler(response, ctx):
                                     )
                                 # Check for Responses API events
                                 elif data.get('type', '').startswith('response.') or data.get('type', '') == 'error':
+                                    data = canonical_response_tools(data)
                                     response_data_type = data.get('type', '')
                                     response_data_is_delta = response_data_type.endswith('.delta')
                                     output, response_metadata = handle_responses_streaming_event(data, output)
@@ -4898,8 +4938,6 @@ async def streaming_chat_response_handler(response, ctx):
                                                     ):
                                                         original_id = delta_tool_call['id']
                                                         delta_tool_call['id'] = output_id('fc')
-                                                        from open_webui.utils.oi.replay import remap_stream_tool
-
                                                         remap_stream_tool(
                                                             request,
                                                             response,
@@ -5433,6 +5471,7 @@ async def streaming_chat_response_handler(response, ctx):
                         for item in output:
                             call_id = item.get('call_id') or item.get('id') or output_id('fc')
                             if item.get('type') == 'function_call' and call_id not in handled_call_ids:
+                                item.setdefault('status', 'completed')
                                 arguments = item.get('arguments', '{}')
                                 responses_api_tool_calls.append(
                                     {
@@ -5449,6 +5488,7 @@ async def streaming_chat_response_handler(response, ctx):
                         if responses_api_tool_calls:
                             tool_calls.append(_split_tool_calls(responses_api_tool_calls))
 
+                    await record_consumer_output(request, metadata, response, output)
                     await save_current_response_stream()
                     if not current_usage:
                         usage = {**(usage or {}), 'incomplete': True}
@@ -6248,11 +6288,17 @@ async def streaming_chat_response_handler(response, ctx):
                 # in stream_wrapper's finally block and release the
                 # upstream connection.  Without this, the async
                 # generator is orphaned and may spin in anyio internals.
-                if hasattr(response, 'body_iterator') and hasattr(response.body_iterator, 'aclose'):
+                if hasattr(active_stream_response, 'body_iterator') and hasattr(
+                    active_stream_response.body_iterator, 'aclose'
+                ):
                     try:
-                        await asyncio.shield(response.body_iterator.aclose())
+                        await asyncio.shield(active_stream_response.body_iterator.aclose())
                     except (asyncio.CancelledError, Exception):
                         pass
+
+                from open_webui.utils.oi.replay import record_consumer_output
+
+                await record_consumer_output(request, metadata, active_stream_response, output)
 
                 async def save_cancelled_state():
                     cancelled_output = full_output()

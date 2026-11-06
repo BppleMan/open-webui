@@ -205,7 +205,7 @@ def build_request(form, binding, connection):
     # checking pairs; normalized/filtered messages already have content/tool fields
     # and must never have removed calls reconstructed here.
     from open_webui.utils.misc import get_paired_tool_call_ids
-    from open_webui.utils.oi.replay import replay_message, project_native_tools
+    from open_webui.utils.oi.replay import replay_message, project_native_tools, provider_tool_results
 
     for message in messages:
         native = message.get('oi_native')
@@ -236,6 +236,8 @@ def build_request(form, binding, connection):
                         continue
             retained_messages.append(message)
         messages = retained_messages
+    if protocol not in {'gemini', 'cpa-agy', 'ollama'}:
+        messages = provider_tool_results(messages, protocol, binding.id)
     stream = bool(source.get('stream', False))
     # OI orchestration fields are never provider extensions.
     for field in (
@@ -666,6 +668,7 @@ class NativeStream:
         self.generated_tool_ids = {int(k): v for k, v in (generated_tool_ids or {}).items()}
         self.input_media = False
         self.tool_positions = {}
+        self.replay_invalidated = False
 
     def ollama_tools_with_ids(self, tools, offset=0):
         """Give the conversion copy stable IDs; retain the provider body verbatim."""
@@ -677,7 +680,21 @@ class NativeStream:
 
     def remap_tool_id(self, index, original_id, canonical_id):
         position = self.tool_positions.get(index)
-        if position is None or self.generated_tool_ids.get(position) != original_id:
+        from open_webui.utils.oi.replay import native_function_slots
+
+        slots = native_function_slots({'protocol': self.protocol, 'body': self.body})
+        if position is None:
+            slot = next((slot for slot in slots if slot[0] == index and slot[1] == original_id), None)
+            if slot is None and 0 <= index < len(slots):
+                slot = slots[index]
+            position = slot[0] if slot else None
+        provider_id = next((provider_id for slot, provider_id, _ in slots if slot == position), None)
+        if self.protocol == 'openai-responses' and index in self.blocks:
+            # Incremental Responses events can arrive before lower-index blocks.
+            # Their output_index is stable even while the raw output list is sparse.
+            position = index
+            provider_id = self.blocks[index].get('call_id') or self.blocks[index].get('id')
+        if position is None or self.generated_tool_ids.get(position, provider_id) != original_id:
             raise ValueError('Native tool does not match the live output')
         self.generated_tool_ids[position] = canonical_id
 
@@ -746,9 +763,10 @@ class NativeStream:
             else self.body.get('steps', self.body.get('outputs', []))
         ):
             if block.get('type') == 'tool_use':
+                self.tool_positions[len(tools)] = block_index
                 tools.append(
                     {
-                        'id': block['id'],
+                        'id': self.generated_tool_ids.get(block_index, block['id']),
                         'type': 'function',
                         'function': {'name': block['name'], 'arguments': compact(block.get('input', {}))},
                     }
@@ -765,9 +783,10 @@ class NativeStream:
                     }
                 )
             elif block.get('type') == 'function_call':
+                self.tool_positions[len(tools)] = block_index
                 tools.append(
                     {
-                        'id': block['id'],
+                        'id': self.generated_tool_ids.get(block_index, block['id']),
                         'type': 'function',
                         'function': {'name': block['name'], 'arguments': compact(block.get('arguments', {}))},
                     }
@@ -795,7 +814,7 @@ class NativeStream:
         if self.protocol in {'openai-chat', 'openai-responses'}:
             if data.get('response'):
                 self.body = merge(self.body, data['response'])
-            if data.get('type') == 'response.output_item.done':
+            if data.get('type') in {'response.output_item.added', 'response.output_item.done'}:
                 self.blocks[data['output_index']] = data['item']
                 self.body['output'] = [copy.deepcopy(self.blocks[i]) for i in sorted(self.blocks)]
             if data.get('choices'):
@@ -829,6 +848,7 @@ class NativeStream:
                                 old['id'] = t['id']
                             for key, value in t.get('function', {}).items():
                                 old['function'][key] = (old['function'].get(key) or '') + (value or '')
+                            self.tool_positions[t.get('index', 0)] = list(self.blocks).index(t.get('index', 0))
                         msg['tool_calls'] = list(self.blocks.values())
                     else:
                         msg[k] = copy.deepcopy(v)
@@ -979,11 +999,18 @@ class NativeStream:
     def nonstream(self, body):
         self.body = copy.deepcopy(body.get('response', body))
         if self.protocol == 'openai-chat':
-            return body
+            result = copy.deepcopy(body)
+            for index, tool in enumerate((result.get('choices') or [{}])[0].get('message', {}).get('tool_calls') or []):
+                tool['id'] = self.generated_tool_ids.get(index, tool.get('id'))
+            return result
         if self.protocol == 'openai-responses':
             from open_webui.routers.openai import convert_responses_result
 
-            return convert_responses_result(body)
+            result = copy.deepcopy(self.body)
+            for index, item in enumerate(result.get('output', [])):
+                if item.get('type') == 'function_call' and index in self.generated_tool_ids:
+                    item['call_id'] = self.generated_tool_ids[index]
+            return convert_responses_result(result)
         if self.protocol == 'ollama':
             from open_webui.utils.response import convert_response_ollama_to_openai
 
@@ -1126,7 +1153,9 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                 'protocol': binding.protocol,
                 'body': state.body,
                 'generated_tool_ids': copy.deepcopy(state.generated_tool_ids),
-                'replayable': not form.get('stream') or (state.finished and not state.body.get('error')),
+                **({'consumer_invalidated': True} if state.replay_invalidated else {}),
+                'replayable': not state.replay_invalidated
+                and (not form.get('stream') or (state.finished and not state.body.get('error'))),
             },
         )
 
@@ -1156,8 +1185,7 @@ async def generate(request, form, user, binding, connection, call_id, transport=
     streams = getattr(request.state, 'oi_native_streams', None)
     if streams is None:
         streams = request.state.oi_native_streams = {}
-    if binding.protocol in {'gemini', 'cpa-agy', 'ollama'}:
-        streams[call_id] = state
+    streams[call_id] = state
 
     async def stream():
         decoder = SSEDecoder()
@@ -1256,7 +1284,7 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                 binding,
                 call_id,
                 state.body,
-                state.finished and not state.body.get('error'),
+                state.finished and not state.body.get('error') and not state.replay_invalidated,
                 caller_id=user.id,
                 configuration_owner_id=getattr(connection, 'owner_id', user.id),
                 generated_tool_ids=state.generated_tool_ids,

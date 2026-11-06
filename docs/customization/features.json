@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-10-31",
-  "phase": "R66_code_CI_verified_preview_pending_GitHub_network; R50_production_hold",
+  "phase": "R72_local_verified_CI_pending; R71_preview_verified; R50_production_hold",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,17 +14,18 @@
     "customization_committed": true,
     "deployment_changed": false,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "f8e8e2f5e09b8ba73af76b6dd26c3895f564bb85",
+    "latest_code_commit": "223addfa331a0bcefc33ceb6ba9498d680c96689",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
-    "staging_deployment_changed": false,
-    "latest_commit": "f8e8e2f5e09b8ba73af76b6dd26c3895f564bb85",
-    "latest_documentation_revision": "U69/R70: two fixes verified; built-in browser and combined preview pending",
+    "staging_deployment_changed": true,
+    "latest_commit": "081227460b779b5713139bc8cd67687886c43859",
+    "latest_documentation_revision": "R72 repair in progress; R71 preview completed",
     "original_base": {
       "tag": "v0.12.3",
       "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60"
     },
-    "staging_gitops_changed": true
+    "staging_gitops_changed": true,
+    "latest_documentation_commit": "081227460b779b5713139bc8cd67687886c43859"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -3491,6 +3492,60 @@
       "5695 existing upstream type diagnostics remain; this batch adds zero.",
       "Original earlier acceptance files remain historical; this R71 record closes the carried-forward R67-R70 browser/publication gates.",
       "Legacy independently issued tokens without a common login lineage cannot be retroactively linked."
+    ]
+  },
+  "review_round10_remediation": {
+    "requirement": "R72",
+    "prototype": "P57",
+    "status": "local_verified_CI_pending",
+    "baseline": "081227460b779b5713139bc8cd67687886c43859",
+    "findings": {
+      "CR10-01": {
+        "implementation": "fixed",
+        "verification": "original_and_combination_regressions_passed"
+      },
+      "CR10-02": {
+        "implementation": "fixed",
+        "verification": "original_and_combination_regressions_passed"
+      },
+      "CR10-03": {
+        "implementation": "fixed",
+        "verification": "original_and_combination_regressions_passed"
+      },
+      "CR10-04": {
+        "implementation": "fixed",
+        "verification": "original_and_combination_regressions_passed"
+      }
+    },
+    "checks": {
+      "before": {
+        "failed": 39,
+        "passed": 65
+      },
+      "original_cases": 104,
+      "new_combination_cases": 100,
+      "deterministic_partitions": {
+        "cases": 200,
+        "failed": 0
+      },
+      "backend": 1017,
+      "frontend": 79,
+      "new_type_diagnostics": 0,
+      "existing_upstream_diagnostics": 5695,
+      "production_build": "passed",
+      "HTTP": "passed: seven stream filters, saved/temporary partitioned replay and actual Markdown image storage",
+      "built_in_browser": "passed: tag partitions, Continue, reload, filtered followup and captured outbound proof",
+      "original_evidence_unchanged": true
+    },
+    "deployment": {
+      "status": "pending_exact_source_CI",
+      "scope": "isolated_preview_only",
+      "previous_R71_preview": "verified; not regressed to pending"
+    },
+    "limitations": [
+      "No production OI/CPA, routing or business database migration.",
+      "No real supplier requests; R59 readable-summary supplier gap remains open.",
+      "Existing envelopes without consumer projections retain conservative legacy handling; missing historical conversion evidence is not fabricated."
     ]
   }
 }

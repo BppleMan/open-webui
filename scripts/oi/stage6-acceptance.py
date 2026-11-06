@@ -21,6 +21,7 @@ for port in [api_port, provider_port]:
     with socket.socket() as guard:
         guard.bind(('127.0.0.1', port))
 state = Path(tempfile.mkdtemp(prefix='oi-stage6-'))
+print(f'Stage6 synthetic environment: {state}', flush=True)
 env = {
     **os.environ,
     'OI_STAGE6_STATE': str(state),
@@ -35,6 +36,7 @@ env = {
     'ENABLE_DB_MIGRATIONS': 'true',
     'WEBUI_SECRET_KEY': 'oi-stage6-synthetic',
     'ENABLE_SIGNUP': 'true',
+    'ENABLE_CHAT_RESPONSE_BASE64_IMAGE_URL_CONVERSION': 'true',
     'ENABLE_OPENAI_API': 'false',
     'ENABLE_OLLAMA_API': 'false',
     'PYTHONPATH': 'backend',
@@ -72,6 +74,7 @@ try:
     subprocess.run([sys.executable, 'scripts/oi/round2-http-acceptance.py'], env=env, check=True, timeout=180)
     subprocess.run([sys.executable, 'scripts/oi/round3-http-acceptance.py'], env=env, check=True, timeout=120)
     subprocess.run([sys.executable, 'scripts/oi/round4-http-acceptance.py'], env=env, check=True, timeout=120)
+    subprocess.run([sys.executable, 'scripts/oi/round10-http-acceptance.py'], env=env, check=True, timeout=180)
     print(f'Stage6 native HTTP/control/compaction scenarios passed. Evidence: {state}')
 
 finally:

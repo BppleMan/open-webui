@@ -347,3 +347,8 @@ Session JWTs receive a stable login sid while jti rotates; logout checks the ent
 
 
 2026-11-06: R71/P56 is verified on the isolated preview, including the carried-forward R67-R70 delivery. Source `223addfa331a0bcefc33ceb6ba9498d680c96689` passed 813 backend and 79 frontend cases, zero new type diagnostics and the full exact-source CI. Built-in-browser checks covered temporary save after a sidebar 503, continued draft editing/reload, generated-image model switching and caption editing at 430 x 932. The final preview streamed a loopback synthetic answer and thought summary and preserved both after reload. GitOps `71f376bf717d0a5c0bdaa8dda068b7de18464ea4` is Synced/Healthy at the recorded immutable image. Original review evidence remains historical; R50 and the R59 real-provider gap remain. See review-round9-remediation-acceptance.json.
+
+
+## P57 — Verified consumer projections and call-scoped tool identity
+
+Persist the actual per-call canonical output alongside the unchanged native response. Validate that projection against saved history before replay. Stream filter changes invalidate only their native call; legitimate tag/media transformations retain a verified association. Record tool-ID maps for every native protocol and normalize Responses event identities before execution.
