@@ -1,7 +1,7 @@
 {
 	"requirement": "R72",
 	"prototype": "P57",
-	"status": "local_verified_CI_pending",
+	"status": "verified_on_isolated_preview",
 	"baseline": "081227460b779b5713139bc8cd67687886c43859",
 	"findings": {
 		"CR10-01": {
@@ -39,16 +39,39 @@
 		"production_build": "passed",
 		"HTTP": "passed: seven stream filters, saved/temporary partitioned replay and actual Markdown image storage",
 		"built_in_browser": "passed: tag partitions, Continue, reload, filtered followup and captured outbound proof",
-		"original_evidence_unchanged": true
+		"original_evidence_unchanged": true,
+		"ci": "passed on exact source",
+		"fresh_restore": {
+			"tables": 63,
+			"attachments": 3,
+			"schema": "oi0000000007"
+		},
+		"original_evidence_files_unchanged": 305,
+		"post_deploy_browser": "passed: streamed tag partitions, Continue, reload and next turn; persisted signatures retained",
+		"real_supplier_requests": 0
 	},
 	"deployment": {
-		"status": "pending_exact_source_CI",
+		"status": "deployed_and_verified",
 		"scope": "isolated_preview_only",
-		"previous_R71_preview": "verified; not regressed to pending"
+		"previous_R71_preview": "verified; not regressed to pending",
+		"image": "ghcr.io/bppleman/open-webui-oi:sha-6e4f1500d9d0a32810286f22af3b1181be221951@sha256:fd521b58201b604f29921ba68c54bb4625fe6602f8cc0a078227148cdbb659a8",
+		"gitops_commit": "4cd29f43a41c60d7d837dc38a5d4578b57bb7882",
+		"argocd": "Synced/Healthy",
+		"pod_restarts": 0,
+		"original_attachments_unchanged": 3,
+		"production_unchanged": true
 	},
 	"limitations": [
 		"No production OI/CPA, routing or business database migration.",
 		"No real supplier requests; R59 readable-summary supplier gap remains open.",
 		"Existing envelopes without consumer projections retain conservative legacy handling; missing historical conversion evidence is not fabricated."
-	]
+	],
+	"source_commit": "6e4f1500d9d0a32810286f22af3b1181be221951",
+	"ci": "https://github.com/BppleMan/open-webui/actions/runs/42153294602",
+	"cleanup": {
+		"loopback_fixtures_stopped": true,
+		"test_connection_disabled": true,
+		"test_user_preferences_restored": true,
+		"global_direct_connections_unchanged": true
+	}
 }
