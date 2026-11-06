@@ -548,6 +548,21 @@ def _require_summary(response):
             body = 'Compaction provider request failed'
         retry_after = response.headers.get('retry-after')
         raise HTTPException(response.status_code, body, headers={'Retry-After': retry_after} if retry_after else None)
+    body = response
+    if isinstance(body, JSONResponse):
+        try:
+            body = JSONCodec.loads(body.body.decode('utf-8', 'replace'))
+        except (ValueError, AttributeError):
+            body = {}
+    if isinstance(body, dict):
+        terminal = body.get('response_status') or body.get('status') or (body.get('oi_finish') or {}).get('status')
+        finishes = [choice.get('finish_reason') for choice in body.get('choices', [])]
+        if (
+            body.get('error')
+            or (terminal and terminal != 'completed')
+            or any(reason in {'length', 'content_filter', 'error', 'cancelled', 'failed'} for reason in finishes)
+        ):
+            raise HTTPException(502, 'Compaction did not complete; original history was preserved')
     summary = _response_text(response).strip()
     if summary:
         return summary

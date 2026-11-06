@@ -285,3 +285,6 @@ Independently reproduce CR14-01..04 and repair per-call consumer finalization on
 ## R77 / U76 — Official v0.13.0 synchronization
 
 Merge the official stable v0.13.0 tag while preserving its new capabilities and the OI customization contract. Join the upstream and OI7 migration branches with a new revision; preserve prior migration lineage. Adapt SideChat native identity/privacy/billing, connection-aware subagent selection, model comments ACL, compaction failure behavior and MCP App context isolation. Reproduce and repair the three confirmed pre-sync findings in this batch. Establish the type baseline only from a clean official checkout, preserve original review evidence and perform batch validation plus isolated-preview acceptance. The controller will conduct a fresh review on the stable source; this synchronization does not declare all reviews cleared. R50/U49/R59 and built-in browser only remain.
+
+
+R77 follow-up: independently reproduced CR15-01..04 on the merge candidate. Repair accepted SideChat cancellation, native-model notification eligibility, failed compaction terminal handling and safe shared-connection context. Preview publication requires controller approval of the exact repaired source SHA.

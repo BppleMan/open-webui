@@ -36,7 +36,7 @@ async def side_context(db, user, destination_temporary_id, messages, *, source_c
         saved = await ChatMessages.get_messages_map_by_chat_id(source_chat_id, db=db)
         saved = deepcopy(saved or (chat.chat or {}).get('history', {}).get('messages', {}))
         body = {'history': {'messages': saved}}
-        await project_native(body, chat.user_id, user.id, db, portable=chat.user_id != user.id)
+        await project_native(body, chat.user_id, user.id, db, portable=True)
         saved = body['history']['messages']
     patches = []
     for message in messages:

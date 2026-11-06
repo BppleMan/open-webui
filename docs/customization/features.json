@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-11-07",
-  "phase": "R76_verified_on_isolated_preview; R50_production_hold",
+  "phase": "R77_sync_review_repairs_in_progress; R76_preview_unchanged; R50_production_hold",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -3974,6 +3974,33 @@
       "scope": "isolated_preview_only",
       "previous_R76_preview": "verified; unchanged"
     },
-    "review_status": "awaiting controller review of fixed candidate; publication gated"
+    "review_status": "CR15-01..04 repaired locally; new fixed source awaiting controller review; publication prohibited",
+    "candidate_source": "fdc34863fdda0a474554afb42a101f20c86e33e1",
+    "post_sync_round1": {
+      "findings": [
+        "CR15-01",
+        "CR15-02",
+        "CR15-03",
+        "CR15-04"
+      ],
+      "before": {
+        "backend_failed": 7,
+        "backend_passed": 8,
+        "accepted_side_stop_api_calls": 0
+      },
+      "targeted_after": {
+        "backend_passed": 15,
+        "accepted_side_stop_api_calls": 1
+      },
+      "status": "local regressions passed; independent re-review and updated browser/CI pending",
+      "validation": {
+        "backend_passed": 2103,
+        "frontend_passed": 94,
+        "new_type_diagnostics": 0,
+        "existing_type_diagnostics": 5716,
+        "source_base": "fdc34863fdda0a474554afb42a101f20c86e33e1",
+        "scope": "uncommitted repair workspace; isolated fixtures only"
+      }
+    }
   }
 }

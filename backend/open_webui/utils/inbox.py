@@ -70,7 +70,7 @@ async def validate_source(event_type, resource_type, resource_id, object_type, o
         raise ValueError('Notification object does not belong to resource')
 
 
-async def resource_queries(user, db):
+async def resource_queries(user, db, *, native_ids=None):
     """One set of indexed permission subqueries, shared by listing, counts and writes."""
     from open_webui.config import BYPASS_ADMIN_ACCESS_CONTROL
     from open_webui.env import ENABLE_ADMIN_CHAT_ACCESS
@@ -115,6 +115,40 @@ async def resource_queries(user, db):
             else or_(model.user_id == user.id, grant(kind, model.id))
         )
         queries[kind] = select(model.id).where(allowed)
+        if kind == 'model':
+            from open_webui.models.customization import Connection, ModelBinding
+            from open_webui.utils.oi.catalog import binding_readable
+
+            ids = (
+                native_ids
+                if native_ids is not None
+                else select(Notification.resource_id)
+                .where(
+                    Notification.user_id == user.id,
+                    Notification.resource_type == 'model',
+                    Notification.resource_id.like('oi:%'),
+                )
+                .distinct()
+            )
+            pairs = (
+                await db.execute(
+                    select(ModelBinding, Connection)
+                    .join(Connection, ModelBinding.connection_id == Connection.id)
+                    .where(ModelBinding.id.in_(ids))
+                )
+            ).all()
+            direct_enabled = await Config.get('direct.enable')
+            accessible = [
+                binding.id
+                for binding, connection in pairs
+                if (connection.transport != 'browser' or direct_enabled)
+                and await binding_readable(db, binding, connection, user)
+            ]
+            queries[kind] = (
+                queries[kind]
+                .where(~model.id.like('oi:%'))
+                .union(select(ModelBinding.id).where(ModelBinding.id.in_(accessible)))
+            )
     if config.get('comments.enable'):
         chat = models['chat']
         # UNION (not UNION ALL) terminates even if legacy folder data contains a cycle.
@@ -178,10 +212,11 @@ async def eligible_recipients(recipients, resource_type, resource_id, actor_id, 
         if row.id == actor_id and kind.startswith(('comment.', 'channel.')):
             continue
         if resource_type is not None:
-            queries = await resource_queries(UserModel.model_validate(row), db=db)
+            queries = await resource_queries(UserModel.model_validate(row), db=db, native_ids=[resource_id])
             query = queries.get(resource_type)
-            if query is None or not await db.scalar(
-                select(query.where(source_models()[resource_type].id == resource_id).exists())
+            visible = query.subquery() if query is not None else None
+            if visible is None or not await db.scalar(
+                select(select(visible.c.id).where(visible.c.id == resource_id).exists())
             ):
                 continue
         eligible[row.id] = kind
@@ -257,6 +292,21 @@ async def hydrate(rows, db):
             obj.id: obj
             for obj in (await db.scalars(select(model).options(load_only(*columns)).where(model.id.in_(values)))).all()
         }
+    native_ids = [key for key in ids.get('model', ()) if key.startswith('oi:')]
+    if native_ids:
+        from types import SimpleNamespace
+        from open_webui.models.customization import Connection, ModelBinding
+
+        for binding_id, name, connection_name in (
+            await db.execute(
+                select(ModelBinding.id, ModelBinding.name, Connection.name)
+                .join(Connection, ModelBinding.connection_id == Connection.id)
+                .where(ModelBinding.id.in_(native_ids))
+            )
+        ).all():
+            objects.setdefault('model', {})[binding_id] = SimpleNamespace(
+                id=binding_id, name=f'{connection_name} / {name}'
+            )
     actors = {
         u.id: {'id': u.id, 'name': u.name}
         for u in (
@@ -387,7 +437,16 @@ async def consume_event(event, db):
         if not comment or comment.deleted_at:
             raise ValueError('Comment event references an unavailable comment')
         resource_model = models[comment.resource_type]
-        owner_id = await db.scalar(select(resource_model.user_id).where(resource_model.id == comment.resource_id))
+        if comment.resource_type == 'model' and comment.resource_id.startswith('oi:'):
+            from open_webui.models.customization import Connection, ModelBinding
+
+            owner_id = await db.scalar(
+                select(Connection.owner_id)
+                .join(ModelBinding, ModelBinding.connection_id == Connection.id)
+                .where(ModelBinding.id == comment.resource_id)
+            )
+        else:
+            owner_id = await db.scalar(select(resource_model.user_id).where(resource_model.id == comment.resource_id))
         reply_to = (
             await db.get(models['comment'], comment.reply_to_id or comment.parent_id) if comment.parent_id else None
         )

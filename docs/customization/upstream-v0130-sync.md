@@ -10,3 +10,10 @@ Official source: c38885a1a737da4968f157092f304f3b5481d0bf, merged from v0.12.5 w
 - Pre-sync findings CTRL-PRE-01..03 are separate historical review inputs and must be verified on the merged source.
 
 The pure upstream baseline has 5913 diagnostics and is byte-identical across independent Node 22 and Node 24 checkouts. No customized source was used to expand the baseline. Passing an incremental gate is not a clean typecheck. A new controller review remains required; this merge is not production authorization or a declaration that reviews are cleared.
+
+
+## Post-sync review repairs
+
+The controller review of `fdc34863fdda0a474554afb42a101f20c86e33e1` confirmed four findings. The local repairs preserve accepted side-task cancellation, integrate native model comments with owner/permission/list/count/hydration handling, reject unsuccessful summary terminal states before checkpoint writes, and use safe portable native context for side conversations. Public regression fixtures cover these paths and permission revocation.
+
+Repair-workspace validation: 2103 backend and 94 frontend cases passed, with zero new type diagnostics (5716 existing). The original merge candidate CI and three-entry PostgreSQL migration/restore checks passed separately; these do not approve the newer repair source. Fixed-source re-review, updated CI and built-in-browser acceptance remain pending. The previous R76 preview remains unchanged.

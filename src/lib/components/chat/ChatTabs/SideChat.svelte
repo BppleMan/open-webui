@@ -391,7 +391,7 @@
 	const stop = async () => {
 		sendEpoch += 1;
 		cancelInteractions();
-		if (!request) {
+		if (!request && !messages.some((message) => message.role === 'assistant' && !message.done)) {
 			busy = false;
 			return;
 		}

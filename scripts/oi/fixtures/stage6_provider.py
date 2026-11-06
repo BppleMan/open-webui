@@ -542,7 +542,12 @@ async def generate(protocol: str, path: str, request: Request):
         ]
     if protocol in {'gemini', 'cpa-agy'}:
         marker = next(
-            (value for value in ['R77_PARENT', 'R77_SIDE_FIRST', 'R77_SIDE_NEXT'] if value in fixture_prompt), None
+            (
+                value
+                for value in ['R77_PARENT', 'R77_SIDE_FIRST', 'R77_SIDE_NEXT', 'R77_SIDE_SLOW']
+                if value in fixture_prompt
+            ),
+            None,
         )
         if marker:
             body = {
@@ -565,6 +570,12 @@ async def generate(protocol: str, path: str, request: Request):
                 'usageMetadata': {'promptTokenCount': 100, 'candidatesTokenCount': 5},
             }
             frames = [body]
+            if marker == 'R77_SIDE_SLOW':
+                first = copy.deepcopy(body)
+                first['candidates'][0].pop('finishReason', None)
+                final = copy.deepcopy(body)
+                final['candidates'][0]['content']['parts'] = []
+                frames = [first, final]
     if not stream:
         return body
 
@@ -572,6 +583,8 @@ async def generate(protocol: str, path: str, request: Request):
         for index, frame in enumerate(frames):
             data = json.dumps(frame, ensure_ascii=False)
             yield (data + '\n') if protocol == 'ollama' else ('data: ' + data + '\n\n')
+            if 'R77_SIDE_SLOW' in fixture_prompt and index == 0:
+                await asyncio.sleep(30)
             if broken_tool_stream:
                 raise RuntimeError('Synthetic provider socket interrupted after partial arguments')
             if (slow_continue and index == 0) or (slow_tools and index == len(frames) - 1):

@@ -392,3 +392,6 @@ Finalize each stream consumer after adapter cleanup on every exit. Separate tool
 ## P62 — Official workspace capabilities with OI identity
 
 Keep official tabs, side conversations, comments, notifications and subagent targets. Explicitly selected SideChat retains the official system instruction separating the side question from the parent task; this is the feature's user-invoked semantics, not an automatic OI prompt change. Transfer parent native context through authenticated read access/capsule binding and preserve the side ledger separately without persisting temporary bodies or duplicating parent charges. Unchanged temporary copies receive a new authenticated message binding; edits deliberately invalidate native state. Existing v1 conversation archives retain their defined scope and visibly exclude independent comments, reactions and notifications.
+
+
+P62 follow-up: Stop and closing a side conversation must cancel an accepted background task and wait for authoritative completion. OI model comments retain inbox visibility and revocation rules. Failed summaries preserve original history; side context carries safe replay state across shared connections without private configuration.
