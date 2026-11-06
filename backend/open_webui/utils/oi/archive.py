@@ -145,6 +145,7 @@ async def export_records(db, user_id, chat_id, directory=None):
         descriptors.append(descriptor)
     manifest = {
         'schema': SCHEMA,
+        'excluded_resources': ['comments', 'comment_reactions', 'notifications'],
         'root_chat_id': chat_id,
         'exported_at': now(),
         'chat': body,

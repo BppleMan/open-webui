@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { v4 as uuidv4 } from 'uuid';
+	import { oiApi } from '$lib/apis/customization';
 	import { config, settings, user as _user, mobile, temporaryChatEnabled } from '$lib/stores';
 	import { refreshChatList } from '$lib/stores/chatList';
 	import { tick, getContext, onMount, onDestroy, createEventDispatcher } from 'svelte';
@@ -21,10 +22,11 @@
 	export let className = 'h-full flex pt-18';
 
 	export let chatId = '';
+	export let oiTemporaryId: string | undefined = undefined;
 	export let user = $_user;
 
 	export let prompt;
-	export let history = {};
+	export let history: { messages: Record<string, any>; currentId?: string | null } = { messages: {}, currentId: null };
 	export let selectedModels;
 	export let atSelectedModel;
 
@@ -91,7 +93,7 @@
 	const buildMessages = () => {
 		let _messages = [];
 
-		let message = history.messages[history.currentId];
+		let message = history.currentId ? history.messages[history.currentId] : undefined;
 		const visitedMessageIds = new Set();
 
 		while (message && (messagesCount !== null ? _messages.length < messagesCount : true)) {
@@ -384,8 +386,9 @@
 				const message = history.messages[messageId];
 				const parentId = message.parentId;
 
+				const copyHistory = history, copyChatId = chatId, copyTemporaryId = oiTemporaryId;
 				const responseMessage = {
-					...message,
+					...structuredClone(message),
 					id: responseMessageId,
 					oi_source_message_id: message.id,
 					parentId: parentId,
@@ -398,6 +401,23 @@
 					timestamp: Math.floor(Date.now() / 1000) // Unix epoch
 				};
 
+                if (message.oi_native_state) {
+                    if (!oiTemporaryId) {
+                        toast.error('Temporary conversation identity is unavailable');
+                        return;
+                    }
+                    try {
+                        Object.assign(responseMessage, await oiApi('/native-state/copy', 'POST', {
+                            temporary_id: oiTemporaryId, source: message, destination: responseMessage
+                        }));
+                        responseMessage.oi_native = undefined;
+                    } catch (error) {
+                        toast.error(`${error}`);
+                        return;
+                    }
+                }
+
+                if (history !== copyHistory || chatId !== copyChatId || oiTemporaryId !== copyTemporaryId || history.messages[messageId] !== message) return;
 				history.messages[responseMessageId] = responseMessage;
 				history.currentId = responseMessageId;
 

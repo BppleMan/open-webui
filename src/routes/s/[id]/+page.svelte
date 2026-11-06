@@ -53,9 +53,7 @@
 		loadAndScroll();
 	}
 
-	//////////////////////////
 	// Web functions
-	//////////////////////////
 
 	const loadAndScroll = async () => {
 		if (await loadSharedChat()) {
@@ -258,11 +256,13 @@
 							{user}
 							chatId={$chatId}
 							readOnly={true}
+                            prompt=""
+                            atSelectedModel={undefined}
+                            mergeResponses={() => {}}
+                            chatActionHandler={() => {}}
 							forkHandler={canClone ? forkSharedChat : null}
 							{selectedModels}
-							{processing}
 							bind:history
-							bind:messages
 							bind:autoScroll
 							bottomPadding={files.length > 0}
 							sendMessage={() => {}}

@@ -650,9 +650,9 @@ def attach_native(saved, messages):
                     if projected.get('tool_calls'):
                         break
                     pending.pop()
-                    has_output = any(projected.get(key) for key in ('content', 'reasoning_content', 'images')) or (
-                        native.get('replayable', True) and _contains_opaque_native(native['body'])
-                    )
+                    has_output = any(
+                        projected.get(key) for key in ('content', 'reasoning_content', 'images', 'audio', 'refusal')
+                    ) or (native.get('replayable', True) and _contains_opaque_native(native['body']))
                     # A non-default reasoning format already supplied its own
                     # assistant slot. Here only the invisible native slot is missing.
                     projected.pop('reasoning_content', None)
@@ -678,7 +678,8 @@ def attach_native(saved, messages):
                 expected = ''.join(remaining_text[i] for i in positions)
                 projected = match_native_text(projected, saved.get('output'), expected)
                 has_output = any(
-                    projected.get(key) for key in ('content', 'tool_calls', 'reasoning_content', 'images')
+                    projected.get(key)
+                    for key in ('content', 'tool_calls', 'reasoning_content', 'images', 'audio', 'refusal')
                 ) or (native.get('replayable', True) and _contains_opaque_native(native['body']))
                 # Respect the canonical converter's selected reasoning format.
                 # Rebuilding call boundaries must not add a higher-priority alias

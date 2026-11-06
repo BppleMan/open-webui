@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CommentButton from '$lib/components/comments/CommentButton.svelte';
 	import { toast } from 'svelte-sonner';
 	import { getContext, tick } from 'svelte';
 
@@ -9,7 +10,8 @@
 	import { getOutputText } from '$lib/components/chat/Messages/structuredOutput';
 
 	import {
-		showControls,
+		showTabs,
+		showOverview,
 		showArtifacts,
 		mobile,
 		temporaryChatEnabled,
@@ -32,6 +34,7 @@
 	import Clipboard from '$lib/components/icons/Clipboard.svelte';
 	import AdjustmentsHorizontal from '$lib/components/icons/AdjustmentsHorizontal.svelte';
 	import Cube from '$lib/components/icons/Cube.svelte';
+	import Map from '$lib/components/icons/Map.svelte';
 	import Folder from '$lib/components/icons/Folder.svelte';
 	import Share from '$lib/components/icons/Share.svelte';
 	import ArchiveBox from '$lib/components/icons/ArchiveBox.svelte';
@@ -59,6 +62,7 @@
 	export let scrollToTop: (() => void) | null = null;
 
 	let showFullMessages = false;
+	let show = false;
 
 	const getChatAsText = async () => {
 		const history = chat.chat.history;
@@ -326,7 +330,11 @@
 				user={$user}
 				readOnly={true}
 				history={chat.chat.history}
-				messages={chat.chat.messages}
+                prompt=""
+                selectedModels={chat.chat.models ?? []}
+                atSelectedModel={undefined}
+                mergeResponses={() => {}}
+                chatActionHandler={() => {}}
 				autoScroll={true}
 				sendMessage={() => {}}
 				continueResponse={() => {}}
@@ -339,6 +347,7 @@
 {/if}
 
 <Dropdown
+	bind:show
 	closeOnSelect
 	onOpenChange={(state) => {
 		if (state === false) {
@@ -405,7 +414,21 @@
 					</svg>
 					<div class="flex items-center">{$i18n.t('Scroll to Top')}</div>
 				</button>
+			{/if}
 
+			{#if Object.keys(chat?.chat?.history?.messages ?? {}).length > 0}
+				<button
+					draggable="false"
+					class="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
+					aria-haspopup="dialog"
+					on:click={() => showOverview.set(true)}
+				>
+					<Map className="size-3.5" strokeWidth="1.5" />
+					<div class="flex items-center">{$i18n.t('Overview')}</div>
+				</button>
+			{/if}
+
+			{#if scrollToTop}
 				<hr class="border-gray-50/30 dark:border-gray-800/30 mx-1 my-0.5" />
 			{/if}
 
@@ -415,7 +438,7 @@
 					class="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
 					id="chat-artifacts-button"
 					on:click={async () => {
-						await showControls.set(true);
+						await showTabs.set(true);
 						await showArtifacts.set(true);
 						await showEmbeds.set(false);
 					}}
@@ -441,6 +464,16 @@
 				</button>
 			{/if}
 
+			{#if chat?.id && !$temporaryChatEnabled}
+				<CommentButton
+					onComment={() => showTabs.set('comments')}
+					menu
+					resource={{ resource_type: 'chat', resource_id: chat.id }}
+					onOpen={() => (show = false)}
+					className="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
+				/>
+			{/if}
+
 			{#if $user?.role === 'admin' || ($user.permissions?.chat?.export ?? true)}
 				<DropdownSub contentClass="select-none z-50">
 					<button
@@ -456,7 +489,7 @@
 					{#if !$temporaryChatEnabled && !readOnly}<button
 							draggable="false"
 							class="flex h-[1.6875rem] w-full items-center gap-2 rounded-xl px-2 text-[0.8125rem] cursor-pointer select-none hover:bg-gray-50/40 dark:hover:bg-gray-800/40"
-							on:click={downloadArchive}>会话归档（.zip）</button
+							on:click={downloadArchive}>会话归档（.zip）<span class="ml-1 text-[0.625rem] text-gray-400">不含评论与通知</span></button
 						>{/if}
 					<button
 						draggable="false"

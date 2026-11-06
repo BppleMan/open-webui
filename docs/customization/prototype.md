@@ -387,3 +387,8 @@ Finalize each stream consumer after adapter cleanup on every exit. Separate tool
 
 
 2026-11-07: R76/P61 is verified on isolated preview. Source `6d8f372d2a15c1bf71ac2a350f4adb939213c9c9` passed 1943 backend / 88 frontend cases, zero new type diagnostics, the original 154 review cases and 270 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser network interruption replay, tool Stop, preserved result, followup and reload paths passed. Exact-source CI and GitOps `464e486a074e04ef21baf2400ca63a4bb8314eba` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round14-remediation-acceptance.json.
+
+
+## P62 — Official workspace capabilities with OI identity
+
+Keep official tabs, side conversations, comments, notifications and subagent targets. Explicitly selected SideChat retains the official system instruction separating the side question from the parent task; this is the feature's user-invoked semantics, not an automatic OI prompt change. Transfer parent native context through authenticated read access/capsule binding and preserve the side ledger separately without persisting temporary bodies or duplicating parent charges. Unchanged temporary copies receive a new authenticated message binding; edits deliberately invalidate native state. Existing v1 conversation archives retain their defined scope and visibly exclude independent comments, reactions and notifications.

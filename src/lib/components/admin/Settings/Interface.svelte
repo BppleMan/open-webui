@@ -331,8 +331,10 @@
 					<AdminSettingField
 						label={$i18n.t('settings.admin.interface.tokenThreshold.label')}
 						description={$i18n.t('settings.admin.interface.tokenThreshold.description')}
+						forId="context-compaction-token-threshold"
 					>
 						<input
+							id="context-compaction-token-threshold"
 							type="number"
 							min="1"
 							step="1"
@@ -344,8 +346,10 @@
 					<AdminSettingField
 						label={$i18n.t('settings.admin.interface.tokenCap.label')}
 						description={$i18n.t('settings.admin.interface.tokenCap.description')}
+						forId="context-compaction-token-cap"
 					>
 						<input
+							id="context-compaction-token-cap"
 							type="number"
 							min="1"
 							step="1"
@@ -357,8 +361,10 @@
 					<AdminSettingField
 						label={$i18n.t('settings.admin.interface.retainedMessages.label')}
 						description={$i18n.t('settings.admin.interface.retainedMessages.description')}
+						forId="context-compaction-retained-messages"
 					>
 						<input
+							id="context-compaction-retained-messages"
 							type="number"
 							min="10"
 							max="50"
@@ -419,8 +425,10 @@
 					<AdminSettingField
 						label={$i18n.t('settings.admin.interface.toolSearchThreshold.label')}
 						description={$i18n.t('settings.admin.interface.toolSearchThreshold.description')}
+						forId="tool-search-threshold"
 					>
 						<input
+							id="tool-search-threshold"
 							type="number"
 							min="0"
 							step="1"
@@ -432,8 +440,10 @@
 					<AdminSettingField
 						label={$i18n.t('settings.admin.interface.toolSearchAlwaysLoaded.label')}
 						description={$i18n.t('settings.admin.interface.toolSearchAlwaysLoaded.description')}
+						forId="tool-search-always-loaded"
 					>
 						<input
+							id="tool-search-always-loaded"
 							class={inputClass}
 							type="text"
 							placeholder={$i18n.t('settings.admin.interface.toolSearchAlwaysLoaded.placeholder')}
@@ -589,8 +599,10 @@
 						description={$i18n.t(
 							'settings.admin.interface.autocompleteGenerationInputMaxLength.description'
 						)}
+						forId="autocomplete-generation-input-max-length"
 					>
 						<input
+							id="autocomplete-generation-input-max-length"
 							type="number"
 							min="-1"
 							step="1"

@@ -160,6 +160,9 @@
 	let userOrderBy = 'total_tokens';
 	let userDirection: 'asc' | 'desc' = 'desc';
 
+	const sortState = (key, orderBy, direction) =>
+		orderBy === key ? (direction === 'asc' ? 'ascending' : 'descending') : 'none';
+
 	const toggleModelSort = (key: string) => {
 		if (modelOrderBy === key) {
 			modelDirection = modelDirection === 'asc' ? 'desc' : 'asc';
@@ -570,10 +573,14 @@
 										<th scope="col" class="font-normal px-2.5 py-1.5 w-8">#</th>
 										<th
 											scope="col"
-											class="font-normal px-2.5 py-1.5 cursor-pointer select-none"
-											on:click={() => toggleModelSort('name')}
+											class="font-normal select-none"
+											aria-sort={sortState('name', modelOrderBy, modelDirection)}
 										>
-											<div class="flex gap-1.5 items-center">
+											<button
+												type="button"
+												class="flex w-full gap-1.5 items-center px-2.5 py-1.5"
+												on:click={() => toggleModelSort('name')}
+											>
 												{$i18n.t('Model')}
 												{#if modelOrderBy === 'name'}
 													<span class="font-normal">
@@ -584,14 +591,18 @@
 												{:else}
 													<span class="invisible"><ChevronUp className="size-2" /></span>
 												{/if}
-											</div>
+											</button>
 										</th>
 										<th
 											scope="col"
-											class="font-normal px-2.5 py-1.5 cursor-pointer select-none text-right"
-											on:click={() => toggleModelSort('count')}
+											class="font-normal select-none text-right"
+											aria-sort={sortState('count', modelOrderBy, modelDirection)}
 										>
-											<div class="flex gap-1.5 items-center justify-end">
+											<button
+												type="button"
+												class="flex w-full gap-1.5 items-center px-2.5 py-1.5 justify-end"
+												on:click={() => toggleModelSort('count')}
+											>
 												{$i18n.t('Messages')}
 												{#if modelOrderBy === 'count'}
 													<span class="font-normal">
@@ -602,14 +613,18 @@
 												{:else}
 													<span class="invisible"><ChevronUp className="size-2" /></span>
 												{/if}
-											</div>
+											</button>
 										</th>
 										<th
 											scope="col"
-											class="font-normal px-2.5 py-1.5 cursor-pointer select-none text-right"
-											on:click={() => toggleModelSort('users')}
+											class="font-normal select-none text-right"
+											aria-sort={sortState('users', modelOrderBy, modelDirection)}
 										>
-											<div class="flex gap-1.5 items-center justify-end">
+											<button
+												type="button"
+												class="flex w-full gap-1.5 items-center px-2.5 py-1.5 justify-end"
+												on:click={() => toggleModelSort('users')}
+											>
 												{$i18n.t('Users')}
 												{#if modelOrderBy === 'users'}
 													<span class="font-normal">
@@ -620,14 +635,18 @@
 												{:else}
 													<span class="invisible"><ChevronUp className="size-2" /></span>
 												{/if}
-											</div>
+											</button>
 										</th>
 										<th
 											scope="col"
-											class="font-normal px-2.5 py-1.5 cursor-pointer select-none text-right"
-											on:click={() => toggleModelSort('chats')}
+											class="font-normal select-none text-right"
+											aria-sort={sortState('chats', modelOrderBy, modelDirection)}
 										>
-											<div class="flex gap-1.5 items-center justify-end">
+											<button
+												type="button"
+												class="flex w-full gap-1.5 items-center px-2.5 py-1.5 justify-end"
+												on:click={() => toggleModelSort('chats')}
+											>
 												{$i18n.t('Chats')}
 												{#if modelOrderBy === 'chats'}
 													<span class="font-normal">
@@ -638,17 +657,21 @@
 												{:else}
 													<span class="invisible"><ChevronUp className="size-2" /></span>
 												{/if}
-											</div>
+											</button>
 										</th>
 										<!-- {$i18n.t('Tokens')} -->
 										{#each tokenColumns as column}
 											<th
 												scope="col"
 												title={`${column.label} ${$i18n.t('tokens')}`}
-												class="font-normal px-2.5 py-1.5 cursor-pointer select-none text-right"
-												on:click={() => toggleModelSort(column.key)}
+												class="font-normal select-none text-right"
+												aria-sort={sortState(column.key, modelOrderBy, modelDirection)}
 											>
-												<div class="flex gap-1.5 items-center justify-end">
+												<button
+													type="button"
+													class="flex w-full gap-1.5 items-center px-2.5 py-1.5 justify-end"
+													on:click={() => toggleModelSort(column.key)}
+												>
 													{column.label}
 													{#if modelOrderBy === column.key}
 														<span class="font-normal">
@@ -659,15 +682,19 @@
 													{:else}
 														<span class="invisible"><ChevronUp className="size-2" /></span>
 													{/if}
-												</div>
+												</button>
 											</th>
 										{/each}
 										<th
 											scope="col"
-											class="font-normal px-2.5 py-1.5 cursor-pointer select-none text-right w-16"
-											on:click={() => toggleModelSort('percentage')}
+											class="font-normal select-none text-right w-16"
+											aria-sort={sortState('percentage', modelOrderBy, modelDirection)}
 										>
-											<div class="flex gap-1.5 items-center justify-end">
+											<button
+												type="button"
+												class="flex w-full gap-1.5 items-center px-2.5 py-1.5 justify-end"
+												on:click={() => toggleModelSort('percentage')}
+											>
 												{selectedMetric === 'tokens'
 													? $i18n.t('Token share')
 													: $i18n.t('Message share')}
@@ -680,7 +707,7 @@
 												{:else}
 													<span class="invisible"><ChevronUp className="size-2" /></span>
 												{/if}
-											</div>
+											</button>
 										</th>
 									</tr>
 								</thead>
@@ -712,8 +739,13 @@
 															if (!image.src.endsWith('/favicon.png')) image.src = '/favicon.png';
 														}}
 													/>
-													<span class="truncate max-w-[9.375rem]"
-														>{modelLabel({ id: model.model_id, name: model.name })}</span
+													<button
+														type="button"
+														class="truncate max-w-[9.375rem] text-left"
+														on:click={() => {
+															selectedModel = { id: model.model_id, name: model.name };
+															showModelModal = true;
+														}}>{modelLabel({ id: model.model_id, name: model.name })}</button
 													>
 												</div>
 											</td>
@@ -774,10 +806,14 @@
 										<th scope="col" class="font-normal px-2.5 py-1.5 w-8">#</th>
 										<th
 											scope="col"
-											class="font-normal px-2.5 py-1.5 cursor-pointer select-none"
-											on:click={() => toggleUserSort('name')}
+											class="font-normal select-none"
+											aria-sort={sortState('name', userOrderBy, userDirection)}
 										>
-											<div class="flex gap-1.5 items-center">
+											<button
+												type="button"
+												class="flex w-full gap-1.5 items-center px-2.5 py-1.5"
+												on:click={() => toggleUserSort('name')}
+											>
 												{$i18n.t('User')}
 												{#if userOrderBy === 'name'}
 													<span class="font-normal">
@@ -788,14 +824,18 @@
 												{:else}
 													<span class="invisible"><ChevronUp className="size-2" /></span>
 												{/if}
-											</div>
+											</button>
 										</th>
 										<th
 											scope="col"
-											class="font-normal px-2.5 py-1.5 cursor-pointer select-none text-right"
-											on:click={() => toggleUserSort('count')}
+											class="font-normal select-none text-right"
+											aria-sort={sortState('count', userOrderBy, userDirection)}
 										>
-											<div class="flex gap-1.5 items-center justify-end">
+											<button
+												type="button"
+												class="flex w-full gap-1.5 items-center px-2.5 py-1.5 justify-end"
+												on:click={() => toggleUserSort('count')}
+											>
 												{$i18n.t('Messages')}
 												{#if userOrderBy === 'count'}
 													<span class="font-normal">
@@ -806,17 +846,21 @@
 												{:else}
 													<span class="invisible"><ChevronUp className="size-2" /></span>
 												{/if}
-											</div>
+											</button>
 										</th>
 										<!-- {$i18n.t('Tokens')} -->
 										{#each tokenColumns as column}
 											<th
 												scope="col"
 												title={`${column.label} ${$i18n.t('tokens')}`}
-												class="font-normal px-2.5 py-1.5 cursor-pointer select-none text-right"
-												on:click={() => toggleUserSort(column.key)}
+												class="font-normal select-none text-right"
+												aria-sort={sortState(column.key, userOrderBy, userDirection)}
 											>
-												<div class="flex gap-1.5 items-center justify-end">
+												<button
+													type="button"
+													class="flex w-full gap-1.5 items-center px-2.5 py-1.5 justify-end"
+													on:click={() => toggleUserSort(column.key)}
+												>
 													{column.label}
 													{#if userOrderBy === column.key}
 														<span class="font-normal">
@@ -827,15 +871,19 @@
 													{:else}
 														<span class="invisible"><ChevronUp className="size-2" /></span>
 													{/if}
-												</div>
+												</button>
 											</th>
 										{/each}
 										<th
 											scope="col"
-											class="font-normal px-2.5 py-1.5 cursor-pointer select-none text-right w-16"
-											on:click={() => toggleUserSort('percentage')}
+											class="font-normal select-none text-right w-16"
+											aria-sort={sortState('percentage', userOrderBy, userDirection)}
 										>
-											<div class="flex gap-1.5 items-center justify-end">
+											<button
+												type="button"
+												class="flex w-full gap-1.5 items-center px-2.5 py-1.5 justify-end"
+												on:click={() => toggleUserSort('percentage')}
+											>
 												{selectedMetric === 'tokens'
 													? $i18n.t('Token share')
 													: $i18n.t('Message share')}
@@ -848,7 +896,7 @@
 												{:else}
 													<span class="invisible"><ChevronUp className="size-2" /></span>
 												{/if}
-											</div>
+											</button>
 										</th>
 									</tr>
 								</thead>
@@ -933,6 +981,9 @@
 		font-size: 0.75rem;
 		font-weight: 400;
 		color: var(--color-gray-500);
+	}
+	:global(:where(html.high-contrast:not(.dark))) .analytics-tab {
+		color: var(--color-gray-700);
 	}
 	.analytics-tab:hover,
 	.tab-selected {

@@ -280,3 +280,8 @@ Independently reproduce CR14-01..04 and repair per-call consumer finalization on
 
 
 2026-11-07: R76/P61 is verified on isolated preview. Source `6d8f372d2a15c1bf71ac2a350f4adb939213c9c9` passed 1943 backend / 88 frontend cases, zero new type diagnostics, the original 154 review cases and 270 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser network interruption replay, tool Stop, preserved result, followup and reload paths passed. Exact-source CI and GitOps `464e486a074e04ef21baf2400ca63a4bb8314eba` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round14-remediation-acceptance.json.
+
+
+## R77 / U76 — Official v0.13.0 synchronization
+
+Merge the official stable v0.13.0 tag while preserving its new capabilities and the OI customization contract. Join the upstream and OI7 migration branches with a new revision; preserve prior migration lineage. Adapt SideChat native identity/privacy/billing, connection-aware subagent selection, model comments ACL, compaction failure behavior and MCP App context isolation. Reproduce and repair the three confirmed pre-sync findings in this batch. Establish the type baseline only from a clean official checkout, preserve original review evidence and perform batch validation plus isolated-preview acceptance. The controller will conduct a fresh review on the stable source; this synchronization does not declare all reviews cleared. R50/U49/R59 and built-in browser only remain.

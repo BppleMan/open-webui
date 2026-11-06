@@ -3910,5 +3910,70 @@
       "global_direct_connections_unchanged": true,
       "synthetic_tool_removed": true
     }
+  },
+  "upstream_v0130_sync": {
+    "requirement": "R77",
+    "prototype": "P62",
+    "status": "candidate_local_checks_passed",
+    "baseline": "cd4755f3253d61cd4a9fc9a609587d700112acd7",
+    "upstream": {
+      "from_tag": "v0.12.5",
+      "to_tag": "v0.13.0",
+      "commit": "c38885a1a737da4968f157092f304f3b5481d0bf",
+      "release": "https://github.com/open-webui/open-webui/releases/tag/v0.13.0",
+      "conflicted_files": 29,
+      "new_upstream_migrations": 3,
+      "merge_revision": "oi0000000008"
+    },
+    "pre_sync_findings": {
+      "CTRL-PRE-01": {
+        "baseline": "cd4755f32",
+        "implementation": "fixed",
+        "verification": "synthetic regressions passed; full controller review pending"
+      },
+      "CTRL-PRE-02": {
+        "baseline": "cd4755f32",
+        "implementation": "fixed",
+        "verification": "synthetic regressions passed; full controller review pending"
+      },
+      "CTRL-PRE-03": {
+        "baseline": "cd4755f32",
+        "implementation": "fixed",
+        "verification": "synthetic regressions passed; full controller review pending"
+      }
+    },
+    "checks": {
+      "type_baseline": {
+        "tag": "v0.13.0",
+        "commit": "c38885a1a737da4968f157092f304f3b5481d0bf",
+        "pristine_tracked_tree": "clean_before_and_after",
+        "command": "npm ci --force; npx svelte-kit sync; npx svelte-check --tsconfig ./tsconfig.json",
+        "diagnostics": 5913,
+        "distinct": 2549,
+        "sha256": "479e399fcff63630dce1706f7e846d3194f69a8bbbf95439ba2383807e198b81",
+        "independent_node22_control": "byte-identical diagnostics",
+        "custom_source_used_for_baseline": false
+      },
+      "real_supplier_requests": 0,
+      "backend": 2088,
+      "frontend": 93,
+      "type_new": 0,
+      "remaining_diagnostics": 5716,
+      "build": "passed",
+      "sqlite_migration_paths": [
+        "empty",
+        "oi7",
+        "upstream"
+      ],
+      "HTTP": "passed: all native suites plus saved/temporary parent SideChat, copy, independent ledger and temporary body privacy",
+      "postgres_merge_paths": "pending",
+      "built_in_browser": "pending"
+    },
+    "deployment": {
+      "status": "pending",
+      "scope": "isolated_preview_only",
+      "previous_R76_preview": "verified; unchanged"
+    },
+    "review_status": "awaiting controller review of fixed candidate; publication gated"
   }
 }

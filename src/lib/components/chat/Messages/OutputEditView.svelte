@@ -29,7 +29,7 @@
 	let cmOutput: any[] | null = null;
 	let syncingCodeMirror = false;
 
-	// --- CodeMirror ---
+	// CodeMirror
 	let cmContainer: HTMLDivElement;
 	let cmEditor: EditorView | null = null;
 	let editorTheme = new Compartment();
@@ -98,7 +98,7 @@
 
 	onDestroy(() => destroyCodeMirror());
 
-	// --- Display items ---
+	// Display items
 
 	interface DisplayItem {
 		type: 'message' | 'reasoning' | 'function_call' | 'code_interpreter' | 'openai_tool';
@@ -179,7 +179,7 @@
 		syncingCodeMirror = false;
 	}
 
-	// --- Helpers ---
+	// Helpers
 
 	function getMessageText(item: any): string {
 		return (item.content ?? [])

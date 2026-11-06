@@ -93,9 +93,14 @@ def connection_json(connection, user):
 
 
 def capabilities(binding):
-    config = binding.capabilities or {}
+    config = binding.capabilities if isinstance(binding.capabilities, dict) else {}
     if 'discovered' in config or 'overrides' in config:
-        return {**config.get('discovered', {}), **config.get('overrides', {})}
+        discovered = config.get('discovered')
+        overrides = config.get('overrides')
+        return {
+            **(discovered if isinstance(discovered, dict) else {}),
+            **(overrides if isinstance(overrides, dict) else {}),
+        }
     return config
 
 
@@ -173,8 +178,23 @@ async def resolve(db, reference, user, *, require_enabled=True):
     return snapshot_target(binding, connection)
 
 
-def reasoning_controls(binding):
-    reasoning = capabilities(binding).get('reasoning') or {}
+def reasoning_controls(binding, *, strict=False):
+    try:
+        return _reasoning_controls(binding)
+    except (ValueError, TypeError, AttributeError, KeyError, OverflowError) as error:
+        if strict:
+            raise ValueError('Invalid discovered reasoning control; no configuration was changed') from error
+        # A provider or old private row may contain an unusable control shape.
+        # Keep the model/capability information, but never fabricate wire parameters.
+        return {}
+
+
+def _reasoning_controls(binding):
+    reasoning = capabilities(binding).get('reasoning')
+    if reasoning is None or isinstance(reasoning, bool):
+        return {}  # Support alone does not establish configurable wire semantics.
+    if not isinstance(reasoning, dict):
+        raise ValueError('Reasoning control must be an object')
     levels = reasoning.get('levels')
     parameter = reasoning.get('parameter')
     mode = canonical_protocol(getattr(binding, 'protocol', ''))
@@ -193,6 +213,14 @@ def reasoning_controls(binding):
     # A declared parameter is required: never guess a provider's wire semantics from its model name.
     if not parameter:
         return {}
+    if not isinstance(parameter, str) or any(
+        not part or part in {'__proto__', 'prototype', 'constructor'} for part in parameter.split('.')
+    ):
+        raise ValueError('Invalid reasoning parameter path')
+    if levels is not None and (
+        not isinstance(levels, list) or any(not isinstance(level, (str, int, float, bool)) for level in levels)
+    ):
+        raise ValueError('Reasoning levels must be a list of scalar values')
     if levels:
 
         def parameters(value):
@@ -284,8 +312,11 @@ async def model_catalog(db, user, *, internal=False):
             continue
         binding, connection = snapshot_target(binding, connection)
         caps = capabilities(binding)
+        from open_webui.utils.oi.model_params import safe_native_params
+
+        params = safe_native_params(binding.params)
         controls = {
-            **(binding.params or {}).get('model_controls', {}),
+            **params.get('model_controls', {}),
             **reasoning_controls(binding),
             **thought_controls(binding),
         }
@@ -313,7 +344,7 @@ async def model_catalog(db, user, *, internal=False):
                 'info': {
                     'id': binding.id,
                     'name': binding.name,
-                    'params': {**(binding.params or {}), 'model_controls': controls},
+                    'params': {**params, 'model_controls': controls},
                     'meta': {'capabilities': caps, 'oi_connection_id': connection.id},
                 },
             }
@@ -398,7 +429,10 @@ async def fetch_models(connection, transport=None):
 
 
 def discovered_capabilities(model):
-    result = dict(model.get('capabilities') or {})
+    raw = model.get('capabilities')
+    if raw is not None and not isinstance(raw, dict):
+        raise ValueError('Discovered capabilities must be an object')
+    result = dict(raw or {})
     # OpenRouter advertises a shared input/output window. Do not turn it into an
     # independent input limit, or invent reasoning levels from a parameter name.
     provider = model.get('top_provider')
@@ -489,6 +523,9 @@ async def apply_discovered_models(db, connection, models, expected_revision=None
             .all()
         )
         discovered = discovered_capabilities(model)
+        from types import SimpleNamespace
+
+        reasoning_controls(SimpleNamespace(capabilities=discovered, protocol=protocol), strict=True)
         if not existing:
             row = ModelBinding(
                 id='oi:' + identifier(),

@@ -320,7 +320,11 @@
 				user={$user}
 				readOnly={true}
 				history={chat.chat.history}
-				messages={chat.chat.messages}
+                prompt=""
+                selectedModels={chat.chat.models ?? []}
+                atSelectedModel={undefined}
+                mergeResponses={() => {}}
+                chatActionHandler={() => {}}
 				autoScroll={true}
 				sendMessage={() => {}}
 				continueResponse={() => {}}

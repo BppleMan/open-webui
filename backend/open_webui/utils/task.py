@@ -76,6 +76,7 @@ async def prompt_template(template: str, user: Optional[Any] = None) -> str:
             USER_VARIABLES = {
                 'name': str(user.get('name')),
                 'email': str(user.get('email')),
+                'role': str(user.get('role')),
                 'location': str(user_info.get('location')),
                 'bio': str(user.get('bio')),
                 'gender': str(user.get('gender')),
@@ -87,7 +88,7 @@ async def prompt_template(template: str, user: Optional[Any] = None) -> str:
     # Get the current date
     current_date = datetime.now()
 
-    # Format the date to YYYY-MM-DD
+    # YYYY-MM-DD: one date format, fewer international incidents.
     formatted_date = current_date.strftime('%Y-%m-%d')
     formatted_time = current_date.strftime('%I:%M:%S %p')
     formatted_weekday = current_date.strftime('%A')
@@ -99,6 +100,7 @@ async def prompt_template(template: str, user: Optional[Any] = None) -> str:
 
     template = template.replace('{{USER_NAME}}', USER_VARIABLES.get('name', 'Unknown'))
     template = template.replace('{{USER_EMAIL}}', USER_VARIABLES.get('email', 'Unknown'))
+    template = template.replace('{{USER_ROLE}}', USER_VARIABLES.get('role', 'Unknown'))
     template = template.replace('{{USER_BIO}}', USER_VARIABLES.get('bio', 'Unknown'))
     template = template.replace('{{USER_GENDER}}', USER_VARIABLES.get('gender', 'Unknown'))
     template = template.replace('{{USER_BIRTH_DATE}}', USER_VARIABLES.get('birth_date', 'Unknown'))

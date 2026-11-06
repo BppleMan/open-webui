@@ -37,9 +37,7 @@ router = APIRouter()
 PAGE_ITEM_COUNT = 30
 
 
-############################
 # Helpers
-############################
 
 
 async def check_automations_permission(request, user):
@@ -164,9 +162,7 @@ async def enrich_automation(automation: AutomationModel, db: AsyncSession, tz: s
     )
 
 
-############################
 # GetAutomationItems (paginated)
-############################
 
 
 @router.get('/list')
@@ -210,9 +206,7 @@ async def get_automation_items(
     }
 
 
-############################
-# CreateNewAutomation
-############################
+# Create New Automation
 
 
 @router.post('/create', response_model=AutomationResponse)
@@ -249,9 +243,7 @@ async def create_new_automation(
     return response
 
 
-############################
-# GetAutomationById
-############################
+# Get Automation By Id
 
 
 @router.get('/{id}', response_model=AutomationResponse)
@@ -267,9 +259,7 @@ async def get_automation_by_id(
     return await enrich_automation(automation, db, tz=user.timezone)
 
 
-############################
-# UpdateAutomationById
-############################
+# Update Automation By Id
 
 
 @router.post('/{id}/update', response_model=AutomationResponse)
@@ -310,9 +300,7 @@ async def update_automation_by_id(
     return response
 
 
-############################
-# ToggleAutomationById
-############################
+# Toggle Automation By Id
 
 
 @router.post('/{id}/toggle', response_model=AutomationResponse)
@@ -338,9 +326,7 @@ async def toggle_automation_by_id(
     return response
 
 
-############################
-# RunAutomationById
-############################
+# Run Automation By Id
 
 
 @router.post('/{id}/run')
@@ -365,9 +351,7 @@ async def run_automation_by_id(
     return await enrich_automation(automation, db, tz=user.timezone)
 
 
-############################
-# DeleteAutomationById
-############################
+# Delete Automation By Id
 
 
 @router.delete('/{id}/delete')
@@ -393,9 +377,7 @@ async def delete_automation_by_id(
     return result
 
 
-############################
-# GetAutomationRuns
-############################
+# Get Automation Runs
 
 
 @router.get('/{id}/runs', response_model=list[AutomationRunModel])
@@ -411,3 +393,22 @@ async def get_automation_runs(
     automation = await Automations.get_by_id(id, db=db)
     check_automation_access(automation, user)
     return await AutomationRuns.get_by_automation(id, skip=skip, limit=limit, db=db)
+
+
+@router.get('/{id}/runs/{run_id}', response_model=AutomationRunModel)
+async def get_automation_run(
+    request: Request,
+    id: str,
+    run_id: str,
+    user=Depends(get_verified_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    from open_webui.models.automations import AutomationRun
+
+    await check_automations_permission(request, user)
+    automation = await Automations.get_by_id(id, db=db)
+    check_automation_access(automation, user)
+    run = await db.get(AutomationRun, run_id)
+    if not run or run.automation_id != id:
+        raise HTTPException(404, 'Run not found')
+    return AutomationRunModel.model_validate(run)

@@ -360,7 +360,7 @@ with engine.connect() as db:
         ).encode()
         manifest[name] = {'count': len(rows), 'sha256': hashlib.sha256(encoded).hexdigest()}
     revision = db.execute(sa.text('SELECT version_num FROM alembic_version')).scalar_one()
-    assert revision == 'oi0000000007'
+    assert revision == 'oi0000000008'
 path = repo / '.oi-local/pg-before-restore.json'
 if mode == 'prepare':
     path.write_text(json.dumps(manifest, indent=2))

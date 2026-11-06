@@ -2,7 +2,7 @@
 
 Read docs/customization/requirements.md, prototype.md, implementation.md and features.json before changes. The user has approved implementation of this contract. Keep feature implementation, verification and deployment statuses separate.
 
-- Base: upstream v0.12.5, merged from the original v0.12.3 fork. Preserve upstream licensing and branding.
+- Base: upstream v0.13.0, merged from v0.12.5 and the original v0.12.3 fork. Preserve upstream licensing and branding.
 - Every model list/selector uses connection-to-model identity, including capability-specific lists.
 - Preserve native structured content and CPA RP semantics. Do not silently add prompts or truncate history.
 - Record every generation/call once; actual and estimated USD are separate, unknown is not zero. Forks inherit anchor cost snapshots, not duplicate charges.
@@ -109,3 +109,5 @@ R70/P55 code and exact-source CI are verified (710 backend/79 frontend). The req
 - R76/P61 repairs four fourteenth-review boundaries. Read review-round14-remediation.md and its acceptance record. Finalize failed stream consumer projections, preserve returned tool results on ordinary errors, persist cancellation before notification, and avoid needless legacy transcript reads. R50/U49/R59 and built-in browser only remain.
 
 - R76/P61 is verified on isolated preview. Read review-round14-remediation-acceptance.json for exact source/CI/image and remaining limits. Public/private top-level phase and source indexes now match the latest remediation. Prior review reports remain historical. Keep R50/U49/R59 and built-in browser only.
+
+- R77/P62 synchronizes official v0.13.0 with OI contracts. Read upstream-v0130-sync.md and its acceptance record. Preserve the OI8 merge lineage, authenticated SideChat/copy state, comments ACL, explicit compaction failure policy and separate MCP UI context. Fresh controller review is still required. R50/U49/R59 and built-in browser only remain.

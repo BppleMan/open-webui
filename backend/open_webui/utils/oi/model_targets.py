@@ -8,6 +8,7 @@ from open_webui.models.models import Models
 from open_webui.utils.misc import merge_model_params
 from open_webui.utils.oi import catalog
 from open_webui.utils.oi.legacy import alias_map
+from open_webui.utils.oi.model_params import safe_native_params
 
 
 @dataclass
@@ -53,11 +54,12 @@ async def resolve_native_target(db, reference, user):
             except (LookupError, ValueError):
                 raise HTTPException(404, 'Connection model unavailable') from None
             override = await Models.get_model_by_id(reference, db=db)
-            params = deepcopy(binding.params or {})
+            params = safe_native_params(binding.params)
             if override is not None:
                 if not override.is_active:
                     raise HTTPException(404, 'Connection model unavailable')
                 params = merge_model_params(params, override.params.model_dump(exclude_unset=True))
+            params = safe_native_params(params)
             controls = {
                 **params.get('model_controls', {}),
                 **catalog.reasoning_controls(binding),

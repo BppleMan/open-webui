@@ -1,0 +1,11 @@
+{
+  "tag": "v0.13.0",
+  "commit": "c38885a1a737da4968f157092f304f3b5481d0bf",
+  "pristine_tracked_tree": "clean_before_and_after",
+  "command": "npm ci --force; npx svelte-kit sync; npx svelte-check --tsconfig ./tsconfig.json",
+  "diagnostics": 5913,
+  "distinct": 2549,
+  "sha256": "479e399fcff63630dce1706f7e846d3194f69a8bbbf95439ba2383807e198b81",
+  "independent_node22_control": "byte-identical diagnostics",
+  "custom_source_used_for_baseline": false
+}

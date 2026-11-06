@@ -212,6 +212,55 @@ class ConnectionForm(BaseModel):
     revision: int | None = None
 
 
+class NativeCopyForm(BaseModel):
+    temporary_id: str = Field(min_length=1, max_length=256)
+    source: dict
+    destination: dict
+
+
+@router.post('/native-state/copy')
+async def copy_native_state(form: NativeCopyForm, user=Depends(get_verified_user)):
+    from open_webui.utils.oi.native_transfer import transfer_capsule
+
+    if not form.destination.get('id'):
+        raise HTTPException(422, 'A destination message is required')
+    return transfer_capsule(form.source, form.destination, user.id, form.temporary_id, form.temporary_id)
+
+
+class SideContextForm(BaseModel):
+    temporary_id: str = Field(min_length=1, max_length=256)
+    source_chat_id: str | None = None
+    source_temporary_id: str | None = None
+    messages: list[dict]
+
+
+@router.post('/side-chats/context')
+async def transfer_side_context(
+    form: SideContextForm, user=Depends(get_verified_user), db: AsyncSession = Depends(get_async_session)
+):
+    from open_webui.models.config import Config
+    from open_webui.utils.access_control import has_permission
+    from open_webui.utils.oi.native_transfer import side_context
+
+    if user.role != 'admin' and not (
+        await has_permission(user.id, 'chat.temporary', await Config.get('user.permissions'), db=db)
+        and await has_permission(user.id, 'chat.side_chat', await Config.get('user.permissions'), db=db)
+    ):
+        raise HTTPException(403, 'Side chats are disabled')
+    if bool(form.source_chat_id) == bool(form.source_temporary_id):
+        raise HTTPException(422, 'Select one source conversation')
+    return {
+        'messages': await side_context(
+            db,
+            user,
+            form.temporary_id,
+            form.messages,
+            source_chat_id=form.source_chat_id,
+            source_temporary_id=form.source_temporary_id,
+        )
+    }
+
+
 @router.get('/connections/templates')
 async def templates(user=Depends(get_verified_user)):
     return catalog.TEMPLATES
@@ -662,6 +711,12 @@ class BindingForm(BaseModel):
 
 
 async def save_binding(db, user, form, binding_id=None):
+    from open_webui.utils.oi.model_params import validate_native_params
+
+    try:
+        validate_native_params(form.params)
+    except (ValueError, TypeError) as error:
+        raise HTTPException(422, str(error)) from None
     connection = await connection_access(db, user, form.connection_id, True)
     if (
         form.protocol is not None
@@ -670,6 +725,8 @@ async def save_binding(db, user, form, binding_id=None):
         and form.protocol_override not in PROTOCOLS
     ):
         raise HTTPException(422, 'Unsupported protocol')
+    if 'rates' in form.pricing and not isinstance(form.pricing['rates'], dict):
+        raise HTTPException(422, 'pricing.rates must be an object')
     for rate in (form.pricing.get('rates') or {}).values():
         try:
             accounting.money(rate)
@@ -683,7 +740,7 @@ async def save_binding(db, user, form, binding_id=None):
     from types import SimpleNamespace
 
     try:
-        catalog.reasoning_controls(SimpleNamespace(capabilities=effective_caps))
+        catalog.reasoning_controls(SimpleNamespace(capabilities=effective_caps), strict=True)
     except ValueError as error:
         raise HTTPException(422, 'Invalid reasoning capability: ' + str(error)) from None
     manual = row is None or (row.capabilities or {}).get('manual', False)

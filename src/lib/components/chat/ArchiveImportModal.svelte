@@ -74,6 +74,7 @@
 </script>
 
 <Modal bind:show size="md" ariaLabel="还原 OI 会话归档">
+	<p class="px-4 pt-3 text-xs text-gray-500">此归档格式包含会话、附件、修订和费用记录，不包含独立评论、评论反应与通知。</p>
 	<div class="max-h-[85dvh] overflow-auto p-4 sm:p-6">
 		<h2 class="mb-2 text-lg font-semibold">还原会话归档</h2>
 		<p class="mb-4 text-sm text-gray-500">{file?.name}</p>

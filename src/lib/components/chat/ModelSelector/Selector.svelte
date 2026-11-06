@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { modelConnection, sortByConnection, groupModels } from '$lib/utils/modelDirectory';
+	import Comments from '$lib/components/comments/Comments.svelte';
+	import type { CommentsRequest } from '$lib/components/comments/CommentsPanel.svelte';
+	let comments: CommentsRequest | null = null;
 	import { marked } from 'marked';
 	import Fuse from 'fuse.js';
 	import { autoUpdate, computePosition, flip, offset, shift, size } from '@floating-ui/dom';
@@ -64,6 +67,7 @@
 	export let onModelSelect: (models: string[]) => void = () => {};
 	export let compareEnabled = false;
 	export let multipleEnabled = false;
+	export let allowEmpty = false;
 	export let disabled = false;
 	export let placeholder: string | undefined = undefined;
 	export let searchEnabled = true;
@@ -429,13 +433,13 @@
 		if (values) {
 			if (compareEnabled) {
 				const nextValues = selectedValues.includes(item.value)
-					? selectedValues.length > 1
+					? (allowEmpty || selectedValues.length > 1)
 						? selectedValues.filter((selectedValue) => selectedValue !== item.value)
 						: selectedValues
 					: [...selectedValues.filter(Boolean), item.value];
 
-				values = nextValues.length ? nextValues : [item.value];
-				value = values[0];
+				values = allowEmpty || nextValues.length ? nextValues : [item.value];
+				value = values[0] ?? '';
 				onModelSelect(values);
 				return;
 			}
@@ -1130,6 +1134,7 @@
 										<div class="ml-4 mr-1 border-l border-gray-100 pl-2 dark:border-white/[0.07]">
 											{#each group.items as item (item.value)}
 												<ModelItem
+													onComment={(request) => (comments = request)}
 													optionId={`model-selector-${id}-option-${item.directoryIndex}`}
 													connectionGrouped
 													bind:selectedModelIdx
@@ -1337,3 +1342,5 @@
 		</div>
 	{/if}
 </div>
+
+<Comments modal bind:view={comments} />

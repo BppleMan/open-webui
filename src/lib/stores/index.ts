@@ -6,7 +6,8 @@ import {
 } from '$lib/utils/ui-visibility';
 import { APP_NAME } from '$lib/constants';
 import { chatCapable } from '$lib/utils/modelDirectory';
-import { type Writable, derived, writable } from 'svelte/store';
+import { type Writable, derived, get, writable } from 'svelte/store';
+import type { CommentTarget } from '$lib/apis/comments';
 import type { ModelConfig } from '$lib/apis';
 import type { Banner } from '$lib/types';
 import type { Socket } from 'socket.io-client';
@@ -15,9 +16,7 @@ import type { I18nOverrides } from '$lib/utils/translationDictionary';
 
 import emojiShortCodes from '$lib/emoji-shortcodes.json';
 
-// What is held here is the only truth the house knows.
-// When it changes, let every room hear at once.
-// Backend
+// Backend identity and session state
 export const WEBUI_NAME = writable(APP_NAME);
 
 export const WEBUI_VERSION = writable(null);
@@ -177,7 +176,13 @@ export const showSearch = writable(false);
 export const showSettings: Writable<boolean | string | SettingsModalRequest> = writable(false);
 export const showChangelog = writable(false);
 
-export const showControls = writable(false);
+export const showTabs = writable<
+	| boolean
+	| 'files'
+	| 'comments'
+	| 'side'
+	| (CommentTarget & { tab: 'comments'; comment_id?: string })
+>(false);
 export const showEmbeds = writable(false);
 export const showOverview = writable(false);
 export const showArtifacts = writable(false);
@@ -187,9 +192,6 @@ export type FileNavOpenRequest = string | { path: string; page?: number | null }
 export const showFileNavPath: Writable<FileNavOpenRequest | null> = writable(null);
 export const showFileNavDir: Writable<string | null> = writable(null);
 export const selectedTerminalId: Writable<string | null> = writable(null);
-export const connectedUserTerminals = writable(
-	new Map<symbol, { terminalId: string; chatId: string }>()
-);
 
 export const artifactCode = writable(null);
 export const artifactContents = writable(null);
@@ -197,6 +199,8 @@ export const artifactContents = writable(null);
 export const embed = writable(null);
 
 export const temporaryChatEnabled = writable(false);
+export const openTemporaryChatIds = writable<Set<string>>(new Set());
+export const sideChatRequest = writable<{ parentId: string; prompt: string } | null>(null);
 
 // Transient one-shot event from the desktop shell (Spotlight, drag-and-drop, etc.).
 // Set by +layout.svelte, consumed and cleared by Chat.svelte.
@@ -414,6 +418,8 @@ type Config = {
 		enable_community_sharing: boolean;
 		enable_memories: boolean;
 		enable_notes?: boolean;
+		enable_comments?: boolean;
+		enable_notifications?: boolean;
 		enable_channels?: boolean;
 		enable_user_webhooks?: boolean;
 		enable_automations?: boolean;

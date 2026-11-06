@@ -540,6 +540,31 @@ async def generate(protocol: str, path: str, request: Request):
                 'usage': body['usage'],
             }
         ]
+    if protocol in {'gemini', 'cpa-agy'}:
+        marker = next(
+            (value for value in ['R77_PARENT', 'R77_SIDE_FIRST', 'R77_SIDE_NEXT'] if value in fixture_prompt), None
+        )
+        if marker:
+            body = {
+                'candidates': [
+                    {
+                        'content': {
+                            'role': 'model',
+                            'parts': [
+                                {
+                                    'thought': True,
+                                    'text': marker + ' thought',
+                                    'thoughtSignature': marker + '-signature',
+                                },
+                                {'text': marker + ' answer'},
+                            ],
+                        },
+                        'finishReason': 'STOP',
+                    }
+                ],
+                'usageMetadata': {'promptTokenCount': 100, 'candidatesTokenCount': 5},
+            }
+            frames = [body]
     if not stream:
         return body
 

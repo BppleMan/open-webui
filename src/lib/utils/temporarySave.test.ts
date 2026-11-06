@@ -111,7 +111,7 @@ it.each(['GET', 'PUT', 'navigation', 'retire', 'refresh-list', 'navigation-inten
 		const saving = harness.run();
 		await waiting;
 		expect(harness.busy()).toBe(true);
-		expect(source).toContain('inert={!!initializingDraft || savingTemporaryChat}');
+		expect(source).toMatch(/inert=\{[^}]*initializingDraft[^}]*savingTemporaryChat[^}]*\}/);
 		editor = { ...editor, prompt: 'queued-during-' + waitAt };
 		if (['navigation', 'retire', 'refresh-list', 'navigation-intent'].includes(waitAt)) {
 			if (waitAt === 'navigation-intent') harness.navigate();

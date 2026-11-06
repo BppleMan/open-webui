@@ -337,14 +337,14 @@ def build_request(form, binding, connection):
         source.setdefault('include', ['reasoning.encrypted_content'])
         return url, source
     if protocol == 'ollama':
-        from open_webui.utils.payload import convert_payload_openai_to_ollama
+        from open_webui.utils.payload import convert_chat_completions_payload_to_ollama
 
         source.pop('store', None)
         source['messages'] = [
             {**clean_message(m), **{key: copy.deepcopy(m[key]) for key in ('thinking', 'reasoning') if key in m}}
             for m in messages
         ]
-        payload = convert_payload_openai_to_ollama(source)
+        payload = convert_chat_completions_payload_to_ollama(source)
         for key in ('think', 'format', 'keep_alive'):
             if key in source:
                 payload[key] = copy.deepcopy(source[key])
@@ -1018,13 +1018,13 @@ class NativeStream:
                     item['call_id'] = self.generated_tool_ids[index]
             return convert_responses_result(result)
         if self.protocol == 'ollama':
-            from open_webui.utils.response import convert_response_ollama_to_openai
+            from open_webui.utils.response import convert_ollama_response_to_chat_completions
 
             normalized = copy.deepcopy(self.body)
             message = normalized.get('message') or {}
             if message.get('tool_calls'):
                 message['tool_calls'] = self.ollama_tools_with_ids(message['tool_calls'])
-            return convert_response_ollama_to_openai(normalized)
+            return convert_ollama_response_to_chat_completions(normalized)
         self.usage = self.body.get('usageMetadata') or self.body.get('usage') or {}
         blocks = (
             self.body.get('content', [])
@@ -1197,7 +1197,10 @@ async def generate(request, form, user, binding, connection, call_id, transport=
         decoder = SSEDecoder()
         try:
             if binding.protocol == 'ollama':
-                from open_webui.utils.response import convert_ollama_tool_call_to_openai, convert_ollama_usage_to_openai
+                from open_webui.utils.response import (
+                    convert_ollama_tool_call_to_chat_completions,
+                    convert_ollama_usage_to_chat_completions,
+                )
 
                 tool_count = 0
                 async for line in response.aiter_lines():
@@ -1222,7 +1225,7 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                         for index, call in enumerate(calls):
                             call.setdefault('index', call.get('function', {}).get('index', tool_count + index))
                         offset = len(saved['tool_calls']) - len(calls)
-                        delta['tool_calls'] = convert_ollama_tool_call_to_openai(
+                        delta['tool_calls'] = convert_ollama_tool_call_to_chat_completions(
                             state.ollama_tools_with_ids(calls, offset)
                         )
                         tool_count = max(tool_count, max(call['index'] for call in delta['tool_calls']) + 1)
@@ -1234,7 +1237,7 @@ async def generate(request, form, user, binding, connection, call_id, transport=
                         + compact(
                             chunk(
                                 delta,
-                                usage=convert_ollama_usage_to_openai(data) if data.get('done') else None,
+                                usage=convert_ollama_usage_to_chat_completions(data) if data.get('done') else None,
                                 finish=finish,
                                 **(
                                     {'oi_usage': accounting.ollama_metering(data), 'oi_usage_protocol': 'ollama'}

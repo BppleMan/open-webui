@@ -124,12 +124,12 @@ async def test_manual_checkpoint_applies_without_automatic_summary_or_history_mu
         {'role': 'user', 'content': 'recent', 'contextSummary': 'explicit manual summary'},
     ]
     original = copy.deepcopy(messages)
-    out, text, changed = await cc.compact_messages_for_request(None, None, messages, {}, 'm', {})
+    out, text, changed = await cc.compact_messages_for_request(None, None, None, messages, {}, 'm', {})
     assert [m['content'] for m in out] == ['system', 'recent'] and text == 'explicit manual summary' and not changed
     summary.assert_not_called()
     assert messages == original
     monkeypatch.setattr(cc, '_load_config', AsyncMock(return_value={'enable': False}))
-    assert (await cc.compact_messages_for_request(None, None, messages, {}, 'm', {})) == (messages, None, False)
+    assert (await cc.compact_messages_for_request(None, None, None, messages, {}, 'm', {})) == (messages, None, [])
 
 
 @pytest.mark.asyncio
@@ -212,6 +212,7 @@ async def test_empty_compaction_does_not_fabricate_a_truncated_summary(monkeypat
     with pytest.raises(HTTPException, match='original history was preserved'):
         await cc._generate_summary(
             SimpleNamespace(state=SimpleNamespace()),
+            None,
             SimpleNamespace(id='u'),
             'm',
             {'m': {'id': 'm'}},

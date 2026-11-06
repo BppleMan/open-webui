@@ -18,6 +18,8 @@ from open_webui.migrations.versions.oi0000000006_import_integrity import upgrade
 from open_webui.migrations.versions.oi0000000007_protocol_inheritance import upgrade as upgrade_protocols
 from open_webui.models.chat_messages import ChatMessage
 from open_webui.models.chats import Chat
+from open_webui.models.comments import Comment, CommentReaction
+from open_webui.models.notifications import Notification
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 
@@ -31,6 +33,9 @@ async def db(monkeypatch):
             # Current upstream message schema; migration 3 has a separate legacy-schema test.
             Chat.__table__.create(connection)
             ChatMessage.__table__.create(connection)
+            Comment.__table__.create(connection)
+            CommentReaction.__table__.create(connection)
+            Notification.__table__.create(connection)
             with Operations.context(MigrationContext.configure(connection)):
                 upgrade()
                 upgrade_snapshots()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject new diagnostics against the documented upstream v0.12.5 baseline."""
+"""Reject new diagnostics against the documented upstream v0.13.0 baseline."""
 
 import collections
 import json

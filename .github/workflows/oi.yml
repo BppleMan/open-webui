@@ -77,6 +77,19 @@ jobs:
           docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test oi_restore
           docker exec -i "$OI_POSTGRES_CONTAINER" pg_restore -U oi_test -d oi_restore --exit-on-error < "$RUNNER_TEMP/oi-pg.dump"
           DATABASE_URL=postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_restore python scripts/oi/postgres-acceptance.py verify
+      - name: Official v0.13.0 and OI migration branch merge
+        env:
+          OI_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+          DATA_DIR: ${{ runner.temp }}/oi-upgrade-data
+          WEBUI_SECRET_KEY: oi-ci-synthetic-key
+          ENABLE_DB_MIGRATIONS: 'false'
+          USE_SLIM_DOCKER: 'true'
+          PYTHONPATH: backend
+        run: |
+          for seed in empty oi7 upstream; do
+            docker exec "$OI_POSTGRES_CONTAINER" createdb -U oi_test "oi_upgrade_$seed"
+            DATABASE_URL="postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_upgrade_$seed" python scripts/oi/upstream-v0130-migration.py "$seed"
+          done
       - name: HTTP, authenticated Realtime and pgvector acceptance
         env:
           PGVECTOR_DB_URL: postgresql://oi_test:oi-synthetic-only@127.0.0.1:55432/oi_vector

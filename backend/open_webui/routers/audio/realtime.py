@@ -579,7 +579,15 @@ async def realtime_call(ws: WebSocket):
                     await validate_bridge_access(ws.app, token, redis, model_id, ledger)
                     await ws.send_json({'type': 'bridge.pong'})
                     continue
-                command = protocol.command(event)
+                try:
+                    command = protocol.command(event)
+                except (ValueError, TypeError):
+                    if not isinstance(event, dict) or event.get('type') != 'conversation.item.truncate':
+                        raise
+                    await ws.send_json(
+                        {'type': 'bridge.error', 'message': 'Invalid audio truncation request', 'fatal': False}
+                    )
+                    continue
                 if event['type'] == 'bridge.result':
                     protocol.requested.add(f'result:{event["call_id"]}')
                 for item in command if isinstance(command, list) else [command]:

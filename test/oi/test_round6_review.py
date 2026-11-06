@@ -386,6 +386,7 @@ async def test_explicit_nonvision_target_rejects_generated_image_history(monkeyp
     from fastapi import HTTPException
     from open_webui.utils import middleware
 
+    monkeypatch.setattr(middleware, 'get_filter_functions', AsyncMock(return_value=[]))
     monkeypatch.setattr(middleware.Config, 'get', AsyncMock(return_value=None))
     monkeypatch.setattr(middleware, 'get_event_emitter', AsyncMock(return_value=AsyncMock()))
     monkeypatch.setattr(middleware, 'get_event_call', AsyncMock(return_value=None))

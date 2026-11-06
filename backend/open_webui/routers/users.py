@@ -72,11 +72,7 @@ def merge_user_ui_settings(defaults: dict, settings: dict) -> dict:
     return merged
 
 
-############################
-# GetUsers
-# A house is only as strong as its care for the least of
-# its members. Let none here be counted without being served.
-############################
+# Get Users
 
 
 PAGE_ITEM_COUNT = 30
@@ -164,9 +160,7 @@ async def search_users(
     )
 
 
-############################
 # User Groups
-############################
 
 
 @router.get('/groups')
@@ -176,9 +170,7 @@ async def get_user_groups(
     return await user_groups_response(user.id, include_inherited, db)
 
 
-############################
 # User Permissions
-############################
 
 
 @router.get('/permissions')
@@ -192,9 +184,7 @@ async def get_user_permissisions(
     return user_permissions
 
 
-############################
 # User Default Permissions
-############################
 class WorkspacePermissions(BaseModel):
     models: bool = False
     knowledge: bool = False
@@ -259,6 +249,7 @@ class ChatPermissions(BaseModel):
     call: bool = True
     multiple_models: bool = True
     temporary: bool = True
+    side_chat: bool = False
     temporary_enforced: bool = False
 
 
@@ -434,6 +425,12 @@ async def get_default_user_permissions(request: Request, user=Depends(get_admin_
 async def update_default_user_permissions(request: Request, form_data: UserPermissions, user=Depends(get_admin_user)):
     user_permissions = form_data.model_dump(by_alias=True)
     await Config.upsert({'user.permissions': user_permissions})
+    from open_webui.socket.main import sio
+
+    try:
+        await sio.emit('access:updated', {})
+    except Exception:
+        log.exception('Unable to refresh default user permissions')
     await publish_event(
         request,
         EVENTS.USER_PERMISSIONS_UPDATED,
@@ -458,9 +455,7 @@ async def get_default_user_permissions_defaults(user=Depends(get_admin_user)):
     }
 
 
-############################
-# GetUserSettingsBySessionUser
-############################
+# Get User Settings By Session User
 
 
 @router.get('/user/settings', response_model=UserSettings | None)
@@ -486,9 +481,7 @@ async def get_user_settings_by_session_user(
     return UserSettings.model_validate(user_settings)
 
 
-############################
-# UpdateUserSettingsBySessionUser
-############################
+# Update User Settings By Session User
 
 
 @router.post('/user/settings/update', response_model=UserSettings)
@@ -568,9 +561,7 @@ async def update_user_settings_by_session_user(
         )
 
 
-############################
-# GetUserStatusBySessionUser
-############################
+# Get User Status By Session User
 
 
 @router.get('/user/status')
@@ -587,9 +578,7 @@ async def get_user_status_by_session_user(
     return user
 
 
-############################
-# UpdateUserStatusBySessionUser
-############################
+# Update User Status By Session User
 
 
 @router.post('/user/status/update')
@@ -620,9 +609,7 @@ async def update_user_status_by_session_user(
     )
 
 
-############################
-# GetUserInfoBySessionUser
-############################
+# Get User Info By Session User
 
 
 @router.get('/user/info', response_model=dict | None)
@@ -639,9 +626,7 @@ class UserVariablesResponse(BaseModel):
     variables: dict[str, str] = Field(default_factory=dict)
 
 
-############################
-# GetUserVariablesBySessionUser
-############################
+# Get User Variables By Session User
 
 
 @router.get('/user/variables', response_model=UserVariablesResponse)
@@ -649,9 +634,7 @@ async def get_user_variables_by_session_user(user=Depends(get_verified_user)):
     return UserVariablesResponse(variables=normalize_user_variables(user.variables))
 
 
-############################
-# UpdateUserVariablesBySessionUser
-############################
+# Update User Variables By Session User
 
 
 @router.post('/user/variables/update', response_model=UserVariablesResponse)
@@ -677,9 +660,7 @@ async def update_user_variables_by_session_user(
     return UserVariablesResponse(variables=variables)
 
 
-############################
-# UpdateUserInfoBySessionUser
-############################
+# Update User Info By Session User
 
 
 @router.post('/user/info/update', response_model=dict | None)
@@ -704,9 +685,7 @@ async def update_user_info_by_session_user(  # PATCH-style merge
     return updated.info
 
 
-############################
-# GetUserUsageBySessionUser
-############################
+# Get User Usage By Session User
 
 
 @router.get('/usage', response_model=UserUsageResponse)
@@ -783,9 +762,7 @@ async def get_user_usage_by_session_user(
     )
 
 
-############################
-# GetUserById
-############################
+# Get User By Id
 
 
 class UserActiveResponse(UserStatus):
@@ -852,9 +829,7 @@ async def get_user_oauth_sessions_by_id(
         )
 
 
-############################
-# GetUserProfileImageById
-############################
+# Get User Profile Image By Id
 
 
 @router.get('/{user_id}/profile/image')
@@ -899,9 +874,7 @@ async def get_user_profile_image_by_id(user_id: str, user=Depends(get_verified_u
         )
 
 
-############################
-# GetUserActiveStatusById
-############################
+# Get User Active Status By Id
 
 
 @router.get('/{user_id}/active', response_model=dict)
@@ -913,9 +886,7 @@ async def get_user_active_status_by_id(
     }
 
 
-############################
-# UpdateUserById
-############################
+# Update User By Id
 
 
 @router.post('/{user_id}/sessions/revoke', response_model=bool)
@@ -1121,9 +1092,7 @@ async def update_user_by_id(
     )
 
 
-############################
-# DeleteUserById
-############################
+# Delete User By Id
 
 
 @router.delete('/{user_id}', response_model=bool)
@@ -1171,9 +1140,7 @@ async def delete_user_by_id(
     )
 
 
-############################
-# GetUserGroupsById
-############################
+# Get User Groups By Id
 
 
 @router.get('/{user_id}/groups')
@@ -1186,9 +1153,7 @@ async def get_user_groups_by_id(
     return await user_groups_response(user_id, include_inherited, db)
 
 
-############################
-# GetUserPreview
-############################
+# Get User Preview
 
 
 @router.get('/{user_id}/preview')
