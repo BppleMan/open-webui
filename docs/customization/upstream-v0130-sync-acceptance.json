@@ -1,7 +1,7 @@
 {
   "requirement": "R77",
   "prototype": "P62",
-  "status": "candidate_local_checks_passed",
+  "status": "verified_on_isolated_preview",
   "baseline": "cd4755f3253d61cd4a9fc9a609587d700112acd7",
   "upstream": {
     "from_tag": "v0.12.5",
@@ -16,17 +16,17 @@
     "CTRL-PRE-01": {
       "baseline": "cd4755f32",
       "implementation": "fixed",
-      "verification": "synthetic regressions passed; full controller review pending"
+      "verification": "independently closed on synchronized source; historical report retained"
     },
     "CTRL-PRE-02": {
       "baseline": "cd4755f32",
       "implementation": "fixed",
-      "verification": "synthetic regressions passed; full controller review pending"
+      "verification": "independently closed on synchronized source; historical report retained"
     },
     "CTRL-PRE-03": {
       "baseline": "cd4755f32",
       "implementation": "fixed",
-      "verification": "synthetic regressions passed; full controller review pending"
+      "verification": "independently closed on synchronized source; historical report retained"
     }
   },
   "checks": {
@@ -42,24 +42,93 @@
       "custom_source_used_for_baseline": false
     },
     "real_supplier_requests": 0,
-    "backend": 2088,
-    "frontend": 93,
+    "backend": 2103,
+    "frontend": 95,
     "type_new": 0,
     "remaining_diagnostics": 5716,
-    "build": "passed",
+    "build": "passed on pinned exact source SHA",
     "sqlite_migration_paths": [
       "empty",
       "oi7",
       "upstream"
     ],
-    "HTTP": "passed: all native suites plus saved/temporary parent SideChat, copy, independent ledger and temporary body privacy",
-    "postgres_merge_paths": "pending",
-    "built_in_browser": "pending"
+    "HTTP": "exact-source CI native HTTP/WS, pgvector, draft, cost/archive suites passed",
+    "postgres_merge_paths": [
+      "empty",
+      "oi7",
+      "upstream"
+    ],
+    "built_in_browser": "passed; receipt truncation close/cancel, side stop/followup, copy/save/draft, comment inbox and mobile editor; new picker selection and clear",
+    "postgres_restore": "all three synthetic entry paths restored with matching hashes",
+    "fresh_preview_restore": {
+      "tables_before": 63,
+      "tables_after": 66,
+      "attachments": 3,
+      "original_business_fingerprints_preserved": 62,
+      "schema": "oi0000000008"
+    },
+    "controller_review": {
+      "round": 3,
+      "fixed_source": "15c01e6e7c0b7d87f2d83db4210dd1fe4d4a59a3",
+      "independent_lifecycle_matrix": 26,
+      "confirmed_open_findings": 0
+    },
+    "post_deploy_browser": "passed: parent native context, accepted side cancellation, native followup and independent ledger",
+    "helm": {
+      "dependency_refresh": "passed",
+      "pinned_dependency_bytes": "unchanged",
+      "lint": "passed",
+      "render": "passed",
+      "render_diff": "staging image only"
+    },
+    "cancelled_native_policy": "Independent post-deploy review confirms incomplete current envelope is retained but not replayed; prior and subsequently completed signatures pass controls",
+    "live_migration": {
+      "original_business_tables": 62,
+      "entire_tables_unchanged": 61,
+      "config_existing_rows": "all unchanged",
+      "config_added_upstream_default_keys": [
+        "comments.enable",
+        "notifications.enable",
+        "knowledge.max_file_count",
+        "knowledge.max_file_size",
+        "knowledge.max_upload_count"
+      ]
+    },
+    "post_deploy_supplier_requests": 5
   },
   "deployment": {
-    "status": "pending",
+    "status": "deployed_and_verified",
     "scope": "isolated_preview_only",
-    "previous_R76_preview": "verified; unchanged"
+    "previous_R76_preview": "verified; unchanged",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-15c01e6e7c0b7d87f2d83db4210dd1fe4d4a59a3@sha256:1a1d56347ba7a08b756f6b34f55f7baa69a06d0851ca44693b02a81ddecbafbd",
+    "gitops_commit": "2614006fb11fb7c421d43b18874fe9360376fe12",
+    "argocd": "Synced/Healthy",
+    "pod_restarts": 0,
+    "schema": "oi0000000008",
+    "original_attachments_unchanged": 3,
+    "production_unchanged": true
   },
-  "review_status": "awaiting controller review of fixed candidate; publication gated"
+  "review_status": "independent fixed-source review passed; no open confirmed P0/P1/P2",
+  "source_commit": "15c01e6e7c0b7d87f2d83db4210dd1fe4d4a59a3",
+  "ci": "https://github.com/BppleMan/open-webui/actions/runs/42306146813",
+  "post_sync_findings": {
+    "CR15-01..04": "independently closed",
+    "CR16-01": "independently closed; actual browser lost-receipt cancellation passed"
+  },
+  "limitations": [
+    "R50: isolated prelaunch only; no production OI/CPA, route, maintenance or business DB changes.",
+    "No real supplier requests; R59 readable-summary gap, actual Ollama/official direct/provider tool/media limitations remain.",
+    "5716 upstream type diagnostics remain; incremental gate is not a clean typecheck.",
+    "Existing v1 archive scope excludes comments, reactions and notifications.",
+    "Full physical-device and real-provider acceptance is not claimed.",
+    "Long-draft browser reload normalized one trailing space; unchanged draft retention across side chat and temporary save was verified separately."
+  ],
+  "cleanup": {
+    "local_fixture_servers_stopped": true,
+    "preview_fixture_stopped": true,
+    "preview_connection_disabled": true,
+    "test_preferences_restored": true,
+    "global_direct_connections_unchanged": true,
+    "local_owned_postgres_removed": true
+  }
 }

@@ -178,3 +178,6 @@ See review-round14-remediation.md and its separate acceptance record. Preserve c
 ### R77 / P62 — Official v0.13.0 synchronization
 
 Merge official capabilities with OI native state, permission, ledger and draft contracts. Use the independent pristine type baseline and new Alembic branch merge. See upstream-v0130-sync.md and its acceptance record for validation and deployment status.
+
+
+2026-11-07: R77/P62 is verified on isolated preview. Official v0.13.0 is integrated at application source `15c01e6e7c0b7d87f2d83db4210dd1fe4d4a59a3`. Three independent review rounds closed the confirmed compatibility findings. Exact-source CI passed 2103 backend / 95 frontend cases and the integration suites; pinned-source build, zero new type diagnostics, three PostgreSQL migration/restore entry paths and built-in-browser interactions passed. A fresh preview clone migrated OI7 to OI8 with 62 original business-table fingerprints preserved; three existing attachments remain unchanged. GitOps `2614006fb11fb7c421d43b18874fe9360376fe12` delivered the immutable image with Synced/Healthy status and zero restarts. R50 and all documented provider/physical-device limits remain. See upstream-v0130-sync-acceptance.json.

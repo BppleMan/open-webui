@@ -111,3 +111,5 @@ R70/P55 code and exact-source CI are verified (710 backend/79 frontend). The req
 - R76/P61 is verified on isolated preview. Read review-round14-remediation-acceptance.json for exact source/CI/image and remaining limits. Public/private top-level phase and source indexes now match the latest remediation. Prior review reports remain historical. Keep R50/U49/R59 and built-in browser only.
 
 - R77/P62 synchronizes official v0.13.0 with OI contracts. Read upstream-v0130-sync.md and its acceptance record. Preserve the OI8 merge lineage, authenticated SideChat/copy state, comments ACL, explicit compaction failure policy and separate MCP UI context. Fresh controller review is still required. R50/U49/R59 and built-in browser only remain.
+
+- R77/P62 is verified on isolated preview at official v0.13.0. Read upstream-v0130-sync-acceptance.json for exact reviewed source/CI/image/schema and remaining limits. Preserve OI8 migration lineage, side-task cleanup despite lost receipts, safe native context, notification permissions and original evidence. R50/U49/R59 and built-in browser only remain.
