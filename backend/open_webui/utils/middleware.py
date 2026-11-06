@@ -4064,6 +4064,8 @@ async def non_streaming_chat_response_handler(response, ctx):
     save_to_chat = is_saved_chat_id(chat_id)
     continuing = bool(metadata.get('assistant_message_id'))
 
+    has_final_output = bool(response_data.get('choices') or response_data.get('output') or continuing)
+
     if event_emitter:
         try:
             if 'error' in response_data:
@@ -4082,11 +4084,11 @@ async def non_streaming_chat_response_handler(response, ctx):
                         metadata['message_id'],
                         {
                             'error': {'content': error},
-                            'done': True,
+                            'done': not has_final_output,
                             'meta': {'response_ended_at': time.time()},
                         },
                     )
-                if isinstance(error, str) or isinstance(error, dict):
+                if not has_final_output and (isinstance(error, str) or isinstance(error, dict)):
                     await event_emitter(
                         {
                             'type': 'chat:message:error',
@@ -4210,21 +4212,6 @@ async def non_streaming_chat_response_handler(response, ctx):
                             (ctx.get('assistant_message') or {}).get('usage'), usage or {'incomplete': True}
                         )
                     finish_reason = choices[0].get('finish_reason') if choices else None
-                    await event_emitter(
-                        {
-                            'type': 'chat:completion',
-                            'data': {
-                                **(response_data if continuing else {}),
-                                'done': True,
-                                'usage': usage,
-                                'output': response_output,
-                                **terminal_fields,
-                                'title': title,
-                                **({'finish_reason': finish_reason} if finish_reason else {}),
-                            },
-                        }
-                    )
-
                     # Save message in the database
                     finish_reason = choices[0].get('finish_reason') if choices else None
 
@@ -4242,6 +4229,22 @@ async def non_streaming_chat_response_handler(response, ctx):
                                 **({'usage': usage} if usage else {}),
                             },
                         )
+
+                    await event_emitter(
+                        {
+                            'type': 'chat:completion',
+                            'data': {
+                                **(response_data if continuing else {}),
+                                'done': True,
+                                'usage': usage,
+                                'output': response_output,
+                                **terminal_fields,
+                                **({'error': response_data['error']} if response_data.get('error') else {}),
+                                'title': title,
+                                **({'finish_reason': finish_reason} if finish_reason else {}),
+                            },
+                        }
+                    )
 
                     if not response_data.get('error'):
                         await publish_chat_finished_event(request, user, metadata, title, content, response_output)
@@ -4402,6 +4405,7 @@ async def streaming_chat_response_handler(response, ctx):
             usage = normalize_usage((message or {}).get('usage') or {}) if existing_output else None
             finish_reason = None
             terminal_fields = {}
+            terminal_error = None
             last_response_id = None
 
             def full_output():
@@ -4540,6 +4544,8 @@ async def streaming_chat_response_handler(response, ctx):
                     nonlocal current_usage
                     nonlocal finish_reason
                     nonlocal terminal_fields
+                    nonlocal terminal_error
+                    terminal_error = None
                     terminal_fields = {}
                     finish_reason = None
                     nonlocal output
@@ -4863,6 +4869,7 @@ async def streaming_chat_response_handler(response, ctx):
                                             response_metadata['usage'] = usage
 
                                         if response_metadata.get('error'):
+                                            terminal_error = response_metadata['error']
                                             log.error(
                                                 'Provider returned error (streaming): %s', response_metadata['error']
                                             )
@@ -6306,6 +6313,7 @@ async def streaming_chat_response_handler(response, ctx):
                     'title': title,
                     **({'finish_reason': finish_reason} if finish_reason else {}),
                     **terminal_fields,
+                    **({'error': terminal_error} if terminal_error else {}),
                     **({'usage': usage} if usage else {}),
                 }
 
@@ -6326,14 +6334,15 @@ async def streaming_chat_response_handler(response, ctx):
                     )
 
                 await clear_response_stream(request.app.state.redis, response_stream_task_id)
-                await publish_chat_finished_event(
-                    request,
-                    user,
-                    metadata,
-                    title,
-                    get_output_text(current_output) if continuing else ''.join(content_parts),
-                    current_output,
-                )
+                if not terminal_error:
+                    await publish_chat_finished_event(
+                        request,
+                        user,
+                        metadata,
+                        title,
+                        get_output_text(current_output) if continuing else ''.join(content_parts),
+                        current_output,
+                    )
 
                 await event_emitter(
                     {
@@ -6352,7 +6361,8 @@ async def streaming_chat_response_handler(response, ctx):
                     **terminal_fields,
                 }
                 await outlet_filter_handler(ctx)
-                await background_tasks_handler(ctx)
+                if not terminal_error:
+                    await background_tasks_handler(ctx)
             except asyncio.CancelledError:
                 log.warning('Task was cancelled!')
 

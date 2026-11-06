@@ -12,3 +12,5 @@ Filtered tool IDs must remain compatible with repeated provider IDs. Invisible t
 The original 180 review cases pass unchanged. The expanded regression suite contains 305 cases; full local checks pass 1450 backend and 84 frontend cases, zero new type diagnostics (5695 upstream diagnostics remain), and the production build. Actual HTTP/socket/database checks and built-in-browser question/reload/followup and failure/truncation presentation checks pass. Exact-source CI and isolated-preview publication are separate gates in the acceptance record.
 
 The three reviewed roots predate R73 according to the review's complete-backend comparison; this work does not relabel them as R73 regressions. Original review evidence remains private and unchanged. R50/U49/R59 apply; no real supplier requests.
+
+Terminal delivery is also verified: persist the complete result before sending one final completion event, retaining partial output and errors together. Failed Responses do not trigger success notifications or background followups.

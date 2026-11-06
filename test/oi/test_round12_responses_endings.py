@@ -31,6 +31,15 @@ async def test_responses_terminal_state_reaches_message_and_ledger(
 ):
     saved, events, ctx = context(monkeypatch, 'openai-responses')
     ctx['form_data']['stream'] = streaming
+    original_emit = ctx['event_emitter']
+
+    async def after_persist(event):
+        if event['type'] == 'chat:completion' and event.get('data', {}).get('done'):
+            assert saved.get('done') and saved.get('output') == event['data']['output']
+            assert saved.get('response_status') == status
+        await original_emit(event)
+
+    ctx['event_emitter'] = after_persist
 
     @asynccontextmanager
     async def session():
@@ -124,3 +133,11 @@ async def test_responses_terminal_state_reaches_message_and_ledger(
         e['data'] for e in reversed(events) if e['type'] == 'chat:completion' and e.get('data', {}).get('done')
     )
     assert final['output'] == saved['output'] and final['response_status'] == status
+    terminal_events = [
+        e
+        for e in events
+        if e['type'] == 'chat:message:error' or (e['type'] == 'chat:completion' and e.get('data', {}).get('done'))
+    ]
+    assert len(terminal_events) == 1
+    if status == 'failed':
+        assert final.get('error')

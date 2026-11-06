@@ -3688,7 +3688,8 @@
       "built_in_browser": "passed: two answers, reload and next turn; Responses incomplete and failed output, tokens and warnings; failed reload",
       "original_evidence_files_unchanged": 360,
       "real_supplier_requests": 0,
-      "tool_media_boundary": "16 opaque-only/image-result cases added; initial boundary fix placed opaque call before flattened tool images; corrected to retain result+media before native terminal"
+      "tool_media_boundary": "16 opaque-only/image-result cases added; initial boundary fix placed opaque call before flattened tool images; corrected to retain result+media before native terminal",
+      "terminal_event_order": "24 cases verify exactly one final completion after persistence, carrying partial output, error and usage"
     },
     "deployment": {
       "status": "pending",
