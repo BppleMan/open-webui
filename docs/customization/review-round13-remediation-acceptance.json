@@ -1,48 +1,83 @@
 {
-	"requirement": "R75",
-	"prototype": "P60",
-	"status": "local_verified",
-	"baseline": "376e8a1d3910b19ee6ddfe289d725b02bb9f38f5",
-	"findings": {
-		"CR13-01": {
-			"implementation": "fixed",
-			"verification": "original_and_expanded_regressions_passed"
-		},
-		"CR13-02": {
-			"implementation": "fixed",
-			"verification": "original_and_expanded_regressions_passed"
-		},
-		"CR13-03": {
-			"implementation": "fixed",
-			"verification": "original_and_expanded_regressions_passed"
-		},
-		"CR13-04": {
-			"implementation": "fixed",
-			"verification": "original_and_expanded_regressions_passed"
-		}
-	},
-	"checks": {
-		"independent_before": {
-			"failed": 82,
-			"passed": 56
-		},
-		"expanded_first": {
-			"passed": 220
-		},
-		"real_supplier_requests": 0,
-		"original_cases": 138,
-		"expanded_regression_cases": 223,
-		"backend": 1673,
-		"frontend": 88,
-		"new_type_diagnostics": 0,
-		"existing_upstream_diagnostics": 5695,
-		"production_build": "passed",
-		"HTTP": "passed",
-		"built_in_browser": "passed: failure partial content, Continue, reload, separate historical failure and successful call"
-	},
-	"deployment": {
-		"status": "pending",
-		"scope": "isolated_preview_only",
-		"previous_R74_preview": "verified; unchanged"
-	}
+  "requirement": "R75",
+  "prototype": "P60",
+  "status": "verified_on_isolated_preview",
+  "baseline": "376e8a1d3910b19ee6ddfe289d725b02bb9f38f5",
+  "findings": {
+    "CR13-01": {
+      "implementation": "fixed",
+      "verification": "original_and_expanded_regressions_passed"
+    },
+    "CR13-02": {
+      "implementation": "fixed",
+      "verification": "original_and_expanded_regressions_passed"
+    },
+    "CR13-03": {
+      "implementation": "fixed",
+      "verification": "original_and_expanded_regressions_passed"
+    },
+    "CR13-04": {
+      "implementation": "fixed",
+      "verification": "original_and_expanded_regressions_passed"
+    }
+  },
+  "checks": {
+    "independent_before": {
+      "failed": 82,
+      "passed": 56
+    },
+    "expanded_first": {
+      "passed": 220
+    },
+    "real_supplier_requests": 0,
+    "original_cases": 138,
+    "expanded_regression_cases": 223,
+    "backend": 1673,
+    "frontend": 88,
+    "new_type_diagnostics": 0,
+    "existing_upstream_diagnostics": 5695,
+    "production_build": "passed",
+    "HTTP": "passed",
+    "built_in_browser": "passed: failure partial content, Continue, reload, separate historical failure and successful call",
+    "ci": "passed on exact source",
+    "fresh_restore": {
+      "tables": 63,
+      "attachments": 3,
+      "schema": "oi0000000007"
+    },
+    "original_evidence_files_unchanged": 477,
+    "post_deploy_browser": "passed: failed stream tool suppression, Continue and reload, separate call diagnostics, restored archive warning",
+    "helm": {
+      "dependency_refresh": "timed_out_45s",
+      "pinned_dependency_bytes": "unchanged",
+      "lint": "passed",
+      "render": "passed",
+      "render_diff": "staging image only"
+    }
+  },
+  "deployment": {
+    "status": "deployed_and_verified",
+    "scope": "isolated_preview_only",
+    "previous_R74_preview": "verified; unchanged",
+    "image": "ghcr.io/bppleman/open-webui-oi:sha-a368a8150a428053c142f2a534e3686131321dc2@sha256:9dc82674db9f544089f6a7d40987ba2189b8c1eb1f9c3479561a8e35442ea469",
+    "gitops_commit": "a45cc468ad21f23d30204b0451a50fe95a1cba16",
+    "argocd": "Synced/Healthy",
+    "pod_restarts": 0,
+    "original_attachments_unchanged": 3,
+    "production_unchanged": true
+  },
+  "source_commit": "a368a8150a428053c142f2a534e3686131321dc2",
+  "ci": "https://github.com/BppleMan/open-webui/actions/runs/42245684495",
+  "limitations": [
+    "No production OI/CPA, route or business database changes.",
+    "No real supplier requests; R59 actual readable-summary gap remains open.",
+    "5695 upstream type diagnostics remain.",
+    "Tool cancellation coverage includes synthetic parallel delegates; no external tool side effects were executed."
+  ],
+  "cleanup": {
+    "loopback_fixtures_stopped": true,
+    "test_connection_disabled": true,
+    "test_user_preferences_restored": true,
+    "global_direct_connections_unchanged": true
+  }
 }
