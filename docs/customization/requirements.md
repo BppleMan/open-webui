@@ -248,3 +248,8 @@ Repair CR10-01..04 after independent reproduction. Stream filters must govern re
 
 
 2026-11-06: R72/P57 is verified on isolated preview. Source `6e4f1500d9d0a32810286f22af3b1181be221951` passed 1017 backend / 79 frontend cases, zero new type diagnostics, the original 104 review cases, 100 added combination cases and 200 deterministic partitions. Real HTTP/socket/database fixtures and built-in-browser tag/Continue/filter/reload paths passed. Exact-source CI and GitOps `4cd29f43a41c60d7d837dc38a5d4578b57bb7882` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round10-remediation-acceptance.json.
+
+
+## R73 / U72 — Eleventh review remediation
+
+Repair incomplete-tool cancellation, controlled dispatch normalization/splitting and authenticated temporary Continue cancellation. Preserve strict validation for replayable tools, prior valid calls/signatures, approvals and execution deduplication. Keep R50/U49/R59, original review evidence and built-in browser only.

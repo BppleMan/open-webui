@@ -1,3 +1,4 @@
+import copy
 from collections.abc import Callable
 
 from open_webui.utils.json_codec import JSONCodec
@@ -113,6 +114,10 @@ def stage_ask_user_tool_calls(
             'arguments': arguments,
             'status': 'completed' if error else 'pending',
         }
+        if arguments != raw_arguments:
+            item['provider_function'] = copy.deepcopy(
+                tool_call.get('provider_function') or tool_call.get('function') or {}
+            )
 
         existing_item = next(
             (

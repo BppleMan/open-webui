@@ -1,0 +1,48 @@
+{
+	"requirement": "R73",
+	"prototype": "P58",
+	"status": "locally_verified_ci_and_preview_pending",
+	"baseline": "6eef3cad8fa5784894a590f899a1749dddb9737f",
+	"findings": {
+		"CR11-01": {
+			"implementation": "fixed",
+			"verification": "original_and_expanded_regressions_passed"
+		},
+		"CR11-02": {
+			"implementation": "fixed",
+			"verification": "original_and_expanded_regressions_passed"
+		},
+		"CR11-03": {
+			"implementation": "fixed",
+			"verification": "original_and_expanded_regressions_passed"
+		}
+	},
+	"checks": {
+		"before": {
+			"failed": 18,
+			"passed": 46
+		},
+		"original_cases": 64,
+		"expanded_regression_cases": 128,
+		"backend": 1145,
+		"frontend": 81,
+		"new_type_diagnostics": 0,
+		"existing_upstream_diagnostics": 5695,
+		"production_build": "passed",
+		"HTTP": "passed: saved partial-tool cancellation, ask_user resolution and temporary Continue cancellation",
+		"built_in_browser": "passed: temporary Continue/Stop/next turn, ask_user answer/automatic resume/reload",
+		"original_evidence_files_unchanged": 272,
+		"real_supplier_requests": 0
+	},
+	"deployment": {
+		"status": "pending",
+		"scope": "isolated_preview_only",
+		"previous_R72_preview": "verified; not regressed to pending"
+	},
+	"limitations": [
+		"R50: no production OI/CPA, routes or business database migration.",
+		"R59 actual CPA readable thought-summary gap remains; no paid probes.",
+		"A malformed provider call split into multiple executions uses canonical replay for that call; its unmodified raw envelope remains private and non-replayable.",
+		"Legacy envelopes without consumer projections retain conservative handling."
+	]
+}

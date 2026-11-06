@@ -124,9 +124,16 @@ def response_state(request, metadata, user, projection):
 def wrap_emitter(emitter, request, metadata, user):
     async def emit(event):
         data = event.get('data') or {}
-        if event.get('type') == 'chat:completion' and data.get('done') and isinstance(data.get('output'), list):
+        cancelled = event.get('type') == 'chat:tasks:cancel'
+        terminal = cancelled or (event.get('type') == 'chat:completion' and data.get('done'))
+        if terminal and isinstance(data.get('output'), list):
             capsule = response_state(request, metadata, user, data['output'])
             if capsule:
+                if cancelled:
+                    # Older clients read capsules only on completion events.
+                    # Send state only (no done/audio side effects), then the
+                    # authoritative cancel snapshot for both client versions.
+                    await emitter({'type': 'chat:completion', 'data': {'oi_native_state': capsule}})
                 event = {**event, 'data': {**data, 'oi_native_state': capsule}}
         return await emitter(event)
 

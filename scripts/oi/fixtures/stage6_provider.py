@@ -1,6 +1,8 @@
 """Loopback synthetic native protocols with captured outbound payloads."""
 
 import json
+import asyncio
+import copy
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +30,7 @@ async def generate(protocol: str, path: str, request: Request):
         {
             'protocol': protocol,
             'path': path,
-            'body': b,
+            'body': copy.deepcopy(b),
             'rp': {k: request.headers.get(k) for k in ['x-rp-client', 'x-rp-user-id', 'x-rp-chat-id']},
         }
     )
@@ -38,12 +40,28 @@ async def generate(protocol: str, path: str, request: Request):
         b['fixture_case'] = 'round10_tags'
     elif 'R72_FILTER_STREAM' in fixture_prompt:
         b['fixture_case'] = 'round10_filter'
+    slow_continue = (
+        protocol in {'gemini', 'cpa-agy'}
+        and last_content.get('role') == 'model'
+        and 'R73 initial reply.' in fixture_prompt
+    )
+    if 'R73_TEMPORARY_NATIVE' in fixture_prompt:
+        b['fixture_case'] = 'r73_initial'
+    elif 'R73_ASK_USER' in fixture_prompt:
+        b['fixture_case'] = 'r73_ask'
+    slow_tools = b.get('fixture_case') == 'r73_partial_tool'
     if b.get('fixture_error'):
         return JSONResponse({'error': {'message': 'Synthetic limit'}}, 429, headers={'Retry-After': '5'})
     filter_fixture = b.get('fixture_case') == 'round10_filter' or (
         protocol == 'ollama' and 'Synthetic round10_filter' in str((b.get('messages') or [{}])[-1].get('content', ''))
     )
-    text = 'round10-original' if filter_fixture else 'Native stage6 fixture.'
+    text = (
+        'R73 initial reply.'
+        if b.get('fixture_case') == 'r73_initial'
+        else 'round10-original'
+        if filter_fixture
+        else 'Native stage6 fixture.'
+    )
     stream = b.get('stream', False) or 'streamGenerateContent' in path
     if protocol == 'openai-chat':
         body = {
@@ -221,13 +239,121 @@ async def generate(protocol: str, path: str, request: Request):
         frames = [body]
     else:
         return JSONResponse({'error': 'unsupported fixture'}, 404)
+    if b.get('fixture_case') == 'r73_ask' and protocol in {'gemini', 'cpa-agy'}:
+        arguments = {
+            'questions': [
+                {
+                    'id': 'route',
+                    'header': 'Route',
+                    'question': 'Choose a synthetic route.',
+                    'options': [
+                        {'label': 'North', 'description': 'Go north.'},
+                        {'label': 'South', 'description': 'Go south.'},
+                    ],
+                }
+            ]
+        }
+        body = {
+            'candidates': [
+                {
+                    'content': {
+                        'role': 'model',
+                        'parts': [
+                            {
+                                'functionCall': {'id': 'r73-ask', 'name': 'ask_user', 'args': arguments},
+                                'thoughtSignature': 'r73-ask-signature',
+                            }
+                        ],
+                    },
+                    'finishReason': 'STOP',
+                }
+            ]
+        }
+        frames = [body]
+    if slow_continue:
+        frames = [
+            {'candidates': [{'content': {'role': 'model', 'parts': [{'text': 'R73 partial continuation.'}]}}]},
+            {
+                'candidates': [
+                    {'content': {'role': 'model', 'parts': [{'text': ' completed.'}]}, 'finishReason': 'STOP'}
+                ]
+            },
+        ]
+    if slow_tools and protocol == 'openai-chat':
+        frames = [
+            {
+                'choices': [
+                    {'index': 0, 'delta': {'role': 'assistant', 'content': 'saved-prefix'}, 'finish_reason': None}
+                ]
+            },
+            {
+                'choices': [
+                    {
+                        'index': 0,
+                        'delta': {
+                            'tool_calls': [
+                                {
+                                    'index': 0,
+                                    'id': 'r73-partial',
+                                    'type': 'function',
+                                    'function': {'name': 'lookup', 'arguments': '{"q":"partial'},
+                                }
+                            ]
+                        },
+                        'finish_reason': None,
+                    }
+                ]
+            },
+        ]
+    elif slow_tools and protocol == 'openai-responses':
+        frames = [
+            {
+                'type': 'response.output_item.added',
+                'output_index': 0,
+                'item': {'type': 'message', 'id': 'm', 'role': 'assistant', 'content': []},
+            },
+            {
+                'type': 'response.content_part.added',
+                'item_id': 'm',
+                'output_index': 0,
+                'content_index': 0,
+                'part': {'type': 'output_text', 'text': '', 'annotations': []},
+            },
+            {
+                'type': 'response.output_text.delta',
+                'item_id': 'm',
+                'output_index': 0,
+                'content_index': 0,
+                'delta': 'saved-prefix',
+            },
+            {
+                'type': 'response.output_item.added',
+                'output_index': 1,
+                'item': {
+                    'type': 'function_call',
+                    'id': 'fc',
+                    'call_id': 'r73-partial',
+                    'name': 'lookup',
+                    'arguments': '',
+                    'status': 'in_progress',
+                },
+            },
+            {
+                'type': 'response.function_call_arguments.delta',
+                'item_id': 'fc',
+                'output_index': 1,
+                'delta': '{"q":"partial',
+            },
+        ]
     if not stream:
         return body
 
     async def chunks():
-        for frame in frames:
+        for index, frame in enumerate(frames):
             data = json.dumps(frame, ensure_ascii=False)
             yield (data + '\n') if protocol == 'ollama' else ('data: ' + data + '\n\n')
+            if (slow_continue and index == 0) or (slow_tools and index == len(frames) - 1):
+                await asyncio.sleep(30)
 
     return StreamingResponse(
         chunks(), media_type='application/x-ndjson' if protocol == 'ollama' else 'text/event-stream'

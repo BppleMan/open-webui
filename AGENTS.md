@@ -93,3 +93,5 @@ R70/P55 code and exact-source CI are verified (710 backend/79 frontend). The req
 - R72/P57 repairs four tenth-review boundaries. Read review-round10-remediation.md and its acceptance record. Keep actual consumer projections, per-call stream invalidation, all-protocol tool IDs and sparse Responses indexes. R71 preview is already accepted; R72 checks and delivery are separate. R50/U49/R59 and built-in browser only remain.
 
 - R72/P57 is verified on isolated preview. Read review-round10-remediation-acceptance.json for exact source/CI/image and remaining limits. Public/private top-level phase and source indexes now match the latest remediation. Prior review reports remain historical. Keep R50/U49/R59 and built-in browser only.
+
+- R73/P58 repairs three eleventh-review boundaries. Read review-round11-remediation.md and its acceptance record. Preserve strict replayable-tool checks, dispatch projections, prior signatures, approvals and authenticated cancellation snapshots. Built-in browser only; R50/U49/R59 remain.

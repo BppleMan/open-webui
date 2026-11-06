@@ -141,3 +141,8 @@ Record actual per-call consumer output after filters, tag parsing and media stor
 
 
 2026-11-06: R72/P57 is verified on isolated preview. Source `6e4f1500d9d0a32810286f22af3b1181be221951` passed 1017 backend / 79 frontend cases, zero new type diagnostics, the original 104 review cases, 100 added combination cases and 200 deterministic partitions. Real HTTP/socket/database fixtures and built-in-browser tag/Continue/filter/reload paths passed. Exact-source CI and GitOps `4cd29f43a41c60d7d837dc38a5d4578b57bb7882` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round10-remediation-acceptance.json.
+
+
+### R73 / P58 — Cancellation and controlled tool dispatch
+
+Skip undispatched partial tools before strict argument parsing. Record original provider functions and normalized execution projections at dispatch; represent split calls by their actual canonical executions. Refresh authenticated temporary capsules on cancellation and consume them atomically with final output. See review-round11-remediation.md and its acceptance record.

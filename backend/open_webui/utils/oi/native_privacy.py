@@ -65,6 +65,7 @@ def replay_envelope(envelope):
                 'generated_tool_ids',
                 'consumer_output',
                 'consumer_invalidated',
+                'consumer_dispatched',
             )
             if k in envelope
         },

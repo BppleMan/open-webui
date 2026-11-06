@@ -1698,6 +1698,9 @@
 					if (data?.output) {
 						message.output = data.output;
 					}
+					if (data?.oi_native_state) {
+						message.oi_native_state = data.oi_native_state;
+					}
 					if (!event.shared && event.message_id === history.currentId) {
 						taskIds = null;
 						// Set all response messages to done

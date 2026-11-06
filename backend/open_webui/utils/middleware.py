@@ -385,6 +385,8 @@ def merge_streamed_reasoning_details(target: list, details) -> None:
 
 def _split_tool_calls(
     tool_calls: list[dict],
+    *,
+    on_split=None,
 ) -> list[dict]:
     """Expand tool calls whose arguments contain multiple back-to-back JSON objects.
 
@@ -430,11 +432,16 @@ def _split_tool_calls(
         if len(split_arguments) <= 1:
             expanded.append(tool_call)
         else:
+            replacements = []
             for argument in split_arguments:
                 cloned = copy.deepcopy(tool_call)
                 cloned['id'] = f'call_{uuid4().hex[:24]}'
+                cloned.pop('provider_function', None)
                 cloned['function']['arguments'] = argument
                 expanded.append(cloned)
+                replacements.append(cloned)
+            if on_split is not None:
+                on_split(tool_call, replacements)
 
     return expanded
 
@@ -4316,6 +4323,7 @@ async def streaming_chat_response_handler(response, ctx):
             response_stream_task_id = metadata.get('task_id') or metadata.get('message_id')
 
             from open_webui.utils.output_tags import create_tag_output_handler
+            from open_webui.utils.oi.replay import record_consumer_output
 
             tag_output_handler = create_tag_output_handler()
 
@@ -4529,12 +4537,47 @@ async def streaming_chat_response_handler(response, ctx):
 
                     response_tool_calls = []
                     response_event_tool_ids = {}
+                    dispatch_split = False
                     from open_webui.utils.oi.replay import (
                         stream_event_projection,
                         invalidate_stream_native,
                         remap_stream_tool,
-                        record_consumer_output,
                     )
+
+                    def split_for_dispatch(calls):
+                        def replace_split(original, replacements):
+                            nonlocal dispatch_split
+                            dispatch_split = True
+                            index = next(
+                                (
+                                    i
+                                    for i, item in enumerate(output)
+                                    if item.get('type') == 'function_call' and item.get('call_id') == original.get('id')
+                                ),
+                                len(output),
+                            )
+                            old = output[index] if index < len(output) else {}
+                            items = [
+                                {
+                                    **old,
+                                    'type': 'function_call',
+                                    'id': call['id'],
+                                    'call_id': call['id'],
+                                    'name': call['function']['name'],
+                                    'arguments': call['function']['arguments'],
+                                    'status': 'completed',
+                                }
+                                for call in replacements
+                            ]
+                            for item in items:
+                                item.pop('provider_function', None)
+                            # The provider's single invalid JSON call cannot stand
+                            # for multiple executed calls. Keep only the valid
+                            # canonical executions in output, and invalidate this
+                            # native envelope without touching earlier calls.
+                            output[index : index + int(index < len(output))] = items
+
+                        return _split_tool_calls(calls, on_split=replace_split)
 
                     def canonical_response_tools(event):
                         # Responses item events and completed snapshots describe the
@@ -5455,7 +5498,7 @@ async def streaming_chat_response_handler(response, ctx):
                                         }
                                     )
                                     break
-                        tool_calls.append(_split_tool_calls(response_tool_calls))
+                        tool_calls.append(split_for_dispatch(response_tool_calls))
 
                     # Responses API path: extract function_call items from output
                     if not response_tool_calls and output:
@@ -5486,9 +5529,9 @@ async def streaming_chat_response_handler(response, ctx):
                                     }
                                 )
                         if responses_api_tool_calls:
-                            tool_calls.append(_split_tool_calls(responses_api_tool_calls))
+                            tool_calls.append(split_for_dispatch(responses_api_tool_calls))
 
-                    await record_consumer_output(request, metadata, response, output)
+                    await record_consumer_output(request, metadata, response, output, invalidate=dispatch_split)
                     await save_current_response_stream()
                     if not current_usage:
                         usage = {**(usage or {}), 'incomplete': True}
@@ -5602,6 +5645,7 @@ async def streaming_chat_response_handler(response, ctx):
                             response_tool_calls.append(tool_call)
 
                     ask_user_staged, ask_user_error = stage_ask_user_tool_calls(response_tool_calls, output, output_id)
+                    await record_consumer_output(request, metadata, active_stream_response, output, dispatched=True)
                     if ask_user_error:
                         response_tool_calls = [
                             tool_call
@@ -6295,8 +6339,6 @@ async def streaming_chat_response_handler(response, ctx):
                         await asyncio.shield(active_stream_response.body_iterator.aclose())
                     except (asyncio.CancelledError, Exception):
                         pass
-
-                from open_webui.utils.oi.replay import record_consumer_output
 
                 await record_consumer_output(request, metadata, active_stream_response, output)
 

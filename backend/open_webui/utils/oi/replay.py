@@ -63,6 +63,13 @@ def project_native_tools(native, canonical_tools, known_tools=None):
         return native
     canonical_tools = canonical_tools or []
     allowed = {tool['id']: tool for tool in canonical_tools}
+    if native.get('consumer_invalidated'):
+        native['consumer_output'] = [
+            item
+            for item in native.get('consumer_output', [])
+            if item.get('type') != 'function_call' or item.get('call_id') in allowed
+        ]
+        return native
     ids = {int(k): v for k, v in (native.get('generated_tool_ids') or {}).items()}
     slots = native_function_slots(native)
     ordered = canonical_tools if known_tools is None else known_tools
@@ -240,7 +247,10 @@ def invalidate_stream_native(request, response):
         state.replay_invalidated = True
 
 
-def consumer_atoms(output):
+REPLAYABLE_TOOL_STATUSES = {'completed', 'failed', 'rejected', 'pending', 'queued', 'requires_approval'}
+
+
+def consumer_atoms(output, *, excluded_tools=(), execution=False):
     """Ignore lifecycle metadata; retain generated text, reasoning and functions.
 
     Continue may join message items, but retains their ordered content parts.
@@ -269,7 +279,11 @@ def consumer_atoms(output):
                 ]
             )
         elif kind == 'function_call':
-            function = get_provider_function(item)
+            if item.get('call_id') in excluded_tools or item.get('status') not in REPLAYABLE_TOOL_STATUSES:
+                continue
+            function = get_provider_function(
+                {k: v for k, v in item.items() if k != 'provider_function'} if execution else item
+            )
             atoms.append(
                 ['function', item.get('call_id'), function['name'], json.loads(function.get('arguments') or '{}')]
             )
@@ -281,12 +295,17 @@ def consumer_atoms(output):
 def validate_consumer_projections(saved, calls):
     if not isinstance(saved.get('output'), list):
         return  # The immediate continuation is already server-owned.
-    actual = consumer_atoms(saved['output'])
+    excluded = {
+        item.get('call_id')
+        for item in saved['output']
+        if item.get('type') == 'function_call' and item.get('status') not in REPLAYABLE_TOOL_STATUSES
+    }
+    actual = consumer_atoms(saved['output'], excluded_tools=excluded)
     offset = 0
     for native in calls:
         if not isinstance(native.get('consumer_output'), list):
             continue
-        expected = consumer_atoms(native['consumer_output'])
+        expected = consumer_atoms(native['consumer_output'], excluded_tools=excluded)
         if not expected:
             continue
         match = next(
@@ -296,9 +315,14 @@ def validate_consumer_projections(saved, calls):
         if match is None:
             raise ValueError('Native continuation does not match the saved output')
         offset = match + len(expected)
+        if native.get('consumer_dispatched'):
+            actual_execution = consumer_atoms(saved['output'], excluded_tools=excluded, execution=True)
+            expected_execution = consumer_atoms(native['consumer_output'], excluded_tools=excluded, execution=True)
+            if actual_execution[match:offset] != expected_execution:
+                raise ValueError('Native tool execution does not match the saved output')
 
 
-async def record_consumer_output(request, metadata, response, output):
+async def record_consumer_output(request, metadata, response, output, *, dispatched=False, invalidate=False):
     """Bind the actual consumer result after filters, tags and media conversion.
 
     The native iterator has finished saving its raw response at this point. Update
@@ -316,6 +340,10 @@ async def record_consumer_output(request, metadata, response, output):
     if native is None:
         return
     native = {**native, 'consumer_output': copy.deepcopy(output)}
+    if dispatched:
+        native['consumer_dispatched'] = True
+    if invalidate:
+        native.update(replayable=False, consumer_invalidated=True)
     remember_native(request, metadata, native)
     chat_id, message_id = metadata.get('chat_id'), metadata.get('message_id')
     if not metadata.get('task') and is_saved_chat_id(chat_id) and message_id:
@@ -420,7 +448,7 @@ def replay_message(native, expected_tools=None):
             for item in native['consumer_output']
             if item.get('type') == 'function_call'
             and item.get('call_id')
-            and item.get('status') in {'completed', 'failed', 'rejected'}
+            and item.get('status') in REPLAYABLE_TOOL_STATUSES
         ]
         if tools:
             projected['tool_calls'] = tools
