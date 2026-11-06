@@ -272,3 +272,8 @@ Independently reproduce CR13-01..04, unify failure finalization, record each com
 
 
 2026-11-07: R75/P60 is verified on isolated preview. Source `a368a8150a428053c142f2a534e3686131321dc2` passed 1673 backend / 88 frontend cases, zero new type diagnostics, the original 138 review cases and 223 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser failure/Continue/reload, separate call diagnostics and archived terminal paths passed. Exact-source CI and GitOps `a45cc468ad21f23d30204b0451a50fe95a1cba16` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round13-remediation-acceptance.json.
+
+
+## R76 / U75 — Fourteenth review remediation
+
+Independently reproduce CR14-01..04 and repair per-call consumer finalization on transport errors, durable completed-tool results after postprocessing failures, persistence-before-cancellation publication, and unnecessary legacy transcript reads. Preserve strict valid-tool identity, prior calls, temporary capsules and R74 compatibility. Existing batch verification and isolated-preview acceptance remain authorized; no reply to the review thread, no real suppliers or production changes. R50/U49/R59 and built-in browser only remain.

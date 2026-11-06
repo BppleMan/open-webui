@@ -488,6 +488,58 @@ async def generate(protocol: str, path: str, request: Request):
             },
             body,
         ]
+    broken_tool_stream = (
+        protocol == 'openai-chat' and 'R76_BROKEN_TOOL' in fixture_prompt and last_content.get('role') == 'user'
+    )
+    if broken_tool_stream:
+        frames = [
+            {
+                'choices': [
+                    {
+                        'index': 0,
+                        'delta': {
+                            'role': 'assistant',
+                            'content': 'R76 kept partial.',
+                            'tool_calls': [
+                                {
+                                    'index': 0,
+                                    'id': 'r76-partial',
+                                    'type': 'function',
+                                    'function': {'name': 'r76_probe', 'arguments': '{"q":"unfinished'},
+                                }
+                            ],
+                        },
+                        'finish_reason': None,
+                    }
+                ]
+            }
+        ]
+    if protocol == 'openai-chat' and 'R76_CANCEL_TOOLS' in fixture_prompt and last_content.get('role') == 'user':
+        calls = [
+            {
+                'index': i,
+                'id': f'r76-tool-{i + 1}',
+                'type': 'function',
+                'function': {'name': 'r76_probe', 'arguments': json.dumps({'q': str(i + 1)})},
+            }
+            for i in range(2)
+        ]
+        body = {
+            'choices': [
+                {
+                    'index': 0,
+                    'message': {'role': 'assistant', 'content': 'R76 running tools.', 'tool_calls': calls},
+                    'finish_reason': 'tool_calls',
+                }
+            ],
+            'usage': {'prompt_tokens': 20, 'completion_tokens': 4},
+        }
+        frames = [
+            {
+                'choices': [{'index': 0, 'delta': body['choices'][0]['message'], 'finish_reason': 'tool_calls'}],
+                'usage': body['usage'],
+            }
+        ]
     if not stream:
         return body
 
@@ -495,6 +547,8 @@ async def generate(protocol: str, path: str, request: Request):
         for index, frame in enumerate(frames):
             data = json.dumps(frame, ensure_ascii=False)
             yield (data + '\n') if protocol == 'ollama' else ('data: ' + data + '\n\n')
+            if broken_tool_stream:
+                raise RuntimeError('Synthetic provider socket interrupted after partial arguments')
             if (slow_continue and index == 0) or (slow_tools and index == len(frames) - 1):
                 await asyncio.sleep(30)
 

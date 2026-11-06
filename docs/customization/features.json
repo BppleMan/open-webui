@@ -3814,5 +3814,65 @@
       "test_user_preferences_restored": true,
       "global_direct_connections_unchanged": true
     }
+  },
+  "review_round14_remediation": {
+    "requirement": "R76",
+    "prototype": "P61",
+    "status": "local_verified",
+    "baseline": "e9702aeddf43f6dab24c5a1e110138abfef42667",
+    "findings": {
+      "CR14-01": {
+        "implementation": "fixed",
+        "verification": "original_and_expanded_regressions_passed"
+      },
+      "CR14-02": {
+        "implementation": "fixed",
+        "verification": "original_and_expanded_regressions_passed"
+      },
+      "CR14-03": {
+        "implementation": "fixed",
+        "verification": "original_and_expanded_regressions_passed"
+      },
+      "CR14-04": {
+        "implementation": "fixed",
+        "verification": "original_and_expanded_regressions_passed"
+      }
+    },
+    "checks": {
+      "independent_before": {
+        "failed": 24,
+        "passed": 130
+      },
+      "real_supplier_requests": 0,
+      "original_cases": 154,
+      "expanded_regression_cases": 270,
+      "backend": 1943,
+      "frontend": 88,
+      "new_type_diagnostics": 0,
+      "existing_upstream_diagnostics": 5695,
+      "production_build": "passed",
+      "HTTP": "passed: real socket interruption and immediate followup after persisted cancellation",
+      "built_in_browser": {
+        "status": "passed",
+        "browser": "ChatGPT in-app browser",
+        "cases": [
+          "midstream network interruption preserves partial text; next turn succeeds",
+          "tool batch stop preserves first returned result; next turn and reload succeed"
+        ],
+        "captured_supplier_requests": 6,
+        "successful_scenario_requests": 4,
+        "initial_setup_attempt": {
+          "requests": 2,
+          "issue": "fixture tool absent from first outbound request; retained both unknown-tool results and evidence; selected checkbox was then verified before retry"
+        },
+        "screenshot": "browser-local-reload.png",
+        "real_supplier_requests": 0
+      }
+    },
+    "deployment": {
+      "status": "pending",
+      "scope": "isolated_preview_only",
+      "previous_R75_preview": "verified; unchanged"
+    }
   }
 }

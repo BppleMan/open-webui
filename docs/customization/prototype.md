@@ -379,3 +379,8 @@ Latch failed attempts before any tool dispatch or success side effects. Record e
 
 
 2026-11-07: R75/P60 is verified on isolated preview. Source `a368a8150a428053c142f2a534e3686131321dc2` passed 1673 backend / 88 frontend cases, zero new type diagnostics, the original 138 review cases and 223 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser failure/Continue/reload, separate call diagnostics and archived terminal paths passed. Exact-source CI and GitOps `a45cc468ad21f23d30204b0451a50fe95a1cba16` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round13-remediation-acceptance.json.
+
+
+## P61 — Durable exception outcomes and bounded compatibility reads
+
+Finalize each stream consumer after adapter cleanup on every exit. Separate tool execution success from attachment/event postprocessing failure and persist the result before terminal publication. Save the cancelled snapshot and native state before releasing queued work. Only nonempty assistant rows lacking terminal keys need legacy compatibility; user rows, empty new messages and explicit null values do not load the old transcript.

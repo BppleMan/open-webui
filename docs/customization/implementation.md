@@ -165,3 +165,8 @@ See review-round13-remediation.md. Implementation, verification and isolated-pre
 
 
 2026-11-07: R75/P60 is verified on isolated preview. Source `a368a8150a428053c142f2a534e3686131321dc2` passed 1673 backend / 88 frontend cases, zero new type diagnostics, the original 138 review cases and 223 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser failure/Continue/reload, separate call diagnostics and archived terminal paths passed. Exact-source CI and GitOps `a45cc468ad21f23d30204b0451a50fe95a1cba16` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round13-remediation-acceptance.json.
+
+
+### R76 / P61 — Durable exception finalization
+
+See review-round14-remediation.md and its separate acceptance record. Preserve completed tool actions, strict replay checks and cancellation publication after persistence. Only genuine legacy assistant metadata requires old transcript reads.

@@ -434,7 +434,9 @@ class ChatMessageTable:
             # metadata only for the same output; canonical values (even null) win.
             legacy_messages = {}
             if any(
-                any(key not in (row.oi_state or {}) for key in ('response_status', 'incomplete_details'))
+                row.role == 'assistant'
+                and bool(row.output or row.content)
+                and any(key not in (row.oi_state or {}) for key in ('response_status', 'incomplete_details'))
                 for row in rows
             ):
                 from open_webui.models.chats import Chat

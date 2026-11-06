@@ -4405,6 +4405,8 @@ async def streaming_chat_response_handler(response, ctx):
             finish_reason = None
             terminal_fields = {}
             terminal_error = None
+            stream_dispatch_split = False
+            final_snapshot_saved = False
             last_response_id = None
 
             def full_output():
@@ -4541,7 +4543,7 @@ async def streaming_chat_response_handler(response, ctx):
                             },
                         )
 
-                async def stream_body_handler(response, current_form_data):
+                async def consume_stream_body(response, current_form_data):
                     nonlocal active_stream_response
                     active_stream_response = response
                     nonlocal usage
@@ -4558,7 +4560,8 @@ async def streaming_chat_response_handler(response, ctx):
 
                     response_tool_calls = []
                     response_event_tool_ids = {}
-                    dispatch_split = False
+                    nonlocal stream_dispatch_split
+                    stream_dispatch_split = False
                     from open_webui.utils.oi.replay import (
                         stream_event_projection,
                         invalidate_stream_native,
@@ -4567,8 +4570,8 @@ async def streaming_chat_response_handler(response, ctx):
 
                     def split_for_dispatch(calls):
                         def replace_split(original, replacements):
-                            nonlocal dispatch_split
-                            dispatch_split = True
+                            nonlocal stream_dispatch_split
+                            stream_dispatch_split = True
                             index = next(
                                 (
                                     i
@@ -5515,11 +5518,28 @@ async def streaming_chat_response_handler(response, ctx):
                         if responses_api_tool_calls:
                             tool_calls.append(split_for_dispatch(responses_api_tool_calls))
 
-                    await record_consumer_output(request, metadata, response, output, invalidate=dispatch_split)
                     await save_current_response_stream()
                     if not current_usage:
                         usage = {**(usage or {}), 'incomplete': True}
                     return normalize_usage(current_usage)
+
+                async def stream_body_handler(response, current_form_data):
+                    try:
+                        return await consume_stream_body(response, current_form_data)
+                    finally:
+                        # The adapter writes its raw envelope in iterator cleanup. Bind
+                        # the actual consumer projection for every exit, including a
+                        # ReadError between argument deltas and ordinary cancellation.
+                        if hasattr(response.body_iterator, 'aclose'):
+                            try:
+                                await asyncio.shield(response.body_iterator.aclose())
+                            except (asyncio.CancelledError, Exception):
+                                log.debug('Unable to close native stream', exc_info=True)
+                        await asyncio.shield(
+                            record_consumer_output(
+                                request, metadata, response, output, invalidate=stream_dispatch_split
+                            )
+                        )
 
                 output_start = len(prior_output)
                 try:
@@ -5710,71 +5730,75 @@ async def streaming_chat_response_handler(response, ctx):
                         }
                         output.append(result_item)
                         tool_call['status'] = result_item['status']
-                        terminal_file_result = build_terminal_file_tool_result(
-                            tool_function_name,
-                            tool_function_params,
-                            tool_result,
-                            tool,
-                            metadata,
-                        )
-                        if terminal_file_result:
-                            tool_result = terminal_file_result
+                        try:
+                            terminal_file_result = build_terminal_file_tool_result(
+                                tool_function_name,
+                                tool_function_params,
+                                tool_result,
+                                tool,
+                                metadata,
+                            )
+                            if terminal_file_result:
+                                tool_result = terminal_file_result
 
-                        tool_result, tool_result_files, tool_result_embeds = await process_tool_result(
-                            request,
-                            tool_function_name,
-                            tool_result,
-                            tool_type,
-                            direct_tool,
-                            metadata,
-                            user,
-                        )
+                            tool_result, tool_result_files, tool_result_embeds = await process_tool_result(
+                                request,
+                                tool_function_name,
+                                tool_result,
+                                tool_type,
+                                direct_tool,
+                                metadata,
+                                user,
+                            )
 
-                        await terminal_event_handler(
-                            tool_function_name,
-                            tool_function_params,
-                            tool_result,
-                            event_emitter,
-                        )
+                            await terminal_event_handler(
+                                tool_function_name,
+                                tool_function_params,
+                                tool_result,
+                                event_emitter,
+                            )
 
-                        # Extract citation sources from tool results
-                        if citations_enabled and tool_function_name in CITATION_TOOL_NAMES and tool_result:
-                            try:
-                                citation_sources = get_citation_source_from_tool_result(
-                                    tool_name=tool_function_name,
-                                    tool_params=tool_function_params,
-                                    tool_result=tool_result,
-                                    tool_id=tool.get('tool_id', '') if tool else '',
-                                )
-                                tool_call_sources.extend(citation_sources)
-                            except Exception as e:
-                                log.exception(f'Error extracting citation source: {e}')
+                            # Extract citation sources from tool results
+                            if citations_enabled and tool_function_name in CITATION_TOOL_NAMES and tool_result:
+                                try:
+                                    citation_sources = get_citation_source_from_tool_result(
+                                        tool_name=tool_function_name,
+                                        tool_params=tool_function_params,
+                                        tool_result=tool_result,
+                                        tool_id=tool.get('tool_id', '') if tool else '',
+                                    )
+                                    tool_call_sources.extend(citation_sources)
+                                except Exception as e:
+                                    log.exception(f'Error extracting citation source: {e}')
 
-                        result = {
-                            'tool_call_id': tool_call_id,
-                            'content': tool_result_content(tool_result),
-                            **({'files': tool_result_files} if tool_result_files else {}),
-                            **({'embeds': tool_result_embeds} if tool_result_embeds else {}),
-                        }
+                            result = {
+                                'tool_call_id': tool_call_id,
+                                'content': tool_result_content(tool_result),
+                                **({'files': tool_result_files} if tool_result_files else {}),
+                                **({'embeds': tool_result_embeds} if tool_result_embeds else {}),
+                            }
 
-                        output_parts = [{'type': 'input_text', 'text': result.get('content', '')}]
-                        display_files = []
-                        for file_item in result.get('files', []):
-                            if file_item.get('type') == 'image' and file_item.get('url', '').startswith('data:'):
-                                image_url = await store_tool_result_image(request, file_item['url'], metadata, user)
-                                output_parts.append({'type': 'input_image', 'image_url': image_url})
-                            else:
-                                display_files.append(file_item)
-                                if file_item.get('type') == 'image' and file_item.get('url'):
-                                    output_parts.append({'type': 'input_image', 'image_url': file_item['url']})
-                        result_item.update(
-                            output=output_parts,
-                            status='failed' if _is_tool_result_error(result.get('content', '')) else 'completed',
-                            **({'files': display_files} if display_files else {}),
-                            **({'embeds': result.get('embeds')} if result.get('embeds') else {}),
-                        )
-                        tool_call['status'] = result_item['status']
-                        await emit_output()
+                            output_parts = [{'type': 'input_text', 'text': result.get('content', '')}]
+                            display_files = []
+                            for file_item in result.get('files', []):
+                                if file_item.get('type') == 'image' and file_item.get('url', '').startswith('data:'):
+                                    image_url = await store_tool_result_image(request, file_item['url'], metadata, user)
+                                    output_parts.append({'type': 'input_image', 'image_url': image_url})
+                                else:
+                                    display_files.append(file_item)
+                                    if file_item.get('type') == 'image' and file_item.get('url'):
+                                        output_parts.append({'type': 'input_image', 'image_url': file_item['url']})
+                            result_item.update(
+                                output=output_parts,
+                                status='failed' if _is_tool_result_error(result.get('content', '')) else 'completed',
+                                **({'files': display_files} if display_files else {}),
+                                **({'embeds': result.get('embeds')} if result.get('embeds') else {}),
+                            )
+                            tool_call['status'] = result_item['status']
+                            await emit_output()
+                        except Exception as exc:
+                            result_item['postprocess_error'] = get_message_error_content(exc)
+                            raise
 
                     for tool_call in response_tool_calls:
                         if tool_call.get('name') != 'delegate_task':
@@ -6292,6 +6316,7 @@ async def streaming_chat_response_handler(response, ctx):
                         },
                     )
 
+                final_snapshot_saved = True
                 await clear_response_stream(request.app.state.redis, response_stream_task_id)
                 if not terminal_error:
                     await publish_chat_finished_event(
@@ -6337,8 +6362,6 @@ async def streaming_chat_response_handler(response, ctx):
                     except (asyncio.CancelledError, Exception):
                         pass
 
-                await record_consumer_output(request, metadata, active_stream_response, output)
-
                 async def save_cancelled_state():
                     cancelled_output = full_output()
                     result_call_ids = {
@@ -6356,7 +6379,7 @@ async def streaming_chat_response_handler(response, ctx):
                         if item.get('status') == 'in_progress' or is_running_tool_call:
                             item['status'] = 'incomplete'
 
-                    await event_emitter({'type': 'chat:tasks:cancel', 'data': {'output': cancelled_output}})
+                    await record_consumer_output(request, metadata, active_stream_response, output)
                     if save_to_chat:
                         await Chats.upsert_message_to_chat_by_id_and_message_id(
                             metadata['chat_id'],
@@ -6367,12 +6390,49 @@ async def streaming_chat_response_handler(response, ctx):
                             },
                         )
                     await clear_response_stream(request.app.state.redis, response_stream_task_id)
+                    await event_emitter({'type': 'chat:tasks:cancel', 'data': {'output': cancelled_output}})
 
                 try:
                     await asyncio.shield(save_cancelled_state())
                 except (asyncio.CancelledError, Exception):
                     pass
                 raise  # re-raise CancelledError for proper propagation
+            except Exception as exc:
+                log.exception('Chat response processing failed')
+                if not final_snapshot_saved:
+                    # Tools may have completed before attachment storage or event
+                    # delivery failed. Persist their results before notifying the UI.
+                    terminal_error = terminal_error or get_message_error_content(exc) or 'Response processing failed.'
+                    failed_output = full_output()
+                    completed_ids = {
+                        item.get('call_id') for item in failed_output if item.get('type') == 'function_call_output'
+                    }
+                    for item in failed_output:
+                        if item.get('status') == 'in_progress' or (
+                            item.get('type') == 'function_call' and item.get('call_id') not in completed_ids
+                        ):
+                            item['status'] = 'incomplete'
+                    await record_consumer_output(request, metadata, active_stream_response, output)
+                    data = {
+                        'done': True,
+                        'output': failed_output,
+                        'error': terminal_error,
+                        'response_status': 'failed',
+                        'incomplete_details': None,
+                        'finish_reason': 'error',
+                        **({'usage': usage} if usage else {}),
+                    }
+                    if save_to_chat:
+                        await Chats.upsert_message_to_chat_by_id_and_message_id(
+                            metadata['chat_id'],
+                            metadata['message_id'],
+                            {**data, 'error': {'content': terminal_error}, 'meta': {'response_ended_at': time.time()}},
+                        )
+                    await clear_response_stream(request.app.state.redis, response_stream_task_id)
+                    try:
+                        await event_emitter({'type': 'chat:completion', 'data': data})
+                    except Exception:
+                        log.exception('Unable to publish the saved failed response')
 
             if response.background is not None:
                 await response.background()
