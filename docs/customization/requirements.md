@@ -288,3 +288,6 @@ Merge the official stable v0.13.0 tag while preserving its new capabilities and 
 
 
 R77 follow-up: independently reproduced CR15-01..04 on the merge candidate. Repair accepted SideChat cancellation, native-model notification eligibility, failed compaction terminal handling and safe shared-connection context. Preview publication requires controller approval of the exact repaired source SHA.
+
+
+R77 second-review follow-up: CR16-01 tracks dispatched side requests across lost HTTP acceptance receipts. Local parsing errors cannot establish that no server task exists. Close, Stop and permission loss must safely cancel uncertain attempts; never-dispatched preparation remains distinct. Exact-source independent review remains a publication gate.

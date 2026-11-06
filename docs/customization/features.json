@@ -3974,7 +3974,7 @@
       "scope": "isolated_preview_only",
       "previous_R76_preview": "verified; unchanged"
     },
-    "review_status": "CR15-01..04 repaired locally; new fixed source awaiting controller review; publication prohibited",
+    "review_status": "second controller review requests CR16-01 repair; exact repaired source re-review pending, publication prohibited",
     "candidate_source": "fdc34863fdda0a474554afb42a101f20c86e33e1",
     "post_sync_round1": {
       "findings": [
@@ -4001,6 +4001,16 @@
         "source_base": "fdc34863fdda0a474554afb42a101f20c86e33e1",
         "scope": "uncommitted repair workspace; isolated fixtures only"
       }
+    },
+    "post_sync_round2": {
+      "reviewed_source": "e8ad892dbd5e49a4d489b27a3b079d274aee6991",
+      "finding": "CR16-01",
+      "implementation": "track attempted dispatch independently of local error/done; clear only on authoritative terminal",
+      "verification": {
+        "before": "16 passed, 1 failed",
+        "after": "19 lifecycle cases passed; 95 frontend tests passed"
+      },
+      "deployment": "unchanged R76"
     }
   }
 }

@@ -395,3 +395,6 @@ Keep official tabs, side conversations, comments, notifications and subagent tar
 
 
 P62 follow-up: Stop and closing a side conversation must cancel an accepted background task and wait for authoritative completion. OI model comments retain inbox visibility and revocation rules. Failed summaries preserve original history; side context carries safe replay state across shared connections without private configuration.
+
+
+P62 cancellation follow-up: preserve pending dispatch identity until an authoritative terminal event, including local receipt errors. Safe idempotent cleanup may run for rejected attempts; local UI completion alone is not server completion.

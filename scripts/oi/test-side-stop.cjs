@@ -31,6 +31,7 @@ const create = (mode) => {
 		input: { uploadPendingFiles: async () => true, setText() {} },
 		sendEpoch: 0,
 		request: null,
+		pendingDispatches: new Set(),
 		contextReady: mode !== 'context',
 		context: [],
 		sourceChatId: 'source',

@@ -96,6 +96,8 @@
 	let sendEpoch = 0;
 	let disposed = false;
 	let request: Promise<any> | null = null;
+	// A failed HTTP receipt does not prove the server rejected the background task.
+	const pendingDispatches = new Set<string>();
 	let scroller: HTMLDivElement;
 	let autoScroll = true;
 	let input: MessageInput;
@@ -195,6 +197,13 @@
 			if (data.output) message.output = data.output;
 			message.done = true;
 			busy = false;
+		}
+		if (
+			(type === 'chat:completion' && data?.done) ||
+			type === 'chat:message:error' ||
+			type === 'chat:tasks:cancel'
+		) {
+			pendingDispatches.delete(message.id);
 		}
 		messages = messages;
 		void scroll();
@@ -332,6 +341,7 @@
 		input?.setText('');
 		busy = true;
 		void scroll();
+		pendingDispatches.add(answer.id);
 		request = generateOpenAIChatCompletion(localStorage.token, {
 			model: sideModelId,
 			model_item: $models.find((model) => model.id === sideModelId),
@@ -391,7 +401,11 @@
 	const stop = async () => {
 		sendEpoch += 1;
 		cancelInteractions();
-		if (!request && !messages.some((message) => message.role === 'assistant' && !message.done)) {
+		if (
+			!request &&
+			!pendingDispatches.size &&
+			!messages.some((message) => message.role === 'assistant' && !message.done)
+		) {
 			busy = false;
 			return;
 		}
@@ -408,7 +422,7 @@
 
 	$: if (!sideChatAllowed) {
 		cancelInteractions();
-		if (busy) void stop();
+		if (busy || pendingDispatches.size) void stop();
 	}
 
 	onMount(() => {
