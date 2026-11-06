@@ -450,6 +450,44 @@ async def generate(protocol: str, path: str, request: Request):
             {'type': 'response.output_item.done', 'output_index': 0, 'item': item},
             {'type': 'response.' + status, 'response': body},
         ]
+    if protocol == 'openai-chat' and 'R75_FAILURE' in fixture_prompt and last_content.get('role') == 'user':
+        body = {'error': {'message': 'R75 synthetic stream interrupted'}}
+        frames = [
+            {
+                'choices': [
+                    {
+                        'index': 0,
+                        'delta': {
+                            'content': 'R75 preserved partial.',
+                            'tool_calls': [
+                                {
+                                    'index': 0,
+                                    'id': 'r75-pending',
+                                    'type': 'function',
+                                    'function': {
+                                        'name': 'ask_user',
+                                        'arguments': json.dumps(
+                                            {
+                                                'questions': [
+                                                    {
+                                                        'id': 'route',
+                                                        'question': 'Must never execute',
+                                                        'options': ['North', 'South'],
+                                                    }
+                                                ]
+                                            }
+                                        ),
+                                    },
+                                }
+                            ],
+                        },
+                        'finish_reason': None,
+                    }
+                ],
+                'usage': {'prompt_tokens': 10, 'completion_tokens': 2},
+            },
+            body,
+        ]
     if not stream:
         return body
 

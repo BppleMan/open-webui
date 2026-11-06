@@ -4108,9 +4108,7 @@ async def non_streaming_chat_response_handler(response, ctx):
 
             choices = response_data.get('choices', [])
             response_output = response_data.get('output')
-            terminal_fields = {
-                key: response_data[key] for key in ('response_status', 'incomplete_details') if key in response_data
-            }
+            terminal_fields = {key: response_data.get(key) for key in ('response_status', 'incomplete_details')}
             content = (choices[0].get('message', {}).get('content') or '') if choices else ''
             # Native tools only run on the streaming path; still finish the turn.
             tool_calls = choices[0].get('message', {}).get('tool_calls') if choices else None
@@ -4224,6 +4222,7 @@ async def non_streaming_chat_response_handler(response, ctx):
                                 'meta': {'response_ended_at': time.time()},
                                 'role': 'assistant',
                                 'output': response_output,
+                                'error': {'content': response_data['error']} if response_data.get('error') else None,
                                 **terminal_fields,
                                 **({'finish_reason': finish_reason} if finish_reason else {}),
                                 **({'usage': usage} if usage else {}),
@@ -4239,7 +4238,7 @@ async def non_streaming_chat_response_handler(response, ctx):
                                 'usage': usage,
                                 'output': response_output,
                                 **terminal_fields,
-                                **({'error': response_data['error']} if response_data.get('error') else {}),
+                                'error': response_data.get('error'),
                                 'title': title,
                                 **({'finish_reason': finish_reason} if finish_reason else {}),
                             },
@@ -4474,6 +4473,11 @@ async def streaming_chat_response_handler(response, ctx):
                 return error if isinstance(error, (str, dict)) else str(error)
 
             async def emit_message_error(error_content):
+                nonlocal terminal_error, finish_reason
+                # One failed attempt cannot dispatch tools or later publish success.
+                terminal_error = terminal_error or error_content or 'Generation failed.'
+                finish_reason = 'error'
+                terminal_fields.update(response_status='failed', incomplete_details=None)
                 if save_to_chat:
                     await Chats.upsert_message_to_chat_by_id_and_message_id(
                         metadata['chat_id'],
@@ -4482,8 +4486,8 @@ async def streaming_chat_response_handler(response, ctx):
                     )
                 await event_emitter(
                     {
-                        'type': 'chat:message:error',
-                        'data': {'error': {'content': error_content}},
+                        'type': 'chat:completion',
+                        'data': {'error': terminal_error},
                     }
                 )
 
@@ -4545,7 +4549,6 @@ async def streaming_chat_response_handler(response, ctx):
                     nonlocal finish_reason
                     nonlocal terminal_fields
                     nonlocal terminal_error
-                    terminal_error = None
                     terminal_fields = {}
                     finish_reason = None
                     nonlocal output
@@ -4740,19 +4743,8 @@ async def streaming_chat_response_handler(response, ctx):
                                 raw_obj = JSONCodec.loads(data)
                                 raw_error = raw_obj.get('error') if isinstance(raw_obj, dict) else None
                                 if raw_error:
-                                    if save_to_chat:
-                                        try:
-                                            await Chats.upsert_message_to_chat_by_id_and_message_id(
-                                                metadata['chat_id'],
-                                                metadata['message_id'],
-                                                {
-                                                    'error': {'content': raw_error},
-                                                },
-                                            )
-                                        except Exception:
-                                            pass
-                                    await event_emitter({'type': 'chat:completion', 'data': {'error': raw_error}})
-                            except Exception:
+                                    await emit_message_error(raw_error)
+                            except (ValueError, TypeError):
                                 pass
                             continue
 
@@ -4850,10 +4842,10 @@ async def streaming_chat_response_handler(response, ctx):
                                             {
                                                 key: response_metadata[key]
                                                 for key in ('response_status', 'incomplete_details')
-                                                if key in response_metadata
+                                                if key in response_metadata and not terminal_error
                                             }
                                         )
-                                        if response_metadata.get('finish_reason'):
+                                        if response_metadata.get('finish_reason') and not terminal_error:
                                             finish_reason = response_metadata['finish_reason']
                                         if ENABLE_RESPONSES_API_STATEFUL:
                                             response_id = response_metadata.pop('response_id', None)
@@ -4869,27 +4861,7 @@ async def streaming_chat_response_handler(response, ctx):
                                             response_metadata['usage'] = usage
 
                                         if response_metadata.get('error'):
-                                            terminal_error = response_metadata['error']
-                                            log.error(
-                                                'Provider returned error (streaming): %s', response_metadata['error']
-                                            )
-                                            if save_to_chat:
-                                                try:
-                                                    await Chats.upsert_message_to_chat_by_id_and_message_id(
-                                                        metadata['chat_id'],
-                                                        metadata['message_id'],
-                                                        {
-                                                            'error': {'content': response_metadata['error']},
-                                                        },
-                                                    )
-                                                except Exception:
-                                                    pass
-                                            await event_emitter(
-                                                {
-                                                    'type': 'chat:completion',
-                                                    'data': {'error': response_metadata['error']},
-                                                }
-                                            )
+                                            await emit_message_error(response_metadata['error'])
 
                                     await emit_response_completion_event(data)
 
@@ -4919,32 +4891,12 @@ async def streaming_chat_response_handler(response, ctx):
                                             }
                                         )
 
-                                    if not choices:
-                                        error = data.get('error', {})
-                                        if error:
-                                            log.error('Provider returned error (streaming): %s', error)
-                                            if save_to_chat:
-                                                try:
-                                                    await Chats.upsert_message_to_chat_by_id_and_message_id(
-                                                        metadata['chat_id'],
-                                                        metadata['message_id'],
-                                                        {
-                                                            'error': {'content': error},
-                                                        },
-                                                    )
-                                                except Exception:
-                                                    pass
-                                            await event_emitter(
-                                                {
-                                                    'type': 'chat:completion',
-                                                    'data': {
-                                                        'error': error,
-                                                    },
-                                                }
-                                            )
+                                    if data.get('error'):
+                                        await emit_message_error(data['error'])
+                                    if not choices or terminal_error:
                                         continue
 
-                                    if choices[0].get('finish_reason'):
+                                    if choices[0].get('finish_reason') and not terminal_error:
                                         finish_reason = choices[0]['finish_reason']
 
                                     delta = choices[0].get('delta', {})
@@ -5408,7 +5360,7 @@ async def streaming_chat_response_handler(response, ctx):
                                             if solution_output is not None:
                                                 tag_output = solution_output
 
-                                        if DETECT_CODE_INTERPRETER:
+                                        if DETECT_CODE_INTERPRETER and not terminal_error:
                                             code_output, end = tag_output_handler(
                                                 'code_interpreter',
                                                 DEFAULT_CODE_INTERPRETER_TAGS,
@@ -5502,7 +5454,7 @@ async def streaming_chat_response_handler(response, ctx):
                                     )
                                 reasoning_item['status'] = 'completed'
 
-                    if response_tool_calls:
+                    if response_tool_calls and not terminal_error:
                         for tc in response_tool_calls:
                             call_id = tc.get('id', '')
                             arguments = tc.get('function', {}).get('arguments', '{}')
@@ -5529,7 +5481,7 @@ async def streaming_chat_response_handler(response, ctx):
                         tool_calls.append(split_for_dispatch(response_tool_calls))
 
                     # Responses API path: extract function_call items from output
-                    if not response_tool_calls and output:
+                    if not response_tool_calls and output and not terminal_error:
                         # Collect call_ids that already have results,
                         # including those from prior_output so we don't
                         # re-process tool calls from a previous turn.
@@ -5572,6 +5524,8 @@ async def streaming_chat_response_handler(response, ctx):
                 output_start = len(prior_output)
                 try:
                     current_usage = await stream_body_handler(response, form_data)
+                except Exception as e:
+                    await emit_message_error(get_message_error_content(e))
                 finally:
                     log_model_usage(request, user, form_data['model'], current_usage)
                     if response.background:
@@ -5636,8 +5590,10 @@ async def streaming_chat_response_handler(response, ctx):
                             }
                         )
 
-                while tool_calls and (
-                    max_tool_call_iterations is None or tool_call_iterations < max_tool_call_iterations
+                while (
+                    tool_calls
+                    and not terminal_error
+                    and (max_tool_call_iterations is None or tool_call_iterations < max_tool_call_iterations)
                 ):
                     tool_call_iterations += 1
 
@@ -5727,47 +5683,33 @@ async def streaming_chat_response_handler(response, ctx):
 
                     await emit_output()
 
-                    results = []
-
-                    # Provider calls have been resolved and staged; execute their saved items directly.
+                    # Commit each result independently: cancellation of a later tool must
+                    # not erase actions that have already returned, including delegates.
                     response_tool_calls = [output_by_call_id[call['id']] for call in response_tool_calls]
-                    delegate_calls = [call for call in response_tool_calls if call.get('name') == 'delegate_task']
-                    tool_results = {}
-                    for tool_call in response_tool_calls:
-                        if tool_call.get('name') != 'delegate_task':
-                            tool_results[tool_call['call_id']] = await execute_tool_call(
-                                form_data, metadata, event_caller, tool_call
-                            )
-                    tool_results.update(
-                        zip(
-                            [tool_call['call_id'] for tool_call in delegate_calls],
-                            await asyncio.gather(
-                                *(
-                                    execute_tool_call(form_data, metadata, event_caller, tool_call)
-                                    for tool_call in delegate_calls
-                                )
-                            ),
-                        )
-                    )
 
-                    for tool_call in response_tool_calls:
+                    async def execute_and_record_tool(tool_call):
                         tool_call_id = tool_call['call_id']
                         tool_function_name = tool_call.get('name', '')
-                        tool_function_params, tool_result, tool, tool_type, direct_tool = tool_results[
-                            tool_call['call_id']
-                        ]
+                        tool_function_params, tool_result, tool, tool_type, direct_tool = await execute_tool_call(
+                            form_data, metadata, event_caller, tool_call
+                        )
                         if tool_result is None:
-                            results.append(
-                                {
-                                    'tool_call_id': tool_call_id,
-                                    'content': (
-                                        'Error: Tool call arguments could not be parsed. The model generated '
-                                        f'malformed or incomplete JSON for `{tool_function_name}`. Please try again.'
-                                    ),
-                                }
+                            tool_result = (
+                                'Error: Tool call arguments could not be parsed. The model generated '
+                                f'malformed or incomplete JSON for `{tool_function_name}`. Please try again.'
                             )
-                            continue
-
+                        # No await between the tool returning and recording its minimum result.
+                        result_item = {
+                            'type': 'function_call_output',
+                            'id': output_id('fco'),
+                            'call_id': tool_call_id,
+                            'output': [{'type': 'input_text', 'text': tool_result_content(tool_result)}],
+                            'status': 'failed'
+                            if _is_tool_result_error(tool_result_content(tool_result))
+                            else 'completed',
+                        }
+                        output.append(result_item)
+                        tool_call['status'] = result_item['status']
                         terminal_file_result = build_terminal_file_tool_result(
                             tool_function_name,
                             tool_function_params,
@@ -5808,49 +5750,48 @@ async def streaming_chat_response_handler(response, ctx):
                             except Exception as e:
                                 log.exception(f'Error extracting citation source: {e}')
 
-                        results.append(
-                            {
-                                'tool_call_id': tool_call_id,
-                                'content': tool_result_content(tool_result),
-                                **({'files': tool_result_files} if tool_result_files else {}),
-                                **({'embeds': tool_result_embeds} if tool_result_embeds else {}),
-                            }
-                        )
+                        result = {
+                            'tool_call_id': tool_call_id,
+                            'content': tool_result_content(tool_result),
+                            **({'files': tool_result_files} if tool_result_files else {}),
+                            **({'embeds': tool_result_embeds} if tool_result_embeds else {}),
+                        }
 
-                    result_status_by_call_id = {}
-                    for result in results:
                         output_parts = [{'type': 'input_text', 'text': result.get('content', '')}]
-                        local_output_status = (
-                            'failed' if _is_tool_result_error(result.get('content', '')) else 'completed'
-                        )
-                        result_status_by_call_id[result.get('tool_call_id', '')] = local_output_status
-
-                        # Data-URI images: LLM only. File-URL images: LLM and frontend. Other files: frontend.
                         display_files = []
                         for file_item in result.get('files', []):
                             if file_item.get('type') == 'image' and file_item.get('url', '').startswith('data:'):
-                                # LLM-only: add as input_image part, not frontend display output.
                                 image_url = await store_tool_result_image(request, file_item['url'], metadata, user)
                                 output_parts.append({'type': 'input_image', 'image_url': image_url})
                             else:
                                 display_files.append(file_item)
                                 if file_item.get('type') == 'image' and file_item.get('url'):
                                     output_parts.append({'type': 'input_image', 'image_url': file_item['url']})
-
-                        output.append(
-                            {
-                                'type': 'function_call_output',
-                                'id': output_id('fco'),
-                                'call_id': result.get('tool_call_id', ''),
-                                'output': output_parts,
-                                'status': local_output_status,
-                                **({'files': display_files} if display_files else {}),
-                                **({'embeds': result.get('embeds')} if result.get('embeds') else {}),
-                            }
+                        result_item.update(
+                            output=output_parts,
+                            status='failed' if _is_tool_result_error(result.get('content', '')) else 'completed',
+                            **({'files': display_files} if display_files else {}),
+                            **({'embeds': result.get('embeds')} if result.get('embeds') else {}),
                         )
+                        tool_call['status'] = result_item['status']
+                        await emit_output()
 
-                    for item in response_tool_calls:
-                        item['status'] = result_status_by_call_id.get(item['call_id'], 'completed')
+                    for tool_call in response_tool_calls:
+                        if tool_call.get('name') != 'delegate_task':
+                            await execute_and_record_tool(tool_call)
+                    delegate_tasks = [
+                        asyncio.create_task(execute_and_record_tool(call))
+                        for call in response_tool_calls
+                        if call.get('name') == 'delegate_task'
+                    ]
+                    try:
+                        await asyncio.gather(*delegate_tasks)
+                    finally:
+                        # gather does not cancel siblings when a child raises CancelledError.
+                        for task in delegate_tasks:
+                            if not task.done():
+                                task.cancel()
+                        await asyncio.gather(*delegate_tasks, return_exceptions=True)
 
                     # Emit citation sources to the frontend for display
                     if citations_enabled:
@@ -6108,11 +6049,16 @@ async def streaming_chat_response_handler(response, ctx):
                     error_content = f'Tool-call limit reached ({max_tool_call_iterations} iterations).'
                     await emit_message_error(error_content)
 
-                if DETECT_CODE_INTERPRETER:
+                if DETECT_CODE_INTERPRETER and not terminal_error:
                     MAX_RETRIES = 5
                     retries = 0
 
-                    while output and output[-1].get('type') == 'open_webui:code_interpreter' and retries < MAX_RETRIES:
+                    while (
+                        output
+                        and not terminal_error
+                        and output[-1].get('type') == 'open_webui:code_interpreter'
+                        and retries < MAX_RETRIES
+                    ):
                         await event_emitter(
                             {
                                 'type': 'chat:completion',
@@ -6302,18 +6248,28 @@ async def streaming_chat_response_handler(response, ctx):
 
                 # Mark all in-progress items as completed
                 for item in [*prior_output, *output]:
-                    if item.get('status') == 'in_progress':
-                        item['status'] = 'completed'
+                    if item.get('status') == 'in_progress' or (
+                        terminal_error
+                        and item.get('type') == 'function_call'
+                        and not any(
+                            result.get('type') == 'function_call_output'
+                            and result.get('call_id') == item.get('call_id')
+                            for result in [*prior_output, *output]
+                        )
+                    ):
+                        item['status'] = 'incomplete' if terminal_error else 'completed'
 
                 current_output = full_output()
                 title = await Chats.get_chat_title_by_id(metadata['chat_id']) if save_to_chat else ''
                 data = {
                     'done': True,
                     'output': current_output,
+                    'response_status': terminal_fields.get('response_status'),
+                    'incomplete_details': terminal_fields.get('incomplete_details'),
                     'title': title,
                     **({'finish_reason': finish_reason} if finish_reason else {}),
                     **terminal_fields,
-                    **({'error': terminal_error} if terminal_error else {}),
+                    'error': terminal_error,
                     **({'usage': usage} if usage else {}),
                 }
 
@@ -6327,6 +6283,9 @@ async def streaming_chat_response_handler(response, ctx):
                             'done': True,
                             'meta': {'response_ended_at': time.time()},
                             'output': current_output,
+                            'response_status': terminal_fields.get('response_status'),
+                            'incomplete_details': terminal_fields.get('incomplete_details'),
+                            'error': {'content': terminal_error} if terminal_error else None,
                             **({'finish_reason': finish_reason} if finish_reason else {}),
                             **terminal_fields,
                             **({'usage': usage} if usage else {}),

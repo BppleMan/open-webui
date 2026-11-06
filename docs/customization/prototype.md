@@ -99,7 +99,6 @@ U20 优先于 U19 的“类型同级”展示建议：日常一级是具体连�
 - 刷新发现的新模型默认未启用；已存在模型的自定义名称、价格、参数与能力覆盖保留。分页完整读取后才能更新可用性；中途失败保留原目录。
 - 接口模式保留在高级选项，模板承载默认协议；Claude/Gemini 分别使用原生适配器。创建/编辑本身不调用生成接口。
 
-
 ## P21 设置表单行修正
 
 对应 R34，覆盖 P16 中将1rem理解为紧贴标题的错误实现。保留表单最大48rem，以整行组织标题、说明与控件；标题和说明归于左侧，控件在统一右侧列对齐。行间使用清晰的节奏和轻分隔，控件至少保留1rem间隔。长标题换行而不推挤开关；展开滑杆的容器也限制24rem，字体等长内容字段保留整行。复用原有Switch和设置外壳，保留即时保存、继承状态、快捷键和焦点。
@@ -108,16 +107,13 @@ U20 优先于 U19 的“类型同级”展示建议：日常一级是具体连�
 
 对应 R35。选择器以明确的连接分组行承载连接图标、连接标识、名称和模型数；其下模型缩进并有轻量层级引导线，模型项保持原生头像、选择勾和操作。分组不是可选模型；键盘移动只遍历模型。省去模型行重复的外部连接标记。当前选择优先展示模型名称，连接作为次要信息或完整提示，避免长连接名称挤掉模型名。搜索连接或模型仍保留分组和唯一绑定，不改变实际选中的模型或请求内容。
 
-
 ### P22 键盘与搜索细节
 
 搜索后焦点从第一条匹配模型开始；无搜索重新打开时定位当前模型。上下方向键只遍历模型项，Enter 选择当前高亮模型，中文输入法组合中不触发选择；Esc 关闭并返回触发按钮。比较模式保留各连接同名模型的独立选中状态。连接标题使用命名分组，搜索框向辅助技术暴露当前高亮项。
 
-
 ## P23 审查修复与可靠性约束
 
 对应 R36，细化 P01/P03/P04/P11/P13 的既定行为。目录读取与生成使用相同模型授权边界；只向可管理者返回完整配置。编辑正文或另存编辑副本后不得回放过时原生正文；未修改内容的原生签名按实际模型绑定回放，预设名称不决定路由。工具续轮和重复规范化保留原生结构，临时会话只在本次请求内保有原生数据。所有已确认用量在正常、断流、错误和取消时均进入同一调用账本，截断、阻断与正常完成分开呈现。草稿解决冲突和发送确认仅清理已处理的本机版本，保留并发未处理输入。具体调查、复现和验证结果仅放 Feature 层。
-
 
 ### P11 既有消息队列的草稿保护
 
@@ -135,23 +131,19 @@ Conversation menu offers an OI ZIP archive alongside legacy JSON/text/PDF export
 
 Restoration creates a new conversation, keeps private ledger lineage per user and deduplicates original call identity across repeated imports. A retried import ID returns the same restored conversation. Imported views inherit a fixed archived cost boundary and append their future calls separately. No model inference is issued by archive/reading operations. Message, file and billing DB writes commit together; failed restoration rolls back and removes only newly created storage objects. Plain legacy JSON imports start with an unknown imported-history baseline that can be replaced in the cost panel.
 
-
 ### P13 能力专用入口的调用契约（R17 / U22 延续）
 
 文档 Embedding、重排、STT、TTS、图像生成/编辑和实时语音选择连接中的稳定模型绑定，按已确认能力过滤。保存的是绑定 ID，出站时使用该连接的地址、凭据、原始模型 ID 和参数；同名模型不能串用。运行时再次检查权限，TTS 缓存命中也不能绕过检查。实时语音与其内置转录必须选择同一连接，因为转录由该实时会话的服务端执行。已有专用服务配置仍可读取，后续迁移不能静默替换连接。
 
 每个实际能力调用分别归账；Embedding 的输出 token 不适用，语音二进制和时长用量没有已配置价格时保持未知。音频与图像 token 若使用独立单价，必须有显式价格与分类计数，不能用普通文本单价冒充。实时回复按 response ID 去重、转录按 item ID 独立归账，断流保留未知/不完整状态。
 
-
 ## P24 阶段收口与下一次续接
 
 对应 R37 / U23。当前阶段结束仅表示这批改动已完成指定本地验证，不表示整个定制计划完成或正式上线。Feature 分别记录实现、验证、部署；下一次首先阅读接手入口、最新 Feature 和证据，再从尚未验证的项目继续。保留源码工作区及私有补丁快照，不以重复实现历史修复消耗验收时间。
 
-
 ## P25 当前阶段源码提交
 
 对应 R38 / U24。本次将已记录的阶段代码、合成测试和脱敏文档提交并推送到 `oi/main`，不触发或执行集群部署。私有记录、凭据、备份与本机运行数据不进入仓库。源码发布、CI 构建、完整功能验收和正式部署分别记录；推送成功不表示完整计划完成。
-
 
 ## P26 能力入口与不可用选择的阶段收尾
 
@@ -159,18 +151,15 @@ Restoration creates a new conversation, keeps private ledger lineage per user an
 
 已保存、URL或草稿中的不可用绑定保留原ID并提示重选，不以默认模型静默替换；无有效聊天模型时发送被拦截并保留输入。服务端同样拒绝专用模型的聊天请求，不发出供应商请求。原生/混合检索中的HTTP错误（含429）直接传递，不转成另一条模型或向量回退调用。检索批次及重排继承原生成身份，跨并发分支保持隔离。
 
-
 ## P27 阶段3：连接身份与迁移
 
 连接有server/browser传输类型，模型绑定ID稳定，浏览器直连仍在浏览器执行。统一管理标明执行位置；模型发现、请求、启停和费用引用真实绑定，不使用数组下标或显示名称路由。浏览器配置凭据统一加密，只有连接所有者可经no-store接口读取；目录与导出均脱敏。旧直连、OpenAI/Ollama与外部检索/语音/图像配置通过预览、来源版本校验、幂等事务迁移；重复/歧义配置列为待处理，既有覆盖保留。迁移至服务器个人连接先检查可达性，成功后创建新连接与明确模型映射，保留原直连。无浏览器会话的后台任务明确拒绝browser连接。
 
 阶段3通过回归与用户路径后提交推送并核实CI；仅源码和镜像流水线，本轮不切换集群。阶段4–8按已批准后续顺序继续，仍需全入口、认证/PWA、协议、数据及发布验收。
 
-
 P27 落地：个人/管理连接复用同一组件，标注浏览器或服务器；同名模型分组显示。旧配置先预览后应用，重读预览处理409；重复来源需逐项选择。移除连接可恢复且恢复后停用，不删除模型或账本。显式复制到服务器先验证可达，保留原直连并返回模型映射。浏览器需要活跃发起会话，服务器独立执行入口拒绝直连；关闭浏览器后保留已确认usage、未知费用。旧专有或不兼容引擎保留兼容入口并提示手工处理，不猜协议。
 
 P27 验证状态：同名A/B/server调用、改名重排/移除A/草稿重开、权限、429、断流usage和PG并发迁移还原通过；旧URL含凭据时不回显并保持手工处理。实现、CI镜像发布、正式部署分别记录，后者未执行。
-
 
 ## P28 阶段4执行分批
 
@@ -180,16 +169,16 @@ P28 / 4A落地：Arena在读取成员参数/知识前按当前用户权限与连
 
 P28执行约束更新（R42）：本轮以整个阶段4通过为收口点；逐入口证据、独立pgvector上传检索、Realtime鉴权撤销/断流、模型统计按原始调用去重均必须完成。
 
-
 ### P28 阶段四落地
+
 新版 @ 菜单按连接分组并仅展示聊天能力；管理弹窗默认进入统一连接目录，本地引擎文件管理保留兼容页。回复、自动化、历史和图表显示连接/模型来源；已不可用的历史身份仅用于展示。统计按原始调用去重，旧账目明确保留消息口径，Token 标为已确认小计。Realtime 每条出站命令及空闲期重新校验权限，已确认用量随中断保留。390/430px、1.1倍缩放和键盘选择已实测。
 
-
 ## P29 阶段五登录与草稿可靠性
+
 有效人类会话提前续签，保留原认证时间、MFA及撤销边界；旧标签页和迟到响应不得覆盖新登录，离线/502不能注销。真实失效使用页内恢复，保留输入与回复编辑内容。普通草稿按用户/会话唯一，IndexedDB保护未同步输入，服务器CAS识别冲突；恢复网络/登录后重试。发送确认仅处理对应输入/队列版本，附件上传中断必须有可恢复提示，不能永远停在上传中。临时会话只保存本机。按R44使用内置浏览器的独立origin与关闭重开验证，不以此宣称真机PWA通过。阶段五收口含实际CI，不部署正式环境。
 
-
 ## P30 — 阶段五检查点与续接
+
 本轮收口已实现的认证续签同步、旧登录响应保护、草稿网络恢复重试和中断附件提示；保存本地提交与验收证据。剩余UI矩阵、CI集成和发布验证继续待办。真机PWA按R44不要求，内置浏览器验收仍需完成。
 
 P29续接：从stage5-checkpoint继续剩余浏览器矩阵、隔离CI与发布材料核验，不重复阶段四、不部署生产。
@@ -198,112 +187,107 @@ P29落地：会话续签同步到实时连接；真正撤销停止立即重连�
 
 P29阶段五已按记录方法验收，release.json记录实际CI与镜像digest。原型/实现/部署继续分列；部署保持not_deployed。
 
-
 ## P31 — 阶段六执行与证据边界
-以stage6-plan.md矩阵推进；原生历史与usage/结束原因分别验证。上下文环形入口按当前分支与连接模型显示，分类估算不混充提供方计数，缓存不重复加进上下文，未知容量不编造百分比。手动压缩必须显式操作和可追溯状态，原文保留。各协议的合成、真实供应商、UI出站、CI证据分列。
 
+以stage6-plan.md矩阵推进；原生历史与usage/结束原因分别验证。上下文环形入口按当前分支与连接模型显示，分类估算不混充提供方计数，缓存不重复加进上下文，未知容量不编造百分比。手动压缩必须显式操作和可追溯状态，原文保留。各协议的合成、真实供应商、UI出站、CI证据分列。
 
 P31落地：环形入口保持在输入框，预算和分类明细折叠，手机展开可滚动；工具定义估算单列并计入占用，当前草稿与旧请求实际值分开。未知窗口无伪造百分比，默认不压缩；原生签名在中断时保留但不当完整历史回放。推理控件沿用原组件，真实浏览器档位与预算均核对出站。
 
-
 P31验收收口：预算、分类与费用使用折叠详情，390/430px展开可滚动，1.1倍缩放和宽屏通过；显式手动压缩后显示摘要状态，关闭后恢复完整历史，费用调用数对应账本。真实与合成边界、CI及镜像见stage6-release.json。
 
-
 ## P32 — 阶段七执行与验收
+
 按stage7-plan.md验证账本边界、费用基数替换、归档完整还原及并发/权限/恶意输入。实际与估算分列；未知不是零；基数编辑携带版本；导入和恢复必须原子且保留调用去重身份。界面复用原生组件，观测/归档元数据不进入模型请求。实现、验证、部署分别记录，正式部署留给阶段八。
 
 P32落地：普通JSON选择后进入原生费用确认弹窗，按会话填写并可明确另开导入批次；费用编辑沿用上下文popup详情，冲突时保留输入。ZIP预览显示消息/调用/修订/附件与明确模型映射，恢复模型显示别名与原始账本身份分离；书签、分支和附件在原有组件中还原。
 
 P32验收收口：内置浏览器确认JSON初始基数、冲突保留输入、替换和重试去重；跨环境ZIP恢复后正文/分支/修订/书签/附件/费用与模型映射保留，当前分支2/全会话4次显示正确。390/430px与桌面、Esc退出通过。原型、实现、验证与部署分别记录；发布见stage7-release.json。
 
-
 ## P33 — 阶段八执行
+
 先核验固定镜像与实际生产配置；加密备份数据库、对象和稳定密钥，以独立DB角色/数据库、Redis实例或命名空间及附件存储恢复预发。关闭复制来的自动任务，真实供应商测试仅用合成短文本。通过迁移、回退恢复和用户路径后，用GitOps停止新生成、等待在途任务结束、执行最终备份和Recreate切换。正式接收新数据后不回退上游镜像；验证真实URL/TLS/auth/socket、模型路由、草稿、usage/账本、附件和监控，保存版本/digest/迁移/验收证据。
 
-
 ## P34 — 阶段八停止边界
+
 遵照R49立即停止推进；只读确认现网镜像及原Pod未变化，结束本任务本机转发。已创建预发工作负载、独立Redis和数据库副本保留现状，不擅自删除或继续迁移。新旧OpenRouter模型歧义尚未得到用户选择；不裁决。续接必须先明确用户希望保留、清理或如何继续，不能沿旧授权自动切换生产。
 
-
 ## P35 — 阶段8A完整验收与微调交接
-仅在隔离预发执行剩余真实HTTP/浏览器用户路径、合成短文本供应商验证、附件/向量检索、兼容版本恢复与断流/草稿/账本检查；以已完成阶段的CI为回归基线，发现实际缺陷才修复并补验证。发布覆盖文件及维护开关只作离线材料，不进入正式chart默认值。生产切换、正式维护开关、生产数据迁移与CPA替换不执行。保留模型歧义的显式待选状态；完成后提供可微调的预发版本、验收矩阵和续接入口。
 
+仅在隔离预发执行剩余真实HTTP/浏览器用户路径、合成短文本供应商验证、附件/向量检索、兼容版本恢复与断流/草稿/账本检查；以已完成阶段的CI为回归基线，发现实际缺陷才修复并补验证。发布覆盖文件及维护开关只作离线材料，不进入正式chart默认值。生产切换、正式维护开关、生产数据迁移与CPA替换不执行。保留模型歧义的显式待选状态；完成后提供可微调的预发版本、验收矩阵和续接入口。
 
 P35 acceptance refinement: provider-reported actual USD and discovered shared-window capacity appear in the existing composer popup; explicit overrides and unresolved legacy aliases remain intact.
 
-
 P35/F16 refinement: ordinary personal/admin forms share a 48rem content boundary. The trailing controls stay aligned within that column; connection/model management and other workspace panels retain the full content area. A 2560px/1.1x browser check reproduced a 2172px general form before this correction.
-
 
 P35收口：候选预览保留，17个连接模板、输入框上下文环形popup、原生费用、编辑/书签/归档及共享设置表单均有对应证据。普通表单48rem，复杂工作区保留宽度；不新增隐式RP上下文。正式路由和生产数据未切换。
 
-
 ## P36 — Existing-component refinement
+
 Model names remain primary; upstream ID is secondary only when different. Expanded connection lists scroll within five consistent-height rows, with actions outside the scroll region. Composer utility buttons share a centered hit area and no extra wrapper padding. Context remains anchored to the composer, uses the visible viewport, and scrolls within a bounded panel even when every section is expanded; unknown capacity never implies a percentage. Usage shows readable status and confirmed totals, separates missing data, and folds technical IDs. Dropdown options share a listbox surface with selection, disabled, keyboard and focus behavior. CPA discovery and generation must use the same protocol-specific prefix and preserve reverse-proxy paths, stable IDs and RP headers.
 
-
 ## P37 — CPA protocol guidance
+
 Show /v1beta for CPA/AGY native Gemini. Preserve the /v1 family for OpenAI Chat/Responses and Anthropic Messages. Gateway identity, client protocol and upstream routing are separate concepts. Existing model/connection identities remain stable; registered routes are not advertised as universal model capability.
 
-
 ## P38 — Protocol-first configuration and compact lists
+
 Primary fields: connection name, execution transport, service address, default interface mode and readonly resolved URL, followed by shared credentials. Models show inherited/effective mode and can override. Four common modes are not template-filtered; legacy extensions remain. Provider compatibility is independent from wire format. Enabled-first ordering is stable while toggling; five-row scrolling uses 2rem/2.5rem rows; connection separators removed; form toggles use a fixed right column. Validation and preview must use the same resolver as generation.
 
 P38 落地验收：连接与模型主表单直接展示接口模式/继承来源和只读实际地址；四种常用协议不再被模板裁剪。启用模型优先，开关操作期间位置稳定；桌面2rem、手机2.5rem，最多五行内部滚动，控件靠右。内置浏览器实测390/430/1280/2560及1.1倍缩放，通过深色本地夹具和浅色隔离预发验证。R50 不变。
 
 ## P39 — 复用成熟 Popover
+
 上下文环形按钮使用 Bits UI Popover.Trigger，内容通过 Portal/Content 呈现。定位、碰撞避让、焦点与键盘由现有库处理；Content本身是唯一滚动容器，高度由库提供的可用空间CSS变量限制。真实验证顶部/底部、展开明细、窗口变化、Escape关闭和焦点返回。
 P39补充验收：不同锚点位置自动选择方向，左右/上下均不越界；只滚动弹层内容；点击空白关闭；Escape关闭并恢复触发按钮焦点。使用项目既有Popover，不新增定位算法。
 P39验收组织：完成整批界面和交互调整后统一执行验收；发现新缺陷时修复后补跑对应范围，预发按整批结果更新。
 
-
 P39落地：由 Bits UI 管理 Portal、方向、碰撞、外部关闭和焦点；Content 单一纵向滚动。390/430/1280/2560、1.1倍缩放、滚动两端和窗口变化本地验证通过；实际预发新会话滚动0→146、已有会话0→511，均到达底部；空白/Escape关闭通过。R50保持。
 
-
 ## P40 — 紧凑模型管理与固定编辑窗
+
 子模型容器左右对齐父连接，以浅色背景/内部缩进区分层级，继续五行内部滚动。连接与模型编辑窗使用固定视口内高度和三段布局（标题、可滚动表单、操作底栏）；折叠项默认保持折叠，展开不改变外框。单行输入统一1.75rem，与SettingsSelect相同；JSON多行保留可编辑高度。容量分列总窗口、输入上限和最大输出，说明上游提供时同步、缺失保留未知、可手动填写；以真实发现结果说明缺失原因，不猜模型参数。
 
 P40验收：894px下模型区域与父连接同宽，全部折叠/展开的弹窗和底栏坐标相同；390/430/1280及390×667短视口通过，1.1缩放下单行输入/下拉为30.796875px。实际预发独立滚动和保存底栏通过。总容量与独立输入上限分列，缺失保持未知。
 
-
 ## P41 — 单一 info Popover 与紧凑回复编辑
+
 消息工具栏原有info位置使用Bits UI Popover，移除正文下独立usage详情块。面板包含本条调用的tokens、实际/估算/未知费用、状态/耗时、截至本轮累计；技术调用信息和原始usage可展开，无账本的历史消息仍能查看原始info，不编造费用。纵向仅Popover滚动，内容紧凑；折叠箭头右、展开下。回复编辑压缩外层/工具栏/正文重复padding，单个文本块不占宽大的类型标签栏，长内容内部滚动且操作底栏可见。聊天输入框模型按钮显示单行模型名，连接副标题隐藏，title/ARIA与选择列表保留来源。
 
 P41本地验收补充：长文撤销后原有textarea高度未回收，已让程序化修订/撤销触发重新测量，并保持正文内部滚动位置。结构化和普通文本路径均验证；无账本旧消息保留所有原始字段，HTML样式字符串按纯文本展示。
 
 P41实际预发：单条回复仅1个info入口，旧inline usage为0；254输入/38输出含30推理/292总计与原始candidate8同时可核对。折叠右、展开下；无账本原始字段保留、失败调用可查看。回复编辑短文高度约213px，8167字符撤销后回到同一高度；390px短屏底栏可见。composer单行，来源仍在title/ARIA和分组中。
 
-
 ## P42 — 顶部概览、独立交互状态与有界编辑器
+
 回复模型名下、正文前显示紧凑用量卡：桌面三列/小屏两列，实际/估算/未知及截至本轮快照分明；复用同一账本派生数据，info只放调用/原始明细。用户展开状态由组件本地状态持有，不从每5秒刷新的调用列表重算。上下文使用既有Bits UI Popover，固定28rem并按可用视口缩小，展开只增加内部滚动；折叠行统一py-2，内容间距放在展开体内部。回复编辑采用固定42rem宽度上限及随视口约束的最小宽度，工具栏在小屏使用短文案和完整ARIA/title；正文/思考/必要工具与JSON以既有Bits UI Tabs组织，保留全部原始结构，不在编辑正文内重复TEXT/THOUGHT标题。
 
 P42编辑安全补充：正文/思考切换与修改保留其他结构块、非文本内容及元数据；无效JSON禁用保存/另存，撤销恢复原结构。模型请求的签名失效策略沿用既有后端。
 
 P42验收：内置浏览器430×932、390×667及桌面1.1缩放通过；上下文展开前后约492.8px不变，折叠行上下8.8px对称，原始usage跨多轮轮询与滚轮仍展开。桌面编辑区约737.2px封顶，小屏工具栏一行；正文/思考/JSON切换、无效JSON阻止保存与撤销均通过。隔离预发证据见usage-editor-acceptance.json。
 
-
 ## P43 — Wrapping metadata and flat complete info
+
 The approved separate metadata row wraps whole metric groups on narrow screens. Input/output/cache-read/cache-write/current cost are always visible; reasoning, total, elapsed and cumulative costs remain available without card chrome. Full info uses sibling Overview/Calls/Raw tabs with stable call-ID source selection. See usage-density-acceptance.json for the verified layout.
 
 ## P44 — Independent summary visibility
+
 Gemini GenerateContent and CPA-AGY deep-merge includeThoughts=true by default; native model controls offer Default / Request summaries / Do not request. Explicit false, effort and budget are preserved. Reuse thought:true → reasoning_content → structured reasoning → existing renderer, including saved reload. No historical CPA thought text is added to RP inputs. OI behavior is verified with synthetic server/browser streams; one actual CPA request did not return readable thoughts, so live supplier acceptance remains open.
 
 ## P45 — Bounded session recovery
+
 A 30rem-wide frame, height bounded by 34rem and the viewport, embeds the existing login/MFA flow with compact spacing and clear invalid-session wording. Retain the original page and local input; stop repeated renewals of an already-rejected credential. New credentials resume normally; expiry/revocation/security policies are unchanged. Local browser recovery, mobile layout and CI session checks passed.
 
 ## P46 — Responsive metric grid and shared icons
+
 At ≤639px use three fixed metric columns: input/output/reasoning, cache-read/cache-write/total, cost plus timing, then cumulative cost plus exceptional status. At ≤359px use two columns with full-width cumulative/status rows. Long monetary values remain readable inside their assigned field. Desktop retains the compact metadata row. Overview and Calls use shared semantic-colored icons with neutral numbers; connection headers gain 0.5rem horizontal inset.
 
-
 ## P47 — Stable upstream merge and shared cost row
-Preserve a Git recovery point, merge the stable tag and review conflicting and automatically merged customization intersections. Retain explicit mobile token columns; place current/cumulative cost side by side, with timing/call count/status on a separate row. Very long amounts may wrap within their own field, never disappear. Verify against a pristine v0.12.5 type baseline and the full integration suite before staging-only publication.
 
+Preserve a Git recovery point, merge the stable tag and review conflicting and automatically merged customization intersections. Retain explicit mobile token columns; place current/cumulative cost side by side, with timing/call count/status on a separate row. Very long amounts may wrap within their own field, never disappear. Verify against a pristine v0.12.5 type baseline and the full integration suite before staging-only publication.
 
 2026-10-30：P47落地：token保持三列；费用与累计使用等宽半行，耗时/调用数/异常另排。上游合并保留原始调用去重、原生历史与服务器草稿；输入框挂载后再恢复草稿，初始化期间阻止抢跑输入和队列发送。 源码 `197335833f08ad54adf5fa423215757c22ac70ac`；CI https://github.com/BppleMan/open-webui/actions/runs/40992376952；证据 `upstream-v0125-acceptance.json`。
 
-
 P48: Keep temporary native state authenticated on the client, preserve cost boundaries on save/fork, retain legacy ACL identity and unknown cost indicators. No additional model context or implicit calls.
-
 
 2026-10-30：P48落地：临时状态加密绑定并跨请求回传；普通保存原子继承费用；旧历史与导入投影分别去重；未知历史基数可见。未增加模型上下文或额外真实调用。 源码 `b96836df3e0faf88be9187957995de729fd97e45`；CI https://github.com/BppleMan/open-webui/actions/runs/41022967897。
 
@@ -315,59 +299,50 @@ New temporary conversations have new identities; retry fingerprints reject chang
 
 Freeze the chat editor while saving a temporary conversation, retain pending input before retiring its source, and reject stale navigation contexts. Ledger ownership follows the stored Chat owner; each generation retains its authenticated caller and existing model permissions. Non-owner shared views receive visible outputs without raw native envelopes; trusted server history remains available for replay. Ollama accounting accepts only numeric metering fields. Gemini pricing uses reported modality/cache classifications and keeps incomplete rates unknown. Legacy archive restores receive an editable unknown imported-history baseline and exclude duplicate statistics. Map existing penalty controls to native generationConfig fields.
 
-
 ## P51 — Native privacy, replay and operation lifecycle
 
 Distinguish native caller-private metadata from protocol replay content. Shared reads use actual caller ownership; forks and archives carry a safe replay projection without private configuration. Outlet rewrites invalidate stale native state, including temporary responses. Media-only replies remain valid history. All Gemini media paths share conservative metering rules. Temporary saves verify their source context after every awaited transition before mutating global state or navigating.
-
 
 ## P52 — Complete response projection and durable continuation
 
 Private metadata follows caller and configuration ownership on every full-chat response. Portable native history retains terminal markers and canonical tool-ID sidecars without modifying signed provider blocks. Legacy missing IDs can be recovered only from a matching unedited canonical function sequence. A successful temporary save transitions to the saved conversation even when sidebar refresh fails, subject to the existing navigation guards.
 
-
 ## P53 — Canonical and native request consistency
 
 Snapshot native request content around filters and invalidate changed request copies only. Restrict outbound native tool blocks to the canonical surviving tool chain, preserving retained signed blocks. Keep generated images as generic content alongside native envelopes so edits and compatible model changes retain visible media. Unsupported targets must fail explicitly instead of dropping images.
-
 
 ## P54 — Protocol fields and stable tool identity
 
 Compare explicit thinking/reasoning field changes at request-filter boundaries and retain their selected values in Ollama conversion. Use the same provider-function normalization for canonical output and native history. Persist positional tool-ID sidecars outside raw provider bodies for both stream and nonstream Ollama, restore validated legacy IDs, and reject mismatches rather than inventing new history IDs.
 
-
 ## P55 — Native call boundaries and consumer tool identity
 
 Recover the native suffix against canonical history while retaining older canonical output. Suppressed Gemini/CPA function blocks do not consume tool positions. The streaming consumer records canonical ID changes in the exact live adapter's positional sidecar; cache, saved envelopes and authenticated temporary capsules use that same mapping. Outbound function results translate canonical IDs back to each retained provider call ID. Preserve raw signatures and canonical reasoning-format choices.
-
 
 ## P56 — Session lineage and complete native replay boundaries
 
 Session JWTs receive a stable login sid while jti rotates; logout checks the entire family, and socket/voice refresh respects login identity. Keep session-family revocation markers without a token-derived TTL because renewal is sliding. Recognize tool boundaries for all seven protocols before lookahead, retaining opaque-only blocks and canonical cancellation. Use the same streaming tag parser for witnessed historical projections, checking both visible text and parsed reasoning/attributes. Arena forwards native transport identity and status/headers.
 
-
 2026-11-06: R71/P56 is verified on the isolated preview, including the carried-forward R67-R70 delivery. Source `223addfa331a0bcefc33ceb6ba9498d680c96689` passed 813 backend and 79 frontend cases, zero new type diagnostics and the full exact-source CI. Built-in-browser checks covered temporary save after a sidebar 503, continued draft editing/reload, generated-image model switching and caption editing at 430 x 932. The final preview streamed a loopback synthetic answer and thought summary and preserved both after reload. GitOps `71f376bf717d0a5c0bdaa8dda068b7de18464ea4` is Synced/Healthy at the recorded immutable image. Original review evidence remains historical; R50 and the R59 real-provider gap remain. See review-round9-remediation-acceptance.json.
-
 
 ## P57 — Verified consumer projections and call-scoped tool identity
 
 Persist the actual per-call canonical output alongside the unchanged native response. Validate that projection against saved history before replay. Stream filter changes invalidate only their native call; legitimate tag/media transformations retain a verified association. Record tool-ID maps for every native protocol and normalize Responses event identities before execution.
 
-
 2026-11-06: R72/P57 is verified on isolated preview. Source `6e4f1500d9d0a32810286f22af3b1181be221951` passed 1017 backend / 79 frontend cases, zero new type diagnostics, the original 104 review cases, 100 added combination cases and 200 deterministic partitions. Real HTTP/socket/database fixtures and built-in-browser tag/Continue/filter/reload paths passed. Exact-source CI and GitOps `4cd29f43a41c60d7d837dc38a5d4578b57bb7882` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round10-remediation-acceptance.json.
-
 
 ## P58 — Dispatch and cancellation boundaries
 
 Exclude undispatched incomplete arguments before strict comparison. Preserve provider functions through controlled normalization and validate the resulting execution projection. One-to-many splitting uses explicit call-local canonical fallback. Cancellation carries an updated authenticated capsule matching final partial output; existing completed calls remain usable.
 
-
 2026-11-06: R73/P58 is verified on isolated preview. Source `02c3c57468f28afc9555494429d185a820291008` passed 1145 backend / 81 frontend cases, zero new type diagnostics, the original 64 review cases and 128 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser temporary Continue/Stop/followup and ask_user answer/reload paths passed. Exact-source CI and GitOps `468327c636c0fa4eb05498571b48cf0b20f4db88` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round11-remediation-acceptance.json.
-
 
 ## P59 — Call boundaries and terminal consistency
 
 Invalidated streams use canonical IDs without remapping unrelated provider identities. Invisible native terminal calls remain after the tool-result boundary. Responses terminal status, details, error and usage propagate through native conversion, message events, persistence and the ledger.
 
-
 2026-11-06: R74/P59 is verified on isolated preview. Source `5d347e661e7ddace7c9b65d420d7a6c6b7c4ffc0` passed 1450 backend / 84 frontend cases, zero new type diagnostics, the original 180 review cases and 305 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser repeated questions, signed terminal replay and Responses failure/truncation paths passed. Exact-source CI and GitOps `a83a3f4dd0059b84623a7065db2cec856da2a3de` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round12-remediation-acceptance.json.
+
+## P60 — Failure, cancellation and recovery consistency
+
+Latch failed attempts before any tool dispatch or success side effects. Record each returned tool independently, including parallel delegates, retaining completed results when other work is cancelled. Explicitly clear old attempt errors on successful Continue, while preserving new errors and historical ledger diagnoses. Canonical terminal fields take precedence; recover missing historical fields only for matching output, then retain them in portable archives.

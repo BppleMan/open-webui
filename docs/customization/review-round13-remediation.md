@@ -1,0 +1,12 @@
+# Thirteenth-review remediation — R75 / P60
+
+Failures must terminate the current attempt without dispatching buffered tools or triggering success side effects. Completed tool results survive later cancellation. Continue replaces the prior attempt error while retaining ledger history. Terminal state survives canonical persistence and archive recovery.
+
+| Finding | Repair                                                                                                                               | Verification                                                                                                |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| CR13-01 | Latch stream/provider/followup errors, suppress pending tools and success side effects, retain partial output/usage and final error. | Seven protocols, EOF/error/followup HTTP and exceptions, normal controls; actual HTTP pending-tool failure. |
+| CR13-02 | Record each tool result before the next await, finalize independently, cancel/drain remaining delegates.                             | Ordinary and parallel batches; cancel first/second; saved and temporary native history.                     |
+| CR13-03 | Explicit final error clearing and Continue UI reset; preserve new failures.                                                          | Both stores, both response modes, seven protocols, actual frontend handlers and HTTP.                       |
+| CR13-04 | Canonical terminal fields plus narrow matching-output legacy fallback.                                                               | Stream/nonstream, same/cross-owner archives, historical missing fields and canonical precedence.            |
+
+Local verification passed: all 138 original cases, 223 expanded regressions, 1673 backend and 88 frontend tests, zero new type diagnostics (5695 upstream diagnostics remain), production build, real HTTP/socket/archive recovery and built-in browser failure/Continue/reload/usage checks. Exact-source CI and isolated-preview deployment are pending. Original review evidence remains unchanged. The first three roots predate R74; the fourth is an integration omission for new fields. R50/U49/R59 and built-in browser only remain.

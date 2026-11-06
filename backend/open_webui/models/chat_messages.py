@@ -250,7 +250,14 @@ class ChatMessageModel(BaseModel):
 
 
 class ChatMessageTable:
-    OI_STATE_FIELDS = ('oi_native', 'oi_native_invalidated', 'finish_reason', 'oi_source_message_id')
+    OI_STATE_FIELDS = (
+        'oi_native',
+        'oi_native_invalidated',
+        'finish_reason',
+        'oi_source_message_id',
+        'response_status',
+        'incomplete_details',
+    )
 
     @classmethod
     def native_state(cls, data, previous=None):
@@ -423,6 +430,17 @@ class ChatMessageTable:
         async with get_async_db_context(db) as db:
             result = await db.execute(select(ChatMessage).filter_by(chat_id=chat_id))
             rows = result.scalars().all()
+            # R74 wrote these fields only to the legacy JSON. Recover missing
+            # metadata only for the same output; canonical values (even null) win.
+            legacy_messages = {}
+            if any(
+                any(key not in (row.oi_state or {}) for key in ('response_status', 'incomplete_details'))
+                for row in rows
+            ):
+                from open_webui.models.chats import Chat
+
+                legacy = (await db.execute(select(Chat.chat).where(Chat.id == chat_id))).scalar_one_or_none()
+                legacy_messages = (legacy or {}).get('history', {}).get('messages', {})
 
         if not rows:
             return None
@@ -447,6 +465,14 @@ class ChatMessageTable:
                 json_key = self.DB_TO_JSON_KEY_MAP.get(key, key)
                 msg[json_key] = val
             msg.update({key: value for key, value in (row.oi_state or {}).items() if key in self.OI_STATE_FIELDS})
+
+            legacy_message = legacy_messages.get(msg_id, {})
+            if row.output == legacy_message.get('output') and (
+                row.output or (row.content or '') == (legacy_message.get('content') or '')
+            ):
+                for key in ('response_status', 'incomplete_details'):
+                    if key not in msg and key in legacy_message:
+                        msg[key] = deepcopy(legacy_message[key])
 
             # Ensure content always has a value
             msg.setdefault('content', '')

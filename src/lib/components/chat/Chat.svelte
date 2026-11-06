@@ -3684,6 +3684,7 @@
 			if (field in data) message[field] = data[field];
 		}
 
+		if ('error' in data && error == null) message.error = null;
 		if (error) {
 			if (shared) message.error = error;
 			else handleOpenAIError(error, message);
@@ -4982,6 +4983,7 @@
 		if (history.messages[message.id].done == true) {
 			const responseMessage = history.messages[message.id];
 			responseMessage.done = false;
+			responseMessage.error = null;
 			await tick();
 
 			const model = $models

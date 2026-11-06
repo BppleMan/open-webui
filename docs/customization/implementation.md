@@ -15,7 +15,6 @@ Approved by the user on 2026-10-25. This is the implementation index; requiremen
 
 Deferred: canon/state injection, automatic memories, campaign/character systems, RP writing rules/request inspector, dice, GM knowledge scopes, independent RP sampling presets. Existing background generation and advanced parameter controls are reused.
 
-
 Stage3 implements transport-aware connection identity, versioned migration and owner-only browser credentials. See validation.md for local acceptance and actual CI status. Continue with stages4–8 after this checkpoint; no production release in stage3.
 
 ### Stage 3 contracts for continuation
@@ -28,9 +27,7 @@ Stage3 implements transport-aware connection identity, versioned migration and o
 - Browser RPC forwards the normalized native request and raw UTF8 response stream through the initiating browser; it reuses native protocol parsing, usage snapshots and ledger attribution. No active browser means no dispatch; loss of that session fails the call while preserving confirmed usage. HTTP429 is propagated without retry. Separate background execution must select server transport.
 - Resume from OI5 with the same persistent server secret; additive migration does not reconstruct old accounting. Test fixtures use only synthetic input and loopback providers. Stage4 must prove each model entrypoint end-to-end rather than inferring correctness from shared components.
 
-
 Stage5 is complete under the documented built-in-browser scope. See stage5-release.json and stage5-acceptance.json. Continue stage6 native protocols/context, stage7 costs/archive and stage8 staging/GitOps. Physical PWA was explicitly waived; production remains unchanged.
-
 
 Stage7 implements atomic historical-cost JSON import, versioned cost replacement, partial/late usage preservation, fixed snapshot correction, canonical archive provenance and concurrent safe restore. See stage7-acceptance.md for the OI6 schema and portable archive contract; stage7-release.json records CI/image publication. Next is stage8 staging and GitOps; no production switch is included.
 
@@ -38,33 +35,27 @@ R50 latest boundary: finish stage8A prelaunch preparation and acceptance only. U
 
 Stage8A is verified; current evidence is stage8-acceptance.json and stage8-release.json. Continue with user tuning. Stage8B production authorization has not been given.
 
-
 R51/P36 preview refinement is verified at a198214b3. Context popovers use rendered capped height, connection lists expose five scrollable rows, composer controls align, settings options reuse Bits UI, and usage details distinguish confirmed/unknown data. CPA/AGY discovery and generation share native /v1beta routing; R52/P37 documents the protocol distinction. See preview-refinement-2026-10-29.json for CI, real synthetic CPA and browser evidence. Production remains unchanged under R50.
 
 ## R53 / P38 — protocol decoupling
 
 Protocol registry, persisted service routing and OI7 model inheritance are implemented. Browser RPC carries explicit streaming and validates the resolved endpoint. The compact connection editor uses common mode choices and readonly URL previews. Final checks: 351 backend and 57 frontend tests, no new type/a11y diagnostics (5765 existing upstream diagnostics), production build and CI 40814642568 passed. Populated PostgreSQL migration, restore, browser user paths and isolated preview are verified. Real supplier/CORS boundaries are recorded in protocol-decoupling-acceptance.json; R50 holds. See protocol-decoupling.md.
 
-
 ### R54/P39 context Popover acceptance
 
 The context popup now uses the installed Bits UI Popover primitive and one vertical scroll container. Source 3ea4c2b4a1a3c2501d592d51e56b075e471870b1 passed the final browser matrix, frontend tests, type delta, production build and CI. Only the isolated preview was updated. See context-popover-acceptance.json for the scroll measurements, CI and immutable image. U49 requires completing related edits before the batch of checks and preview publication. R50 remains in force.
-
 
 ### R55/P40 model editor refinement
 
 Connection model regions now align with their parent row. Both editors use fixed viewport-bounded frames, independent body scrolling and fixed action footers. Single-line controls match the existing settings select height, with separate multiline JSON styling. Capacity displays shared context, independent input and output limits separately. Existing CPA discovery did not advertise the sampled limits; no values were invented or backend behavior changed. Source 98e09d6fd4de602f5b89aa1077710b63331b51c2 and CI40822743633 passed; isolated preview is verified. See model-editor-acceptance.json, including the pinned-dependency verification used after remote Helm refresh stalled. R50/U49 remain.
 
-
 ### R56/P41 unified message info
 
 The original info toolbar position now opens one existing-library Popover for ledger usage, costs, the round snapshot and preserved native raw data. Independent inline usage cards are removed. Reply editing uses compact spacing and a scrollable body; programmatic undo/revision changes resize both structured and plain textareas. Composer triggers hide the connection subtitle without changing identity or menu grouping. Source 341d26f304d8418570743198658ec9cf2edf8d8b and CI40836739314 passed; the isolated preview is verified. See message-info-acceptance.json, including the pinned-dependency fallback after remote Helm index refresh timed out. No accounting/backend/schema changes or new provider generations. R50/U49 remain.
 
-
 ### R57/P42 reply-leading usage and stable editors
 
 Essential usage/cost/snapshot metrics now precede each response; native info retains technical and raw details. User-owned disclosure state survives ledger polling. Context Popover uses a fixed viewport-bounded 28rem frame, one scroll container and symmetric disclosure rows. Reply editing is bounded to 42rem, with one-row mobile actions and Bits UI body/reasoning/tool/JSON tabs. Text changes retain non-text structured fields; invalid JSON disables saving and external undo restores the editor. Local browser acceptance, 59 frontend tests, type delta (0 new; 5756 upstream diagnostics) and production build passed. Source bcfd7fa35f37afca9b54936c7cda4feee3222fc7 and CI40845461704 passed; the isolated preview is verified. See usage-editor-acceptance.json. R50/U49 remain.
-
 
 ### R59/P44 Gemini summaries and R60/P45 recovery
 
@@ -74,7 +65,6 @@ GenerateContent and CPA-AGY now request readable summaries by default, preservin
 
 The reply-leading card is replaced with a compact, wrapping metadata row. Input/output, grouped cache reads/writes, reasoning, total tokens, per-response cost, elapsed time and the cumulative snapshot retain their data semantics. Existing line icons plus a small currency outline use restrained theme colors. Info restores full statistics in sibling Overview/Calls/Raw tabs; the raw source is keyed by immutable call ID and survives refresh. Calls are deduplicated before presentation, missing values stay unknown, and monetary strings retain precision. A passive note distinguishes recorded reasoning usage from absent readable thought content; no provider summary request is enabled. Local browser acceptance and 63 frontend tests passed, with zero new type diagnostics (5756 upstream remain). Production build and exact-source CI40860984784 passed; isolated preview is verified at 1db8c067c403d0829f006c65efd02390cec26979. See usage-density-acceptance.json. R50/U49 apply.
 
-
 ### R61 / P46 — Responsive usage layout and shared metric icons
 
 The reply-leading metadata uses explicit three-column grid areas below 640px and a two-column fallback below 360px. Cost, timing, cumulative cost and exceptional status keep dedicated positions; exact decimals and unknown values retain existing semantics. The info overview and calls use the same decorative icon palette. Connection headings add horizontal inset without changing their model region or five-row scrolling.
@@ -83,7 +73,6 @@ The batch is locally verified at 320/390/430/1280px, 1.1 application scale, ligh
 
 R61 closure: source `eefed22b63a3a4001e76ecf86aff795fe24b05fc` passed [CI](https://github.com/BppleMan/open-webui/actions/runs/40920231140) and was verified on the isolated preview using its immutable image. Phone grid grouping, overview/call icons and connection header inset passed rendered checks. No schema migration, supplier generation or production update occurred. See `usage-responsive-acceptance.json`.
 
-
 ### R62 / P47 — upstream v0.12.5 synchronization
 
 Merge the stable v0.12.5 tag into the existing integration branch, retaining the original v0.12.3 lineage and all OI persistence contracts. The upstream Sessions explorer uses the connection-grouped model directory. Global analytics continue to count canonical call records, including regeneration, without duplicating fork/import projections; the Sessions explorer describes saved message sessions separately. Keep upstream partial streaming usage snapshots and IME fixes alongside native protocol replay and ledger accounting.
@@ -91,7 +80,6 @@ Merge the stable v0.12.5 tag into the existing integration branch, retaining the
 Mount the composer before applying durable draft content, and defer queued dispatch until draft restoration and model defaults finish. A restored pending terminal upload without its in-memory File is marked for reattachment rather than silently omitted. Current and cumulative fees share one deliberate mobile grid row; timing/status occupy the following row. Full decimals and unknown fees remain visible.
 
 The type baseline was regenerated from a pristine v0.12.5 archive using its locked dependencies, not from the merged fork. See upstream-v0125-acceptance.json for the separate implementation, validation and staging statuses. R50 production hold and the R59 actual-CPA-readable-summary gap remain.
-
 
 R63 review remediation is implemented with isolated regression and HTTP validation. See review-remediation.md and review-remediation-acceptance.json; CI and preview are separate pending gates.
 
@@ -121,39 +109,34 @@ Request-stage filters invalidate changed native request copies while keeping unt
 
 Request consistency includes Ollama thinking/reasoning fields and preserves explicit native-field clearing. Legacy call sequences use get_provider_function. Ollama IDs are persisted in sidecars and restored through strict provider-function matching, including temporary API history. Versioned capsule projection separates transport indexes without accepting edited content or breaking v1 validation. See review-round7-remediation.md and its acceptance record.
 
-
 ### R70 / P55 — Native suffixes and consumer-assigned tool IDs
 
 Retain canonical legacy prefixes and reconstruct merged native call boundaries from the end. Exclude undispatched Gemini/CPA tools from matching. Apply consumer ID changes to the exact live adapter state, persisting the positional sidecar into ordinary and temporary replay; translate provider result IDs without changing signed blocks. See review-round8-remediation.md and its acceptance record.
-
 
 ### R71 / P56 — Session-family logout and cross-protocol replay
 
 Stable login lineage revokes all refresh siblings while keeping independent logins. Native tool boundary detection covers all seven adapters, including opaque-only reasoning. Shared consumer tag projection validates recorded content rather than treating normal parsing as editing. Arena keeps native response identity. See review-round9-remediation.md and its acceptance record.
 
-
 2026-11-06: R71/P56 is verified on the isolated preview, including the carried-forward R67-R70 delivery. Source `223addfa331a0bcefc33ceb6ba9498d680c96689` passed 813 backend and 79 frontend cases, zero new type diagnostics and the full exact-source CI. Built-in-browser checks covered temporary save after a sidebar 503, continued draft editing/reload, generated-image model switching and caption editing at 430 x 932. The final preview streamed a loopback synthetic answer and thought summary and preserved both after reload. GitOps `71f376bf717d0a5c0bdaa8dda068b7de18464ea4` is Synced/Healthy at the recorded immutable image. Original review evidence remains historical; R50 and the R59 real-provider gap remain. See review-round9-remediation-acceptance.json.
-
 
 ### R72 / P57 — Consumer projection and all-protocol tool identity
 
 Record actual per-call consumer output after filters, tag parsing and media storage; validate it before replay, preserving raw signatures. Invalidate only changed stream calls and omit their raw body from portable output. Share provider/canonical tool identity across all seven adapters and Responses event snapshots. Keep temporary state client-held and cancellation tied to the active stream. See review-round10-remediation.md and its acceptance record.
 
-
 2026-11-06: R72/P57 is verified on isolated preview. Source `6e4f1500d9d0a32810286f22af3b1181be221951` passed 1017 backend / 79 frontend cases, zero new type diagnostics, the original 104 review cases, 100 added combination cases and 200 deterministic partitions. Real HTTP/socket/database fixtures and built-in-browser tag/Continue/filter/reload paths passed. Exact-source CI and GitOps `4cd29f43a41c60d7d837dc38a5d4578b57bb7882` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round10-remediation-acceptance.json.
-
 
 ### R73 / P58 — Cancellation and controlled tool dispatch
 
 Skip undispatched partial tools before strict argument parsing. Record original provider functions and normalized execution projections at dispatch; represent split calls by their actual canonical executions. Refresh authenticated temporary capsules on cancellation and consume them atomically with final output. See review-round11-remediation.md and its acceptance record.
 
-
 2026-11-06: R73/P58 is verified on isolated preview. Source `02c3c57468f28afc9555494429d185a820291008` passed 1145 backend / 81 frontend cases, zero new type diagnostics, the original 64 review cases and 128 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser temporary Continue/Stop/followup and ask_user answer/reload paths passed. Exact-source CI and GitOps `468327c636c0fa4eb05498571b48cf0b20f4db88` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round11-remediation-acceptance.json.
-
 
 ### R74 / P59 — Native tool boundaries and Responses terminal state
 
 Invalidated calls retain canonical ID recovery. Invisible terminal responses stay after completed tool results. Responses ending metadata propagates through the adapter, reducers, final message and ledger, with unsuccessful tools excluded from dispatch. Interactive resolutions use stable per-tool generation identities. See review-round12-remediation.md and its acceptance record.
 
-
 2026-11-06: R74/P59 is verified on isolated preview. Source `5d347e661e7ddace7c9b65d420d7a6c6b7c4ffc0` passed 1450 backend / 84 frontend cases, zero new type diagnostics, the original 180 review cases and 305 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser repeated questions, signed terminal replay and Responses failure/truncation paths passed. Exact-source CI and GitOps `a83a3f4dd0059b84623a7065db2cec856da2a3de` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round12-remediation-acceptance.json.
+
+### R75 / P60 — Failed attempts and durable results
+
+See review-round13-remediation.md. Implementation, verification and isolated-preview deployment are tracked separately; prior acceptance remains historical.
