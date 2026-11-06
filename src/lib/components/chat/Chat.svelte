@@ -3664,7 +3664,10 @@
 				}
 				dispatchCallOverlayAudio(message);
 			}
-		} else if (data?.type === 'response.completed' || data?.type?.endsWith('.done')) {
+		} else if (
+			['response.completed', 'response.incomplete', 'response.failed'].includes(data?.type) ||
+			data?.type?.endsWith('.done')
+		) {
 			message.content = getOutputText(message.output) || message.content;
 		}
 
@@ -3677,6 +3680,9 @@
 		const { id, done, choices, content, output, sources, selected_model_id, error, usage } = data;
 		const finishReason = data.finish_reason || choices?.[0]?.finish_reason;
 		if (finishReason) message.finish_reason = finishReason;
+		for (const field of ['response_status', 'incomplete_details']) {
+			if (field in data) message[field] = data[field];
+		}
 
 		if (error) {
 			if (shared) message.error = error;

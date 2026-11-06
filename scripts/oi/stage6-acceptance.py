@@ -76,6 +76,7 @@ try:
     subprocess.run([sys.executable, 'scripts/oi/round4-http-acceptance.py'], env=env, check=True, timeout=120)
     subprocess.run([sys.executable, 'scripts/oi/round10-http-acceptance.py'], env=env, check=True, timeout=180)
     subprocess.run([sys.executable, 'scripts/oi/round11-http-acceptance.py'], env=env, check=True, timeout=180)
+    subprocess.run([sys.executable, 'scripts/oi/round12-http-acceptance.py'], env=env, check=True, timeout=180)
     print(f'Stage6 native HTTP/control/compaction scenarios passed. Evidence: {state}')
 
 finally:

@@ -9,7 +9,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from uuid import uuid4
+from uuid import NAMESPACE_URL, uuid4, uuid5
 
 import aiohttp
 import anyio.to_thread
@@ -2096,6 +2096,11 @@ async def resolve_chat_message_tool_call(
     request.state.tool_approval_resume = (id, message_id, resolution['resume'])
     try:
         payload = await build_tool_approval_resume_payload(id, message_id, chat=resolution['chat'])
+        # Several interactive calls can resume the same assistant message. The
+        # authenticated resolution is the idempotency boundary, not that message.
+        payload['oi_request_id'] = str(
+            uuid5(NAMESPACE_URL, JSONCodec.dumps(['tool-resume', id, message_id, form_data.call_id]))
+        )
         result = await chat_completion(request, payload, user)
     finally:
         del request.state.tool_approval_resume

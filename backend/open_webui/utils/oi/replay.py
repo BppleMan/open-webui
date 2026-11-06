@@ -206,7 +206,9 @@ def remap_stream_tool(request, response, index, original_id, canonical_id):
     """
     call_id = response.headers.get('x-oi-native-call-id')
     state = getattr(request.state, 'oi_native_streams', {}).get(call_id)
-    if state is not None:
+    # A changed stream uses its recorded canonical projection, not raw provider
+    # identities. Consumer deduplication must not remap that invalidated envelope.
+    if state is not None and not state.replay_invalidated:
         state.remap_tool_id(index, original_id, canonical_id)
 
 
@@ -632,6 +634,37 @@ def attach_native(saved, messages):
 
         pending, rebuilt = list(calls), []
         for message in reversed(messages):
+            if message.get('role') in {'tool', 'user'}:
+                # The converter may omit a reasoning/opaque-only assistant after
+                # a tool result (including its flattened user image message).
+                # Consume those calls on THIS side of that boundary before
+                # matching the preceding tool assistant.
+                tail = []
+                while pending:
+                    native = pending[-1]
+                    projected = replay_message(native, surviving_tools)
+                    try:
+                        projected = match_native_text(projected, saved.get('output'), '')
+                    except ValueError:
+                        break
+                    if projected.get('tool_calls'):
+                        break
+                    pending.pop()
+                    has_output = any(projected.get(key) for key in ('content', 'reasoning_content', 'images')) or (
+                        native.get('replayable', True) and _contains_opaque_native(native['body'])
+                    )
+                    # A non-default reasoning format already supplied its own
+                    # assistant slot. Here only the invisible native slot is missing.
+                    projected.pop('reasoning_content', None)
+                    if has_output:
+                        tail.insert(
+                            0,
+                            {
+                                **projected,
+                                **({'oi_native': copy.deepcopy(native)} if native.get('replayable', True) else {}),
+                            },
+                        )
+                rebuilt[0:0] = tail
             if message.get('role') != 'assistant' or not pending:
                 rebuilt.insert(0, message)
                 continue

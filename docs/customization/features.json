@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-11-06",
-  "phase": "R73_verified_on_isolated_preview; R50_production_hold",
+  "phase": "R74_locally_verified_ci_and_preview_pending; R73_preview_verified; R50_production_hold",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -3646,5 +3646,60 @@
       "test_user_preferences_restored": true,
       "global_direct_connections_unchanged": true
     }
+  },
+  "review_round12_remediation": {
+    "requirement": "R74",
+    "prototype": "P59",
+    "status": "locally_verified_ci_and_preview_pending",
+    "baseline": "f3d76d0ff70ec97b85c4aa572227becec21bc0e3",
+    "findings": {
+      "CR12-01": {
+        "implementation": "fixed",
+        "verification": "original_and_expanded_regressions_passed"
+      },
+      "CR12-02": {
+        "implementation": "fixed",
+        "verification": "original_and_expanded_regressions_passed"
+      },
+      "CR12-03": {
+        "implementation": "fixed",
+        "verification": "original_and_expanded_regressions_passed"
+      }
+    },
+    "additional_finding": {
+      "id": "R74-B01",
+      "problem": "Second interactive resolution in one assistant message reused the prior generation idempotency key; answer saved but continuation returned 409",
+      "implementation": "stable per-resolution identity after permission and duplicate checks",
+      "verification": "actual HTTP and built-in browser two-question flow, duplicate rejection and exact call count"
+    },
+    "checks": {
+      "before": {
+        "failed": 41,
+        "passed": 139
+      },
+      "original_cases": 180,
+      "expanded_regression_cases": 305,
+      "backend": 1450,
+      "frontend": 84,
+      "new_type_diagnostics": 0,
+      "existing_upstream_diagnostics": 5695,
+      "production_build": "passed",
+      "HTTP": "passed: actual filtered/repeated tool IDs, two questions, signed terminal after results, stream/nonstream message and ledger endings",
+      "built_in_browser": "passed: two answers, reload and next turn; Responses incomplete and failed output, tokens and warnings; failed reload",
+      "original_evidence_files_unchanged": 360,
+      "real_supplier_requests": 0,
+      "tool_media_boundary": "16 opaque-only/image-result cases added; initial boundary fix placed opaque call before flattened tool images; corrected to retain result+media before native terminal"
+    },
+    "deployment": {
+      "status": "pending",
+      "scope": "isolated_preview_only",
+      "previous_R73_preview": "verified; not regressed to pending"
+    },
+    "limitations": [
+      "No production OI/CPA, route or business database changes.",
+      "No real supplier requests; R59 actual readable thought-summary gap remains open.",
+      "5695 existing upstream type diagnostics remain.",
+      "Invalidated stream calls use canonical replay while other valid raw signatures remain unchanged."
+    ]
   }
 }

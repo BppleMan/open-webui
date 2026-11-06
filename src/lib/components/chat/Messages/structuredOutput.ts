@@ -569,7 +569,7 @@ export function applyResponseStreamEvent(
 		return output;
 	}
 
-	if (eventType === 'response.completed') {
+	if (['response.completed', 'response.incomplete', 'response.failed'].includes(eventType)) {
 		if (!event.response?.output?.length) return output;
 
 		// Completion covers one provider response, not the earlier tool-call rounds.

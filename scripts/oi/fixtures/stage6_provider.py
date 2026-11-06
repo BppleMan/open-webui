@@ -34,7 +34,7 @@ async def generate(protocol: str, path: str, request: Request):
             'rp': {k: request.headers.get(k) for k in ['x-rp-client', 'x-rp-user-id', 'x-rp-chat-id']},
         }
     )
-    last_content = (b.get('contents') or b.get('messages') or [{}])[-1]
+    last_content = (b.get('contents') or b.get('messages') or b.get('input') or [{}])[-1]
     fixture_prompt = json.dumps(last_content)
     if 'R72_TAGS_STREAM' in fixture_prompt:
         b['fixture_case'] = 'round10_tags'
@@ -344,6 +344,111 @@ async def generate(protocol: str, path: str, request: Request):
                 'output_index': 1,
                 'delta': '{"q":"partial',
             },
+        ]
+    # R74: two interactive tool rounds with reused provider IDs, then an
+    # invisible signed terminal call. All tools stay inside this synthetic app.
+    cycle = b.get('fixture_case') == 'r74_cycle' or (
+        'R74_TOOL_CYCLE' in json.dumps(b) and 'R74_FOLLOWUP' not in fixture_prompt
+    )
+    if cycle and protocol in {'gemini', 'openai-responses'}:
+
+        def objects(value):
+            if isinstance(value, dict):
+                yield value
+                for child in value.values():
+                    yield from objects(child)
+            elif isinstance(value, list):
+                for child in value:
+                    yield from objects(child)
+
+        turns = sum(
+            bool(value.get('functionResponse')) or value.get('type') == 'function_call_output' for value in objects(b)
+        )
+        args = {
+            'questions': [
+                {
+                    'id': 'route',
+                    'header': f'Round {turns + 1}',
+                    'question': f'Choose synthetic round {turns + 1}.',
+                    'options': [
+                        {'label': 'North', 'description': 'Go north.'},
+                        {'label': 'South', 'description': 'Go south.'},
+                    ],
+                }
+            ]
+        }
+        if protocol == 'gemini':
+            parts = (
+                [
+                    {
+                        'functionCall': {'id': 'r74-repeat', 'name': 'ask_user', 'args': args},
+                        'thoughtSignature': f'r74-tool-{turns}',
+                    }
+                ]
+                if turns < 2
+                else [{'thought': True, 'text': 'R74 terminal thought.', 'thoughtSignature': 'r74-terminal-signature'}]
+            )
+            body = {
+                'candidates': [{'content': {'role': 'model', 'parts': parts}, 'finishReason': 'STOP'}],
+                'usageMetadata': {'promptTokenCount': 100, 'candidatesTokenCount': 5, 'totalTokenCount': 105},
+            }
+            frames = [body]
+        else:
+            items = (
+                [
+                    {
+                        'id': f'fc-r74-{turns}',
+                        'type': 'function_call',
+                        'call_id': 'r74-repeat',
+                        'name': 'ask_user',
+                        'arguments': json.dumps(args),
+                        'status': 'completed',
+                    }
+                ]
+                if turns < 2
+                else [
+                    {
+                        'id': 'r74-reasoning',
+                        'type': 'reasoning',
+                        'summary': [{'type': 'summary_text', 'text': 'R74 terminal thought.'}],
+                        'encrypted_content': 'r74-terminal-signature',
+                        'status': 'completed',
+                    }
+                ]
+            )
+            body = {
+                'id': f'r74-{turns}',
+                'status': 'completed',
+                'output': items,
+                'usage': {'input_tokens': 100, 'output_tokens': 5, 'total_tokens': 105},
+            }
+            frames = [
+                {'type': 'response.output_item.done', 'output_index': i, 'item': item} for i, item in enumerate(items)
+            ] + [{'type': 'response.completed', 'response': body}]
+    if protocol == 'openai-responses' and (
+        'R74_RESPONSE_INCOMPLETE' in fixture_prompt or 'R74_RESPONSE_FAILED' in fixture_prompt
+    ):
+        status = 'incomplete' if 'R74_RESPONSE_INCOMPLETE' in fixture_prompt else 'failed'
+        item = {
+            'id': 'r74-partial',
+            'type': 'message',
+            'role': 'assistant',
+            'status': 'incomplete',
+            'content': [{'type': 'output_text', 'text': 'R74 partial answer.', 'annotations': []}],
+        }
+        body = {
+            'id': 'r74-terminal',
+            'status': status,
+            'output': [item],
+            'usage': {'input_tokens': 10, 'output_tokens': 2, 'total_tokens': 12},
+        }
+        if status == 'incomplete':
+            body['incomplete_details'] = {'reason': 'max_output_tokens'}
+        else:
+            body['error'] = {'code': 'server_error', 'message': 'R74 synthetic failure.'}
+        frames = [
+            {'type': 'response.output_item.done', 'output_index': 0, 'item': item},
+            {'type': 'response.' + status, 'response': body},
         ]
     if not stream:
         return body

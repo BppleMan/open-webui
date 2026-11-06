@@ -856,6 +856,12 @@ class NativeStream:
                     self.finished = True
             if data.get('type') in {'response.completed', 'response.failed', 'response.incomplete'}:
                 self.finished = True
+                from open_webui.utils.response import responses_terminal_metadata
+
+                terminal = responses_terminal_metadata(
+                    {**self.body, 'status': self.body.get('status') or data['type'].split('.')[-1]}
+                )
+                data = {**data, 'oi_finish': terminal['oi_finish']}
             self.usage = data.get('usage') or self.body.get('usage') or self.usage
             return [data]
         if self.protocol == 'anthropic':

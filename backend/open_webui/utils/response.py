@@ -1,3 +1,4 @@
+import copy
 from numbers import Number
 from uuid import uuid4
 
@@ -6,6 +7,40 @@ from open_webui.utils.misc import (
     openai_chat_chunk_message_template,
     openai_chat_completion_message_template,
 )
+
+
+def responses_terminal_metadata(response):
+    """Keep Responses HTTP-200 terminal states identical across both transports."""
+    status = response.get('status') or ('failed' if response.get('error') else 'completed')
+    reason = (response.get('incomplete_details') or {}).get('reason')
+    if status == 'failed' or response.get('error'):
+        status, finish = 'failed', 'error'
+    elif status == 'incomplete':
+        finish = {'max_output_tokens': 'length', 'content_filter': 'content_filter'}.get(reason, 'unknown')
+    else:
+        finish = (
+            'tool_calls'
+            if any(item.get('type') == 'function_call' for item in response.get('output') or [])
+            else 'stop'
+        )
+    return {
+        'response_status': status,
+        'finish_reason': finish,
+        'incomplete_details': copy.deepcopy(response.get('incomplete_details')),
+        'oi_finish': {
+            'protocol': 'openai-responses',
+            'status': status,
+            'normalized': finish,
+            'reason': reason or status,
+            'source': 'provider',
+        },
+        **{key: copy.deepcopy(response[key]) for key in ('error',) if response.get(key) is not None},
+        **(
+            {'error': {'message': 'Provider response failed'}}
+            if status == 'failed' and not response.get('error')
+            else {}
+        ),
+    }
 
 
 def usage_counter(value):
@@ -729,21 +764,25 @@ def handle_responses_streaming_event(
 
         return current_output, None
 
-    elif event_type == 'response.completed':
-        # State Machine Event: Completed
+    elif event_type in {'response.completed', 'response.incomplete', 'response.failed'}:
         response_data = data.get('response', {})
         final_output = response_data.get('output')
 
         # Some providers send an empty output on response.completed despite having streamed items
-        new_output = final_output if final_output else current_output
+        new_output = copy.deepcopy(final_output if final_output else current_output)
 
         # Ensure reasoning items are marked as completed in the final output
         if new_output:
             for item in new_output:
                 if item.get('type') == 'reasoning' and item.get('status') != 'completed':
                     item['status'] = 'completed'
+                elif item.get('type') == 'function_call' and event_type != 'response.completed':
+                    item['status'] = 'incomplete'
 
         return new_output, {
+            **responses_terminal_metadata(
+                {**response_data, 'status': response_data.get('status') or event_type.split('.')[-1]}
+            ),
             'usage': response_data.get('usage'),
             'done': True,
             'response_id': response_data.get('id'),
@@ -753,11 +792,6 @@ def handle_responses_streaming_event(
         # State Machine Event: In Progress
         # We could extract metadata if needed, but for now just acknowledge iteration
         return current_output, None
-
-    elif event_type == 'response.failed':
-        # State Machine Event: Failed
-        error = data.get('response', {}).get('error', {})
-        return current_output, {'error': error}
 
     elif event_type == 'error':
         return current_output, {'error': data}

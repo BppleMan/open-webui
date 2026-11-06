@@ -97,3 +97,5 @@ R70/P55 code and exact-source CI are verified (710 backend/79 frontend). The req
 - R73/P58 repairs three eleventh-review boundaries. Read review-round11-remediation.md and its acceptance record. Preserve strict replayable-tool checks, dispatch projections, prior signatures, approvals and authenticated cancellation snapshots. Built-in browser only; R50/U49/R59 remain.
 
 - R73/P58 is verified on isolated preview. Read review-round11-remediation-acceptance.json for exact source/CI/image and remaining limits. Public/private top-level phase and source indexes now match the latest remediation. Prior review reports remain historical. Keep R50/U49/R59 and built-in browser only.
+
+- R74/P59 repairs three twelfth-review defects and the full-entry repeated ask_user identity boundary found during acceptance. Read review-round12-remediation.md and its acceptance record. Preserve valid-call strictness, tool/result/signature order, terminal metadata and duplicate-resolution guards. R50/U49/R59 and built-in browser only remain.

@@ -1360,7 +1360,16 @@ def convert_responses_result(response: dict) -> dict:
     Extracts text and function calls from output items so all downstream consumers
     (frontend tasks, get_content_from_response) work without modification.
     """
-    output_items = response.get('output', [])
+    import copy
+
+    from open_webui.utils.response import responses_terminal_metadata
+
+    terminal = responses_terminal_metadata(response)
+    output_items = copy.deepcopy(response.get('output') or [])
+    if terminal['response_status'] != 'completed':
+        for item in output_items:
+            if item.get('type') == 'function_call':
+                item['status'] = 'incomplete'
 
     content = ''
     tool_calls = []
@@ -1385,6 +1394,9 @@ def convert_responses_result(response: dict) -> dict:
             )
 
     return {
+        **terminal,
+        'status': terminal['response_status'],
+        'output': output_items,
         'id': response.get('id', ''),
         'object': 'chat.completion',
         'model': response.get('model', ''),
@@ -1394,9 +1406,9 @@ def convert_responses_result(response: dict) -> dict:
                 'message': {
                     'role': 'assistant',
                     'content': content,
-                    **({'tool_calls': tool_calls} if tool_calls else {}),
+                    **({'tool_calls': tool_calls} if tool_calls and terminal['response_status'] == 'completed' else {}),
                 },
-                'finish_reason': 'tool_calls' if tool_calls else 'stop',
+                'finish_reason': terminal['finish_reason'],
             }
         ],
         'usage': response.get('usage', {}),

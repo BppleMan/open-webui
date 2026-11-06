@@ -4106,11 +4106,14 @@ async def non_streaming_chat_response_handler(response, ctx):
 
             choices = response_data.get('choices', [])
             response_output = response_data.get('output')
+            terminal_fields = {
+                key: response_data[key] for key in ('response_status', 'incomplete_details') if key in response_data
+            }
             content = (choices[0].get('message', {}).get('content') or '') if choices else ''
             # Native tools only run on the streaming path; still finish the turn.
             tool_calls = choices[0].get('message', {}).get('tool_calls') if choices else None
 
-            if 'error' not in response_data and (choices or response_output or continuing):
+            if choices or response_output or continuing:
                 # An empty terminal response (blocked/truncated/reasoning-only) still completes.
                 if choices or response_output or continuing:
                     if not continuing:
@@ -4215,6 +4218,7 @@ async def non_streaming_chat_response_handler(response, ctx):
                                 'done': True,
                                 'usage': usage,
                                 'output': response_output,
+                                **terminal_fields,
                                 'title': title,
                                 **({'finish_reason': finish_reason} if finish_reason else {}),
                             },
@@ -4233,21 +4237,25 @@ async def non_streaming_chat_response_handler(response, ctx):
                                 'meta': {'response_ended_at': time.time()},
                                 'role': 'assistant',
                                 'output': response_output,
+                                **terminal_fields,
                                 **({'finish_reason': finish_reason} if finish_reason else {}),
                                 **({'usage': usage} if usage else {}),
                             },
                         )
 
-                    await publish_chat_finished_event(request, user, metadata, title, content, response_output)
+                    if not response_data.get('error'):
+                        await publish_chat_finished_event(request, user, metadata, title, content, response_output)
 
                     ctx['assistant_message'] = {
                         'content': content,
                         'output': response_output,
+                        **terminal_fields,
                         **({'usage': usage} if usage else {}),
                         **({'finish_reason': finish_reason} if finish_reason else {}),
                     }
                     await outlet_filter_handler(ctx)
-                    await background_tasks_handler(ctx)
+                    if not response_data.get('error'):
+                        await background_tasks_handler(ctx)
 
             response = build_response_object(response, merge_events_into_response(response_data, events))
         except Exception as e:
@@ -4393,6 +4401,7 @@ async def streaming_chat_response_handler(response, ctx):
 
             usage = normalize_usage((message or {}).get('usage') or {}) if existing_output else None
             finish_reason = None
+            terminal_fields = {}
             last_response_id = None
 
             def full_output():
@@ -4530,6 +4539,9 @@ async def streaming_chat_response_handler(response, ctx):
                     nonlocal usage
                     nonlocal current_usage
                     nonlocal finish_reason
+                    nonlocal terminal_fields
+                    terminal_fields = {}
+                    finish_reason = None
                     nonlocal output
                     nonlocal prior_output
                     nonlocal last_response_id
@@ -4828,6 +4840,15 @@ async def streaming_chat_response_handler(response, ctx):
                                     # calls. The outer middleware manages the
                                     # actual completion signal.
                                     if response_metadata:
+                                        terminal_fields.update(
+                                            {
+                                                key: response_metadata[key]
+                                                for key in ('response_status', 'incomplete_details')
+                                                if key in response_metadata
+                                            }
+                                        )
+                                        if response_metadata.get('finish_reason'):
+                                            finish_reason = response_metadata['finish_reason']
                                         if ENABLE_RESPONSES_API_STATEFUL:
                                             response_id = response_metadata.pop('response_id', None)
                                             if response_id:
@@ -5513,7 +5534,11 @@ async def streaming_chat_response_handler(response, ctx):
                         responses_api_tool_calls = []
                         for item in output:
                             call_id = item.get('call_id') or item.get('id') or output_id('fc')
-                            if item.get('type') == 'function_call' and call_id not in handled_call_ids:
+                            if (
+                                item.get('type') == 'function_call'
+                                and call_id not in handled_call_ids
+                                and terminal_fields.get('response_status', 'completed') == 'completed'
+                            ):
                                 item.setdefault('status', 'completed')
                                 arguments = item.get('arguments', '{}')
                                 responses_api_tool_calls.append(
@@ -6280,6 +6305,7 @@ async def streaming_chat_response_handler(response, ctx):
                     'output': current_output,
                     'title': title,
                     **({'finish_reason': finish_reason} if finish_reason else {}),
+                    **terminal_fields,
                     **({'usage': usage} if usage else {}),
                 }
 
@@ -6294,6 +6320,7 @@ async def streaming_chat_response_handler(response, ctx):
                             'meta': {'response_ended_at': time.time()},
                             'output': current_output,
                             **({'finish_reason': finish_reason} if finish_reason else {}),
+                            **terminal_fields,
                             **({'usage': usage} if usage else {}),
                         },
                     )
@@ -6322,6 +6349,7 @@ async def streaming_chat_response_handler(response, ctx):
                     'output': current_output,
                     **({'usage': usage} if usage else {}),
                     **({'finish_reason': finish_reason} if finish_reason else {}),
+                    **terminal_fields,
                 }
                 await outlet_filter_handler(ctx)
                 await background_tasks_handler(ctx)
