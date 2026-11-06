@@ -1,7 +1,7 @@
 {
 	"requirement": "R73",
 	"prototype": "P58",
-	"status": "locally_verified_ci_and_preview_pending",
+	"status": "verified_on_isolated_preview",
 	"baseline": "6eef3cad8fa5784894a590f899a1749dddb9737f",
 	"findings": {
 		"CR11-01": {
@@ -32,17 +32,45 @@
 		"HTTP": "passed: saved partial-tool cancellation, ask_user resolution and temporary Continue cancellation",
 		"built_in_browser": "passed: temporary Continue/Stop/next turn, ask_user answer/automatic resume/reload",
 		"original_evidence_files_unchanged": 272,
-		"real_supplier_requests": 0
+		"real_supplier_requests": 0,
+		"ci": "passed on exact source",
+		"fresh_restore": {
+			"tables": 63,
+			"attachments": 3,
+			"schema": "oi0000000007"
+		},
+		"post_deploy_browser": "passed: temporary Continue/Stop/next turn, ask_user answer/resume/reload; prior signatures retained",
+		"helm": {
+			"dependency_refresh": "passed",
+			"pinned_dependency_bytes": "unchanged",
+			"lint": "passed",
+			"render": "passed",
+			"render_diff": "staging image only"
+		}
 	},
 	"deployment": {
-		"status": "pending",
+		"status": "deployed_and_verified",
 		"scope": "isolated_preview_only",
-		"previous_R72_preview": "verified; not regressed to pending"
+		"previous_R72_preview": "verified; not regressed to pending",
+		"image": "ghcr.io/bppleman/open-webui-oi:sha-02c3c57468f28afc9555494429d185a820291008@sha256:25be1a3895e327445544976e187bce6ea96e693b4315ca5e18704a26744f188f",
+		"gitops_commit": "468327c636c0fa4eb05498571b48cf0b20f4db88",
+		"argocd": "Synced/Healthy",
+		"pod_restarts": 0,
+		"original_attachments_unchanged": 3,
+		"production_unchanged": true
 	},
 	"limitations": [
 		"R50: no production OI/CPA, routes or business database migration.",
 		"R59 actual CPA readable thought-summary gap remains; no paid probes.",
 		"A malformed provider call split into multiple executions uses canonical replay for that call; its unmodified raw envelope remains private and non-replayable.",
 		"Legacy envelopes without consumer projections retain conservative handling."
-	]
+	],
+	"source_commit": "02c3c57468f28afc9555494429d185a820291008",
+	"ci": "https://github.com/BppleMan/open-webui/actions/runs/42206519766",
+	"cleanup": {
+		"loopback_fixtures_stopped": true,
+		"test_connection_disabled": true,
+		"test_user_preferences_restored": true,
+		"global_direct_connections_unchanged": true
+	}
 }

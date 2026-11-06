@@ -360,3 +360,6 @@ Persist the actual per-call canonical output alongside the unchanged native resp
 ## P58 — Dispatch and cancellation boundaries
 
 Exclude undispatched incomplete arguments before strict comparison. Preserve provider functions through controlled normalization and validate the resulting execution projection. One-to-many splitting uses explicit call-local canonical fallback. Cancellation carries an updated authenticated capsule matching final partial output; existing completed calls remain usable.
+
+
+2026-11-06: R73/P58 is verified on isolated preview. Source `02c3c57468f28afc9555494429d185a820291008` passed 1145 backend / 81 frontend cases, zero new type diagnostics, the original 64 review cases and 128 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser temporary Continue/Stop/followup and ask_user answer/reload paths passed. Exact-source CI and GitOps `468327c636c0fa4eb05498571b48cf0b20f4db88` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round11-remediation-acceptance.json.

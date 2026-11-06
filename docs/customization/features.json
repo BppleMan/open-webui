@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-11-06",
-  "phase": "R73_locally_verified_ci_and_preview_pending; R72_preview_verified; R50_production_hold",
+  "phase": "R73_verified_on_isolated_preview; R50_production_hold",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,18 +14,18 @@
     "customization_committed": true,
     "deployment_changed": true,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "6e4f1500d9d0a32810286f22af3b1181be221951",
+    "latest_code_commit": "02c3c57468f28afc9555494429d185a820291008",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "6e4f1500d9d0a32810286f22af3b1181be221951",
-    "latest_documentation_revision": "R72/P57: four tenth-review repairs verified on isolated preview",
+    "latest_commit": "02c3c57468f28afc9555494429d185a820291008",
+    "latest_documentation_revision": "R73/P58: three eleventh-review repairs verified on isolated preview",
     "original_base": {
       "tag": "v0.12.3",
       "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60"
     },
     "staging_gitops_changed": true,
-    "current_acceptance": "docs/customization/review-round10-remediation-acceptance.json"
+    "current_acceptance": "docs/customization/review-round11-remediation-acceptance.json"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -3574,7 +3574,7 @@
   "review_round11_remediation": {
     "requirement": "R73",
     "prototype": "P58",
-    "status": "locally_verified_ci_and_preview_pending",
+    "status": "verified_on_isolated_preview",
     "baseline": "6eef3cad8fa5784894a590f899a1749dddb9737f",
     "findings": {
       "CR11-01": {
@@ -3605,18 +3605,46 @@
       "HTTP": "passed: saved partial-tool cancellation, ask_user resolution and temporary Continue cancellation",
       "built_in_browser": "passed: temporary Continue/Stop/next turn, ask_user answer/automatic resume/reload",
       "original_evidence_files_unchanged": 272,
-      "real_supplier_requests": 0
+      "real_supplier_requests": 0,
+      "ci": "passed on exact source",
+      "fresh_restore": {
+        "tables": 63,
+        "attachments": 3,
+        "schema": "oi0000000007"
+      },
+      "post_deploy_browser": "passed: temporary Continue/Stop/next turn, ask_user answer/resume/reload; prior signatures retained",
+      "helm": {
+        "dependency_refresh": "passed",
+        "pinned_dependency_bytes": "unchanged",
+        "lint": "passed",
+        "render": "passed",
+        "render_diff": "staging image only"
+      }
     },
     "deployment": {
-      "status": "pending",
+      "status": "deployed_and_verified",
       "scope": "isolated_preview_only",
-      "previous_R72_preview": "verified; not regressed to pending"
+      "previous_R72_preview": "verified; not regressed to pending",
+      "image": "ghcr.io/bppleman/open-webui-oi:sha-02c3c57468f28afc9555494429d185a820291008@sha256:25be1a3895e327445544976e187bce6ea96e693b4315ca5e18704a26744f188f",
+      "gitops_commit": "468327c636c0fa4eb05498571b48cf0b20f4db88",
+      "argocd": "Synced/Healthy",
+      "pod_restarts": 0,
+      "original_attachments_unchanged": 3,
+      "production_unchanged": true
     },
     "limitations": [
       "R50: no production OI/CPA, routes or business database migration.",
       "R59 actual CPA readable thought-summary gap remains; no paid probes.",
       "A malformed provider call split into multiple executions uses canonical replay for that call; its unmodified raw envelope remains private and non-replayable.",
       "Legacy envelopes without consumer projections retain conservative handling."
-    ]
+    ],
+    "source_commit": "02c3c57468f28afc9555494429d185a820291008",
+    "ci": "https://github.com/BppleMan/open-webui/actions/runs/42206519766",
+    "cleanup": {
+      "loopback_fixtures_stopped": true,
+      "test_connection_disabled": true,
+      "test_user_preferences_restored": true,
+      "global_direct_connections_unchanged": true
+    }
   }
 }
