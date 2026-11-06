@@ -1,7 +1,7 @@
 {
 	"requirement": "R74",
 	"prototype": "P59",
-	"status": "locally_verified_ci_and_preview_pending",
+	"status": "verified_on_isolated_preview",
 	"baseline": "f3d76d0ff70ec97b85c4aa572227becec21bc0e3",
 	"findings": {
 		"CR12-01": {
@@ -40,17 +40,46 @@
 		"original_evidence_files_unchanged": 360,
 		"real_supplier_requests": 0,
 		"tool_media_boundary": "16 opaque-only/image-result cases added; initial boundary fix placed opaque call before flattened tool images; corrected to retain result+media before native terminal",
-		"terminal_event_order": "24 cases verify exactly one final completion after persistence, carrying partial output, error and usage"
+		"terminal_event_order": "24 cases verify exactly one final completion after persistence, carrying partial output, error and usage",
+		"ci": "passed on exact source",
+		"fresh_restore": {
+			"tables": 63,
+			"attachments": 3,
+			"schema": "oi0000000007"
+		},
+		"post_deploy_browser": "passed: two questions, signed terminal after tool results, next turn, Responses partial failure/truncation and reload",
+		"helm": {
+			"dependency_refresh": "passed",
+			"pinned_dependency_bytes": "unchanged",
+			"lint": "passed",
+			"render": "passed",
+			"render_diff": "staging image only"
+		}
 	},
 	"deployment": {
-		"status": "pending",
+		"status": "deployed_and_verified",
 		"scope": "isolated_preview_only",
-		"previous_R73_preview": "verified; not regressed to pending"
+		"previous_R73_preview": "verified; not regressed to pending",
+		"image": "ghcr.io/bppleman/open-webui-oi:sha-5d347e661e7ddace7c9b65d420d7a6c6b7c4ffc0@sha256:70db372fb37235661b362899d55ceb8c916850b16e6492f981ba89374b3aadee",
+		"gitops_commit": "a83a3f4dd0059b84623a7065db2cec856da2a3de",
+		"argocd": "Synced/Healthy",
+		"pod_restarts": 0,
+		"original_attachments_unchanged": 3,
+		"production_unchanged": true,
+		"test_connections_disabled": 2
 	},
 	"limitations": [
 		"No production OI/CPA, route or business database changes.",
 		"No real supplier requests; R59 actual readable thought-summary gap remains open.",
 		"5695 existing upstream type diagnostics remain.",
 		"Invalidated stream calls use canonical replay while other valid raw signatures remain unchanged."
-	]
+	],
+	"source_commit": "5d347e661e7ddace7c9b65d420d7a6c6b7c4ffc0",
+	"ci": "https://github.com/BppleMan/open-webui/actions/runs/42218522573",
+	"cleanup": {
+		"loopback_fixtures_stopped": true,
+		"test_connection_disabled": true,
+		"test_user_preferences_restored": true,
+		"global_direct_connections_unchanged": true
+	}
 }

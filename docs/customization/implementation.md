@@ -154,3 +154,6 @@ Skip undispatched partial tools before strict argument parsing. Record original 
 ### R74 / P59 — Native tool boundaries and Responses terminal state
 
 Invalidated calls retain canonical ID recovery. Invisible terminal responses stay after completed tool results. Responses ending metadata propagates through the adapter, reducers, final message and ledger, with unsuccessful tools excluded from dispatch. Interactive resolutions use stable per-tool generation identities. See review-round12-remediation.md and its acceptance record.
+
+
+2026-11-06: R74/P59 is verified on isolated preview. Source `5d347e661e7ddace7c9b65d420d7a6c6b7c4ffc0` passed 1450 backend / 84 frontend cases, zero new type diagnostics, the original 180 review cases and 305 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser repeated questions, signed terminal replay and Responses failure/truncation paths passed. Exact-source CI and GitOps `a83a3f4dd0059b84623a7065db2cec856da2a3de` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round12-remediation-acceptance.json.
