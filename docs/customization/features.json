@@ -2,7 +2,7 @@
   "schema_version": 1,
   "project": "OI Open WebUI customization",
   "updated_on": "2026-11-07",
-  "phase": "R75_verified_on_isolated_preview; R50_production_hold",
+  "phase": "R76_verified_on_isolated_preview; R50_production_hold",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -14,18 +14,18 @@
     "customization_committed": true,
     "deployment_changed": true,
     "fork": "https://github.com/BppleMan/open-webui",
-    "latest_code_commit": "a368a8150a428053c142f2a534e3686131321dc2",
+    "latest_code_commit": "6d8f372d2a15c1bf71ac2a350f4adb939213c9c9",
     "latest_push": "origin/oi/main",
     "production_deployment_changed": false,
     "staging_deployment_changed": true,
-    "latest_commit": "a368a8150a428053c142f2a534e3686131321dc2",
-    "latest_documentation_revision": "R75/P60: four thirteenth-review failure/cancellation/recovery repairs verified on isolated preview",
+    "latest_commit": "6d8f372d2a15c1bf71ac2a350f4adb939213c9c9",
+    "latest_documentation_revision": "R76/P61: four fourteenth-review failure/cancellation/recovery repairs verified on isolated preview",
     "original_base": {
       "tag": "v0.12.3",
       "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60"
     },
     "staging_gitops_changed": true,
-    "current_acceptance": "docs/customization/review-round13-remediation-acceptance.json"
+    "current_acceptance": "docs/customization/review-round14-remediation-acceptance.json"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -3818,7 +3818,7 @@
   "review_round14_remediation": {
     "requirement": "R76",
     "prototype": "P61",
-    "status": "local_verified",
+    "status": "verified_on_isolated_preview",
     "baseline": "e9702aeddf43f6dab24c5a1e110138abfef42667",
     "findings": {
       "CR14-01": {
@@ -3867,12 +3867,48 @@
         },
         "screenshot": "browser-local-reload.png",
         "real_supplier_requests": 0
+      },
+      "ci": "passed on exact source",
+      "fresh_restore": {
+        "tables": 63,
+        "attachments": 3,
+        "schema": "oi0000000007"
+      },
+      "original_evidence_files_unchanged": 475,
+      "post_deploy_browser": "passed: partial-argument transport failure replay, Stop preserves executed tool result, followup and reload",
+      "helm": {
+        "dependency_refresh": "passed",
+        "pinned_dependency_bytes": "unchanged",
+        "lint": "passed",
+        "render": "passed",
+        "render_diff": "staging image only"
       }
     },
     "deployment": {
-      "status": "pending",
+      "status": "deployed_and_verified",
       "scope": "isolated_preview_only",
-      "previous_R75_preview": "verified; unchanged"
+      "previous_R75_preview": "verified; unchanged",
+      "image": "ghcr.io/bppleman/open-webui-oi:sha-6d8f372d2a15c1bf71ac2a350f4adb939213c9c9@sha256:e8717ceea5915d49ed1ea8ae2ed7efa7c6196cd0e7b190dfd7de7a402a1f98a9",
+      "gitops_commit": "464e486a074e04ef21baf2400ca63a4bb8314eba",
+      "argocd": "Synced/Healthy",
+      "pod_restarts": 0,
+      "original_attachments_unchanged": 3,
+      "production_unchanged": true
+    },
+    "source_commit": "6d8f372d2a15c1bf71ac2a350f4adb939213c9c9",
+    "ci": "https://github.com/BppleMan/open-webui/actions/runs/42256564633",
+    "limitations": [
+      "No production OI/CPA, route or business database changes.",
+      "No real supplier requests; R59 actual readable-summary gap remains open.",
+      "5695 upstream type diagnostics remain.",
+      "Synthetic parallel delegates and injected postprocessing errors are covered; no external tool side effects were executed. Genuine legacy assistant metadata may still require a full historical JSON read."
+    ],
+    "cleanup": {
+      "loopback_fixtures_stopped": true,
+      "test_connection_disabled": true,
+      "test_user_preferences_restored": true,
+      "global_direct_connections_unchanged": true,
+      "synthetic_tool_removed": true
     }
   }
 }

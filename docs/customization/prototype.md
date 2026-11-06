@@ -384,3 +384,6 @@ Latch failed attempts before any tool dispatch or success side effects. Record e
 ## P61 — Durable exception outcomes and bounded compatibility reads
 
 Finalize each stream consumer after adapter cleanup on every exit. Separate tool execution success from attachment/event postprocessing failure and persist the result before terminal publication. Save the cancelled snapshot and native state before releasing queued work. Only nonempty assistant rows lacking terminal keys need legacy compatibility; user rows, empty new messages and explicit null values do not load the old transcript.
+
+
+2026-11-07: R76/P61 is verified on isolated preview. Source `6d8f372d2a15c1bf71ac2a350f4adb939213c9c9` passed 1943 backend / 88 frontend cases, zero new type diagnostics, the original 154 review cases and 270 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser network interruption replay, tool Stop, preserved result, followup and reload paths passed. Exact-source CI and GitOps `464e486a074e04ef21baf2400ca63a4bb8314eba` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round14-remediation-acceptance.json.

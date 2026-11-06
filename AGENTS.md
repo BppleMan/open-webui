@@ -107,3 +107,5 @@ R70/P55 code and exact-source CI are verified (710 backend/79 frontend). The req
 - R75/P60 is verified on isolated preview. Read review-round13-remediation-acceptance.json for exact source/CI/image and remaining limits. Public/private top-level phase and source indexes now match the latest remediation. Prior review reports remain historical. Keep R50/U49/R59 and built-in browser only.
 
 - R76/P61 repairs four fourteenth-review boundaries. Read review-round14-remediation.md and its acceptance record. Finalize failed stream consumer projections, preserve returned tool results on ordinary errors, persist cancellation before notification, and avoid needless legacy transcript reads. R50/U49/R59 and built-in browser only remain.
+
+- R76/P61 is verified on isolated preview. Read review-round14-remediation-acceptance.json for exact source/CI/image and remaining limits. Public/private top-level phase and source indexes now match the latest remediation. Prior review reports remain historical. Keep R50/U49/R59 and built-in browser only.

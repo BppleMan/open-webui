@@ -277,3 +277,6 @@ Independently reproduce CR13-01..04, unify failure finalization, record each com
 ## R76 / U75 — Fourteenth review remediation
 
 Independently reproduce CR14-01..04 and repair per-call consumer finalization on transport errors, durable completed-tool results after postprocessing failures, persistence-before-cancellation publication, and unnecessary legacy transcript reads. Preserve strict valid-tool identity, prior calls, temporary capsules and R74 compatibility. Existing batch verification and isolated-preview acceptance remain authorized; no reply to the review thread, no real suppliers or production changes. R50/U49/R59 and built-in browser only remain.
+
+
+2026-11-07: R76/P61 is verified on isolated preview. Source `6d8f372d2a15c1bf71ac2a350f4adb939213c9c9` passed 1943 backend / 88 frontend cases, zero new type diagnostics, the original 154 review cases and 270 expanded regressions. Real HTTP/socket/database fixtures and built-in-browser network interruption replay, tool Stop, preserved result, followup and reload paths passed. Exact-source CI and GitOps `464e486a074e04ef21baf2400ca63a4bb8314eba` delivered the recorded immutable image with Synced/Healthy status and no restarts. Original review evidence remains unchanged; R50 and the R59 real-provider gap remain. See review-round14-remediation-acceptance.json.
