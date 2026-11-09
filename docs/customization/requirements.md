@@ -298,3 +298,7 @@ R77 second-review follow-up: CR16-01 tracks dispatched side requests across lost
 ## R78 Production cutover
 
 Run the reviewed application on a verified restore of the existing database and preserve the original for recovery. Keep connection defaults and model-specific protocol choices. Legacy direct models may be retired independently of auxiliary engines.
+
+## R79 New API model metadata
+
+Read supplemental model metadata from a New API gateway during OI model discovery. Scope every result to an already authorized model.

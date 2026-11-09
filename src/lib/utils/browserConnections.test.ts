@@ -219,6 +219,46 @@ describe('native browser protocols', () => {
 			expect((vi.mocked(oiApi).mock.calls[0][2] as { models: unknown[] }).models).toHaveLength(2);
 		}
 	);
+	it('joins the New API catalog without credentials and submits authorized IDs only', async () => {
+		vi.stubGlobal('localStorage', { token: 'synthetic' });
+		vi.mocked(oiApi).mockClear();
+		const fetch = vi
+			.fn()
+			.mockResolvedValueOnce(
+				Response.json({
+					template: 'openai-compatible',
+					protocol: 'openai-chat',
+					revision: 2,
+					headers: { Authorization: 'Bearer synthetic' },
+					endpoints: {
+						models: 'https://p.test/v1/models',
+						new_api_pricing: 'https://p.test/api/pricing'
+					}
+				})
+			)
+			.mockResolvedValueOnce(
+				Response.json({
+					success: true,
+					data: [{ id: 'allowed', supported_endpoint_types: ['openai'] }]
+				})
+			)
+			.mockResolvedValueOnce(
+				Response.json({
+					data: [
+						{ model_name: 'allowed', tags: '1M' },
+						{ model_name: 'not-allowed', tags: '500K' }
+					]
+				})
+			);
+		vi.stubGlobal('fetch', fetch);
+		await discoverBrowserModels({ id: 'c' });
+		expect(fetch.mock.calls[2][0]).toBe('https://p.test/api/pricing');
+		expect(fetch.mock.calls[2][1]).not.toHaveProperty('headers');
+		expect(vi.mocked(oiApi).mock.calls[0][2]).toMatchObject({
+			new_api_catalog: true,
+			pricing_records: [{ model_name: 'allowed', tags: '1M' }]
+		});
+	});
 	it('does not apply a partial discovery on repeated pagination', async () => {
 		vi.stubGlobal('localStorage', { token: 'synthetic' });
 		vi.mocked(oiApi).mockClear();

@@ -114,11 +114,47 @@ export function modelPage(body: any, protocol: string) {
 	return { models, next };
 }
 
+async function newApiPricing(url: string, models: any[], protocol: string) {
+	const ids = new Set(
+		models.map((m) => {
+			const id = m.id ?? m.name;
+			return protocol.startsWith('gemini') && typeof id === 'string'
+				? id.replace(/^models\//, '')
+				: id;
+		})
+	);
+	try {
+		const response = await fetch(url, {
+			credentials: 'omit',
+			redirect: 'error',
+			cache: 'no-store',
+			signal: AbortSignal.timeout(8000)
+		});
+		if (!response.ok) return {};
+		const body = await response.json();
+		if (body.success === false || !Array.isArray(body.data)) return {};
+		return {
+			pricing_records: body.data
+				.filter((row: any) => ids.has(row?.model_name))
+				.map(({ model_name, description, tags, supported_endpoint_types }: any) => ({
+					model_name,
+					description,
+					tags,
+					supported_endpoint_types
+				})),
+			pricing_endpoints: body.supported_endpoint ?? {}
+		};
+	} catch {
+		return {};
+	}
+}
+
 export async function discoverBrowserModels(connection: any) {
 	const config = await browserConfiguration(connection.id, connection.revision);
 	const models: any[] = [],
 		seen = new Set<string>();
 	let params: [string, string] | null = null;
+	let newApi = config.template === 'new-api';
 	for (let page = 0; page < 100; page++) {
 		const url = new URL(config.endpoints.models);
 		if (params) url.searchParams.set(...params);
@@ -129,14 +165,26 @@ export async function discoverBrowserModels(connection: any) {
 			cache: 'no-store'
 		});
 		if (!response.ok) throw new Error(`浏览器模型发现失败（HTTP ${response.status}）`);
-		const parsed = modelPage(await response.json(), config.protocol);
+		const body = await response.json();
+		const parsed = modelPage(body, config.protocol);
+		newApi ||=
+			body.success === true &&
+			parsed.models.some((m: any) => Array.isArray(m.supported_endpoint_types));
 		models.push(...parsed.models);
 		if (models.length > 10000) throw new Error('模型目录过大，现有配置已保留');
-		if (!parsed.next)
+		if (!parsed.next) {
+			const pricing = newApi && config.endpoints.new_api_pricing;
 			return oiApi(`/connections/${connection.id}/browser-models`, 'POST', {
 				revision: config.revision,
-				models
+				models,
+				...(pricing
+					? {
+							new_api_catalog: true,
+							...(await newApiPricing(pricing, models, config.protocol))
+						}
+					: {})
 			});
+		}
 		const cursor = JSON.stringify(parsed.next);
 		if (seen.has(cursor)) throw new Error('模型分页重复，现有配置已保留');
 		seen.add(cursor);

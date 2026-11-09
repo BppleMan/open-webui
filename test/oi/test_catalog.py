@@ -153,3 +153,64 @@ async def test_refresh_keeps_window_override_and_model_identity(db):
         'discovered': {'context_window': 128000},
         'overrides': {'context_window': 16000},
     }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('template,success', [('openai-compatible', True), ('new-api', False)])
+async def test_new_api_enrichment_joins_only_authorized_models_and_preserves_overrides(db, template, success):
+    from open_webui.utils.oi.catalog import binding_json, capabilities
+
+    c = connection()
+    c.template = template
+    c.base_url = 'https://example.test/gateway/v1'
+    c.credentials = encrypt_credentials({'api_key': 'synthetic-token'})
+    b = binding(c.id, 'oi:a')
+    b.capabilities = {'discovered': {}, 'overrides': {'tools': False}}
+    db.add_all([c, b])
+    await db.flush()
+    calls = []
+    pricing_status = 200
+    catalog = {
+        'data': [
+            {
+                'model_name': 'same-model',
+                'description': 'Example',
+                'tags': '工具, 多模态,1.1M',
+                'supported_endpoint_types': ['openai'],
+            },
+            {'model_name': 'inaccessible', 'tags': '视觉,500K'},
+        ],
+        'supported_endpoint': {'openai': {'method': 'POST', 'path': '/v1/chat/completions'}},
+    }
+
+    def respond(req):
+        calls.append(req.url.path)
+        if req.url.path.endswith('/v1/models'):
+            assert req.headers['authorization'] == 'Bearer synthetic-token'
+            return httpx.Response(
+                200,
+                json={
+                    'success': success,
+                    'data': [{'id': 'same-model', 'supported_endpoint_types': ['openai']}, {'id': 'no-capacity'}],
+                },
+            )
+        assert req.url.path == '/gateway/api/pricing'
+        assert 'authorization' not in req.headers
+        return httpx.Response(pricing_status, json=catalog)
+
+    transport = httpx.MockTransport(respond)
+    rows = await discover(db, c, transport)
+    assert calls == ['/gateway/v1/models', '/gateway/api/pricing']
+    assert {row.upstream_id for row in rows} == {'same-model', 'no-capacity'}
+    assert capabilities(b) == {'tools': False, 'chat': True, 'context_window_label': '1.1M'}
+    assert b.capabilities['discovered']['tools']
+    assert binding_json(b, c)['catalog_metadata']['description'] == 'Example'
+    assert not capabilities(next(row for row in rows if row.upstream_id == 'no-capacity'))
+    pricing_status = 503
+    await discover(db, c, transport)
+    assert capabilities(b)['context_window_label'] == '1.1M'
+    pricing_status = 200
+    catalog['data'][0]['tags'] = '工具'
+    await discover(db, c, transport)
+    assert 'context_window_label' not in capabilities(b)
+    assert capabilities(b)['tools'] is False

@@ -4054,5 +4054,20 @@
       "production continuation of an existing Gemini conversation",
       "production continuation of an existing Claude conversation"
     ]
+  },
+  "new_api_model_metadata": {
+    "requirements": [
+      "R79"
+    ],
+    "prototypes": [
+      "P64"
+    ],
+    "features": [
+      "F01",
+      "F02"
+    ],
+    "implementation": "implemented",
+    "verification": "focused catalog and frontend tests passed",
+    "deployment": "candidate"
   }
 }

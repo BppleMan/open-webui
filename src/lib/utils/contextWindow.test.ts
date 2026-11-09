@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { contextBudget, contextProjection, contextOccupancy, tokenSubtotal } from './contextWindow';
+import {
+	estimatedInputBudget,
+	contextBudget,
+	contextProjection,
+	contextOccupancy,
+	tokenSubtotal
+} from './contextWindow';
 describe('context observations', () => {
 	it('separates input limit, shared capacity and reserved output', () => {
 		expect(contextBudget({ input_limit: 8000, context_window: 10000 }, 3000).effective).toBe(7000);
@@ -56,4 +62,11 @@ it('counts observed tool definitions once without duplicating history or cache',
 		})
 	).toEqual({ tools: 6300, total: 6400 });
 	expect(contextOccupancy(100, null)).toEqual({ tools: null, total: 100 });
+});
+
+it('uses rounded catalog labels only for display and accounts for reserved output', () => {
+	expect(estimatedInputBudget('1.1M', 100000)).toBe(1000000);
+	expect(estimatedInputBudget('500K', null)).toBe(500000);
+	expect(estimatedInputBudget('OpenRouter', 0)).toBeNull();
+	expect(contextBudget({ context_window_label: '1M' }, 8000).effective).toBeNull();
 });

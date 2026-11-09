@@ -405,3 +405,7 @@ P62 cancellation follow-up: preserve pending dispatch identity until an authorit
 ## P63 Production migration
 
 Compare the restored database with its source before the schema upgrade. Keep old chats and attachments available after the switch. A model can inherit the gateway protocol or override it. Disabling a legacy model removes its chat picker entry while preserving its conversations.
+
+## P64 Gateway model metadata
+
+Join the gateway model and public pricing catalogs by upstream ID. Display its description and tags, declared capabilities and approximate window labels. Keep explicit limits, overrides and per-model routes intact. A gateway catalog failure preserves the last known metadata while the model list remains authoritative.

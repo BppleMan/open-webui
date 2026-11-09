@@ -21,6 +21,7 @@ from open_webui.utils.oi.connection_templates import (
 from open_webui.utils.oi.connection_templates import (
     get_template as get_template,
 )
+from open_webui.utils.oi import new_api_catalog
 from open_webui.utils.oi.storage import identifier, now
 from open_webui.utils.oi.endpoints import resolve_endpoint, compatibility_profile
 from open_webui.utils.oi.selection import effective_protocol, snapshot_target
@@ -137,6 +138,7 @@ def binding_json(binding, connection):
         )
         else 'connection',
         'connection_name': connection.name,
+        'catalog_metadata': (binding.capabilities or {}).get('catalog_metadata', {}),
         'transport': getattr(connection, 'transport', None) or 'server',
         'capabilities': capabilities(binding),
         'capability_overrides': (binding.capabilities or {}).get('overrides', {}),
@@ -345,7 +347,15 @@ async def model_catalog(db, user, *, internal=False):
                     'id': binding.id,
                     'name': binding.name,
                     'params': {**params, 'model_controls': controls},
-                    'meta': {'capabilities': caps, 'oi_connection_id': connection.id},
+                    'meta': {
+                        'capabilities': caps,
+                        'oi_connection_id': connection.id,
+                        **(
+                            {'description': binding.capabilities['catalog_metadata']['description']}
+                            if (binding.capabilities or {}).get('catalog_metadata', {}).get('description')
+                            else {}
+                        ),
+                    },
                 },
             }
         )
@@ -413,13 +423,26 @@ async def fetch_models(connection, transport=None):
     protocol = connection.protocol
     url = resolve_endpoint(connection, protocol, 'models')
     params, cursors, models = {}, set(), []
+    new_api = getattr(connection, 'template', None) == 'new-api'
     async with httpx.AsyncClient(trust_env=True, timeout=30, transport=transport) as client:
         for _ in range(100):
             response = await client.get(url, params=params, headers=request_headers(connection))
             response.raise_for_status()
-            page, cursor = _model_page(response.json(), protocol)
+            body = response.json()
+            page, cursor = _model_page(body, protocol)
+            new_api = new_api or new_api_catalog.is_new_api_page(body, page)
             models.extend(page)
             if cursor is None:
+                catalog_url = new_api_catalog.pricing_url(url) if new_api and models else None
+                if catalog_url:
+                    try:
+                        catalog_response = await client.get(catalog_url, timeout=8)
+                        catalog_response.raise_for_status()
+                        records = new_api_catalog.catalog_rows(catalog_response.json())
+                    except (httpx.HTTPError, ValueError):
+                        # A closed or unavailable pricing directory must not hide authorized models.
+                        records = None
+                    new_api_catalog.attach_records(models, protocol, records)
                 return models
             if cursor in cursors:
                 raise ValueError('Model discovery repeated a page')
@@ -444,8 +467,12 @@ def discovered_capabilities(model):
     windows = [
         value for value in (model.get('context_length'), provider.get('context_length')) if positive_integer(value)
     ]
+    if positive_integer(model.get('context_window')):
+        windows.append(model['context_window'])
     if windows:
         result.setdefault('context_window', min(windows))
+    if positive_integer(model.get('max_output_tokens')):
+        result.setdefault('output_limit', model['max_output_tokens'])
     if positive_integer(provider.get('max_completion_tokens')):
         result.setdefault('output_limit', provider['max_completion_tokens'])
     for source, target in (
@@ -546,7 +573,15 @@ async def apply_discovered_models(db, connection, models, expected_revision=None
             existing = [row]
         for row in existing:
             old = row.capabilities or {}
-            row.capabilities = {**old, 'discovered': discovered, 'overrides': old.get('overrides', {})}
+            updated = {**old, 'discovered': discovered, 'overrides': old.get('overrides', {})}
+            if '_oi_catalog' in model:
+                record = model['_oi_catalog']
+                meta = new_api_catalog.metadata(record) if isinstance(record, dict) else old.get('catalog_metadata', {})
+                updated['catalog_metadata'] = meta
+                updated['discovered'] = {**new_api_catalog.declared_capabilities(meta), **discovered}
+            else:
+                updated.pop('catalog_metadata', None)
+            row.capabilities = updated
             row.available = True
             row.updated_at = now()
             result.append(row)

@@ -20,7 +20,7 @@ from open_webui.models.customization import (
     ModelCall,
 )
 from open_webui.utils.auth import get_verified_user
-from open_webui.utils.oi import accounting, catalog, drafts
+from open_webui.utils.oi import accounting, catalog, drafts, new_api_catalog
 from open_webui.utils.oi.protocol_registry import COMMON_PROTOCOLS, PROTOCOLS, canonical_protocol, protocol_directory
 from open_webui.utils.oi.endpoints import resolve_endpoint, compatibility_profile
 from open_webui.utils.oi.selection import effective_protocol
@@ -533,12 +533,14 @@ async def browser_config(
             'id': connection.id,
             'revision': connection.revision,
             'base_url': connection.base_url,
+            'template': connection.template,
             'protocol': canonical_protocol(protocol),
             'headers': headers,
             'endpoints': {
                 'generate': resolve_endpoint(connection, protocol, model=upstream),
                 'stream': resolve_endpoint(connection, protocol, model=upstream, stream=True),
                 'models': resolve_endpoint(connection, protocol, 'models'),
+                'new_api_pricing': new_api_catalog.pricing_url(resolve_endpoint(connection, protocol, 'models')),
             },
         },
         headers={'Cache-Control': 'no-store, private', 'Pragma': 'no-cache', 'Vary': 'Authorization, Cookie'},
@@ -548,6 +550,9 @@ async def browser_config(
 class BrowserDiscoveryForm(BaseModel):
     revision: int
     models: list[dict] = Field(max_length=10000)
+    pricing_records: list[dict] | None = Field(default=None, max_length=10000)
+    new_api_catalog: bool = False
+    pricing_endpoints: dict = Field(default_factory=dict)
 
 
 @router.post('/connections/{connection_id}/browser-models')
@@ -568,6 +573,15 @@ async def browser_models(
     if connection.revision != form.revision:
         raise HTTPException(409, 'Connection changed; reload before discovering models')
     try:
+        if form.new_api_catalog:
+            records = (
+                new_api_catalog.catalog_rows(
+                    {'data': form.pricing_records, 'supported_endpoint': form.pricing_endpoints}
+                )
+                if form.pricing_records is not None
+                else None
+            )
+            new_api_catalog.attach_records(form.models, connection.protocol, records)
         rows = await catalog.apply_discovered_models(db, connection, form.models)
     except (ValueError, TypeError):
         await db.rollback()

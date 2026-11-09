@@ -25,6 +25,15 @@ export function contextBudget(capabilities: any, reserve: unknown) {
 		effective: input == null ? shared : shared == null ? input : Math.min(input, shared)
 	};
 }
+// Rounded directory labels are for display only; never use them for request limits.
+export function estimatedInputBudget(label: unknown, reserve: unknown): number | null {
+	const match = typeof label === 'string' && /^([1-9]\d*(?:\.\d+)?)([KM])$/i.exec(label);
+	if (!match) return null;
+	const tokens = Math.round(
+		Number(match[1]) * (match[2].toUpperCase() === 'M' ? 1_000_000 : 1_000)
+	);
+	return Number.isSafeInteger(tokens) ? Math.max(0, tokens - (positiveLimit(reserve) ?? 0)) : null;
+}
 export function branchMessages(history: any, currentId: string | null) {
 	const seen = new Set<string>(),
 		messages: any[] = [];

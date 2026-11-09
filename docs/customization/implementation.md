@@ -185,3 +185,5 @@ Merge official capabilities with OI native state, permission, ledger and draft c
 ## R78 / P63 Production acceptance
 
 The reviewed application runs on the restored copy. See production-cutover-acceptance.json for the checks completed and the two production chat continuation checks still open.
+
+R79/P64 implements New API catalog discovery in OI for server and browser connections. Context estimates from rounded tags are display-only.

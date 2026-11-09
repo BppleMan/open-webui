@@ -17,7 +17,7 @@ from open_webui.models.config import Config
 from open_webui.models.users import User
 from open_webui.models.models import Models
 from open_webui.models.customization import Connection, ConnectionMigration, ModelBinding
-from open_webui.utils.oi import catalog
+from open_webui.utils.oi import catalog, new_api_catalog
 from open_webui.utils.oi.storage import identifier, now, insert_once
 
 PREFIXES = ('openai.', 'ollama.', 'rag.', 'audio.', 'image_generation.', 'images.edit.')
@@ -464,6 +464,10 @@ async def apply(db, user, scope, version, choices):
             caps = item.get('model_capabilities', {}).get(upstream) or (
                 {item['capability']: True} if item['capability'] else catalog.discovered_capabilities(model)
             )
+            metadata = {}
+            if isinstance(model.get('_oi_catalog'), dict):
+                metadata = new_api_catalog.metadata(model['_oi_catalog'])
+                caps = {**new_api_catalog.declared_capabilities(metadata), **caps}
             params = copy.deepcopy(item['params'])
             if legacy:
                 overrides = legacy.params.model_dump(exclude_unset=True)
@@ -513,6 +517,7 @@ async def apply(db, user, scope, version, choices):
                 enabled=legacy.is_active if legacy else item['enabled'],
                 available=True,
                 capabilities={
+                    **({'catalog_metadata': metadata} if metadata else {}),
                     'discovered': caps,
                     'overrides': {},
                     'manual': True,

@@ -6,6 +6,7 @@
 	import UsageSummary from './UsageSummary.svelte';
 	import {
 		contextBudget,
+		estimatedInputBudget,
 		contextProjection,
 		contextOccupancy,
 		tokenSubtotal
@@ -56,7 +57,12 @@
 	$: latest = contextCalls.at(-1) || calls.at(-1);
 	$: context = latest?.usage?.context;
 	$: budget = contextBudget(model?.capabilities, reservedOutput);
-	$: limit = budget.effective;
+	$: estimate =
+		budget.effective == null
+			? estimatedInputBudget(model?.capabilities?.context_window_label, reservedOutput)
+			: null;
+	$: limit = budget.effective ?? estimate;
+	$: capacityText = (estimate != null ? '约 ' : '') + format(limit);
 	$: projection = contextProjection(history, currentId, draft, system, compactionEnabled);
 	$: occupancy = contextOccupancy(projection.count, context);
 	$: count = occupancy.total;
@@ -77,7 +83,7 @@
 	);
 	$: label =
 		count != null
-			? `上下文窗口：已用 ${format(count)}，容量 ${format(limit)}${percent != null ? `，${Math.round(percent)}%` : ''}。${source}。点击查看详情`
+			? `上下文窗口：已用 ${format(count)}，容量 ${capacityText}${percent != null ? `，${Math.round(percent)}%` : ''}。${source}。点击查看详情`
 			: '上下文窗口：尚无用量数据。点击查看详情';
 	const labels: Record<string, string> = {
 		system: '系统指令',
@@ -159,7 +165,7 @@
 			<div class="flex items-center justify-between gap-3">
 				<h3 class="font-semibold">上下文窗口</h3>
 				<span class="whitespace-nowrap font-mono text-xs tabular-nums"
-					>{format(count)} / {format(limit)}{percent != null
+					>{format(count)} / {capacityText}{percent != null
 						? ` (${Math.round(percent)}%)`
 						: ''}</span
 				>
@@ -184,10 +190,12 @@
 				<div class="flex items-center gap-2">
 					<span class="size-2 rounded-full bg-gray-200 dark:bg-gray-700"></span><span class="flex-1"
 						>剩余输入空间</span
-					><span class="font-mono tabular-nums">{format(remaining)}</span>
+					><span class="font-mono tabular-nums"
+						>{estimate != null ? '约 ' : ''}{format(remaining)}</span
+					>
 				</div>
 			</div>
-			{#if percent != null && percent >= 80}<p
+			{#if estimate == null && percent != null && percent >= 80}<p
 					class="mt-3 text-xs text-amber-600 dark:text-amber-400"
 				>
 					接近当前模型输入上限；不会自动压缩或裁剪历史。
@@ -205,7 +213,8 @@
 						</div>
 					{/each}
 					<p class="text-gray-400">
-						工具定义沿用最近请求估算，变更工具后待下次请求校正。媒体与协议开销未计入；实际计数另列。只预警，不自动裁剪。
+						{#if estimate != null}容量来自目录标签 {model.capabilities
+								.context_window_label}，剩余空间按此估算。{/if}工具定义沿用最近请求估算，变更工具后待下次请求校正。媒体与协议开销未计入；实际计数另列。只预警，不自动裁剪。
 					</p>
 				</div>
 			</details>

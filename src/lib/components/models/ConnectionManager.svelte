@@ -915,6 +915,16 @@
 					protocol={modelEdit.protocol_override || modelConnection?.protocol}
 					model={modelEdit.upstream_id}
 				/>
+				{#if modelEdit.catalog_metadata?.description || modelEdit.catalog_metadata?.tags?.length}
+					<div class="space-y-1 text-xs text-gray-500">
+						{#if modelEdit.catalog_metadata.description}<p>
+								{modelEdit.catalog_metadata.description}
+							</p>{/if}
+						{#if modelEdit.catalog_metadata.tags.length}<p>
+								目录标签 · {modelEdit.catalog_metadata.tags.join(' · ')}
+							</p>{/if}
+					</div>
+				{/if}
 				<div class="grid gap-3 sm:grid-cols-3">
 					<label class="space-y-1 text-xs text-gray-500"
 						>上下文总容量<input
@@ -922,7 +932,9 @@
 							type="number"
 							min="1"
 							bind:value={modelEdit.capabilities.context_window}
-							placeholder="未知"
+							placeholder={modelEdit.capabilities.context_window_label
+								? `约 ${modelEdit.capabilities.context_window_label}（目录标签）`
+								: '未知'}
 						/></label
 					>
 					<label class="space-y-1 text-xs text-gray-500"
