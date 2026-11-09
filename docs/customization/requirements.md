@@ -294,3 +294,7 @@ R77 second-review follow-up: CR16-01 tracks dispatched side requests across lost
 
 
 2026-11-07: R77/P62 is verified on isolated preview. Official v0.13.0 is integrated at application source `15c01e6e7c0b7d87f2d83db4210dd1fe4d4a59a3`. Three independent review rounds closed the confirmed compatibility findings. Exact-source CI passed 2103 backend / 95 frontend cases and the integration suites; pinned-source build, zero new type diagnostics, three PostgreSQL migration/restore entry paths and built-in-browser interactions passed. A fresh preview clone migrated OI7 to OI8 with 62 original business-table fingerprints preserved; three existing attachments remain unchanged. GitOps `2614006fb11fb7c421d43b18874fe9360376fe12` delivered the immutable image with Synced/Healthy status and zero restarts. R50 and all documented provider/physical-device limits remain. See upstream-v0130-sync-acceptance.json.
+
+## R78 Production cutover
+
+Run the reviewed application on a verified restore of the existing database and preserve the original for recovery. Keep connection defaults and model-specific protocol choices. Legacy direct models may be retired independently of auxiliary engines.

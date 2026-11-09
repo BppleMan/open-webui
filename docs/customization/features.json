@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "project": "OI Open WebUI customization",
-  "updated_on": "2026-11-07",
-  "phase": "R77_v0130_verified_on_isolated_preview; R50_production_hold",
+  "updated_on": "2026-11-09",
+  "phase": "R78_production_on_restored_copy",
   "requirements_file": "requirements.md",
   "prototype_file": "prototype.md",
   "source": {
@@ -16,16 +16,16 @@
     "fork": "https://github.com/BppleMan/open-webui",
     "latest_code_commit": "15c01e6e7c0b7d87f2d83db4210dd1fe4d4a59a3",
     "latest_push": "origin/oi/main",
-    "production_deployment_changed": false,
+    "production_deployment_changed": true,
     "staging_deployment_changed": true,
     "latest_commit": "15c01e6e7c0b7d87f2d83db4210dd1fe4d4a59a3",
-    "latest_documentation_revision": "R77/P62: official v0.13.0 with reviewed OI compatibility; isolated preview verified",
+    "latest_documentation_revision": "R78/P63: production cutover on restored copy",
     "original_base": {
       "tag": "v0.12.3",
       "commit": "91ea4e3421d1d8069f13d4a463fcb5986d94ea60"
     },
     "staging_gitops_changed": true,
-    "current_acceptance": "docs/customization/upstream-v0130-sync-acceptance.json"
+    "current_acceptance": "docs/customization/production-cutover-acceptance.json"
   },
   "status_definitions": {
     "planned": "需求已记录，原型为文字设计，应用功能未实现",
@@ -77,7 +77,7 @@
       "status": "verified",
       "implementation": "native_protocols_and_template_connection_model_flow",
       "verification": "stage6 seven-protocol matrix and existing-CPA live paths; stage8 migrated New API/OpenRouter live paths; official-provider limits explicit",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "acceptance": [
         "三家原生流式与非流式请求可用",
         "结构化历史、工具、多模态、usage 和错误正确处理",
@@ -230,7 +230,7 @@
       "status": "verified",
       "implementation": "composer_ring_popup_context_cache_budget_warnings_and_explicit_compaction",
       "verification": "stage6 context/compaction matrix; stage8 capacity; R54 real Popover scrolling, placement, keyboard and outside dismissal verified",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "acceptance": [
         "完整上下文分类与窗口、压缩阈值分离",
         "默认不压缩、不裁剪历史，超限明确失败",
@@ -355,7 +355,7 @@
       "status": "verified",
       "implementation": "native_per_message_usage",
       "verification": "stage6/7/8 usage, partial response and unknown-cost evidence",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "acceptance": [
         "无需 usage Filter 或 Pipe 即可显示明细",
         "流式快照和增量不重复累计",
@@ -533,7 +533,7 @@
       "status": "verified",
       "implementation": "modal_revision_diff_undo_branch_and_native_replay_invalidation",
       "verification": "review regression, stage7 archive/edit and stage8 actual modal/diff/save/bookmark paths",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "acceptance": [
         "独立弹窗编辑与取消不扰动聊天滚动",
         "保存和另存分支正确",
@@ -620,7 +620,7 @@
       "status": "verified",
       "implementation": "declared_discrete_and_budget_native_controls",
       "verification": "stage6 seven-protocol and real browser outbound checks; no guessed levels",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "acceptance": [
         "按连接协议模型获取能力并生成原生控件",
         "档位顺序、默认值和实际出站参数一致",
@@ -707,7 +707,7 @@
       "status": "verified",
       "implementation": "generation_call_ledger_snapshots_and_fork_boundaries",
       "verification": "stage7 exact synthetic totals/concurrency/late settlement; stage8 real regen/fork totals",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "acceptance": [
         "第一笔请求前建立生成记录",
         "regen 与继续回复分别记录新增费用",
@@ -832,7 +832,7 @@
       "status": "verified",
       "implementation": "versioned_historical_cost_baselines",
       "verification": "stage7/8 JSON import, replace, conflict and idempotent retry",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "acceptance": [
         "导入时可填写并随后修改历史费用基数",
         "修改替换基数，同批单条旧 cost 不重复计入",
@@ -909,7 +909,7 @@
       "status": "verified",
       "implementation": "native_CPA_AGY_protocol_adapter_and_companion_source",
       "verification": "stage6 structured/history/tool/429 matrix and existing-gateway live paths; companion not deployed",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "OI_adapter_in_image; CPA_excluded_from_production_cutover",
       "acceptance": [
         "复用 CPA OAuth、账号池和 RP 策略",
         "建立请求/返回字段保留与转换清单",
@@ -1073,7 +1073,7 @@
       "status": "verified",
       "implementation": "session_refresh_and_inline_recovery",
       "verification": "stage5 HTTP/Redis/browser matrix; stage8 refresh/authenticated socket and restore login",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "investigation": "fixed_expiry_mechanism_verified_other_incidents_not_fully_attributed",
       "acceptance": [
         "正常活动期间无感续期",
@@ -1143,7 +1143,7 @@
       "status": "verified",
       "implementation": "per_chat_server_draft_and_device_recovery",
       "verification": "stage5 matrix; stage8 6000-character cross-client/CAS/restore and 5531-character browser reload",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "acceptance": [
         "同一用户每会话只有一份服务器草稿，跨分支和浏览器共用",
         "服务器持久保存，换浏览器和 PWA kill/reopen 后恢复已保存版本",
@@ -1420,7 +1420,7 @@
       "status": "verified",
       "implementation": "global_connection_model_directory_and_browser_transport",
       "verification": "stage3/4 M01-M22 plus stage8 identity/ambiguous-alias/migration/discovery verification",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "architecture_role": "shared_foundation_for_all_model_lists_and_selection",
       "coverage": {
         "inventory_groups": 22,
@@ -1652,7 +1652,7 @@
       "status": "verified",
       "implementation": "seventeen_templates_and_override_preserving_discovery",
       "verification": "stage3/4/6 matrix; stage8 template UI, real migration and advertised capacity discovery",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "depends_on": [
         "F13",
         "F01",
@@ -1877,7 +1877,7 @@
       "status": "verified",
       "implementation": "bounded_shared_ordinary_settings_forms_and_aligned_rows",
       "verification": "stage8 actual form/workspace responsive matrix; previous admin media/document checks retained",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "acceptance": [
         "开关与标题属于同一紧凑视觉组，不随视口加宽被推到最右端",
         "普通表单限制宽度，复杂表格和编辑器不被一刀切收窄",
@@ -2006,7 +2006,7 @@
       "scope_confirmed": true,
       "implementation": "branch_reading_bookmark_and_portable_archive_metadata",
       "verification": "stage7/8 real archive/restore, revisions, attachment and accounting evidence",
-      "deployment": "staging_verified; production_not_deployed",
+      "deployment": "included_in_production_image",
       "candidate_ids": [
         "RP02",
         "RP06",
@@ -2105,7 +2105,8 @@
         "R60",
         "R61",
         "R62",
-        "R63"
+        "R63",
+        "R78"
       ],
       "prototypes": [
         "P18",
@@ -2121,12 +2122,13 @@
         "P45",
         "P46",
         "P47",
-        "P48"
+        "P48",
+        "P63"
       ],
       "status": "in_progress",
       "implementation": "stages_1_to_7_and_stage8A_prelaunch_complete",
-      "verification": "stage8A_verified_with_documented_boundaries",
-      "deployment": "staging_only_production_unchanged",
+      "verification": "production_runtime_and_data_checked; legacy_chat_continuations_pending",
+      "deployment": "production_on_restored_copy",
       "postgres_rehearsal": {
         "environment": "isolated_production_copy_PostgreSQL18",
         "migration": "v0.12.3_to_oi0000000006_passed",
@@ -2362,7 +2364,7 @@
     "frontend_build": "passed",
     "synthetic_HTTP_WebSocket": "capability_routes_cache_revocation_and_separate_realtime_ASR_passed",
     "postgres_archive_restore": "OI7_populated_migration_restore_and_63_preview_tables_verified",
-    "production_deployment": "not_performed_R50",
+    "production_deployment": "production_on_restored_copy",
     "stage2_HTTP": "specialized_chat422_no_provider_call_saved_B_and_unavailable_draft_preservation_passed",
     "stage3_HTTP": "owner_only_no_store_same_model_A_B_server_reorder_remove_draft_429_partial_usage_passed",
     "stage4A_local": {
@@ -4044,5 +4046,13 @@
       "global_direct_connections_unchanged": true,
       "local_owned_postgres_removed": true
     }
+  },
+  "production_cutover": {
+    "status": "production_on_restored_copy",
+    "acceptance": "docs/customization/production-cutover-acceptance.json",
+    "pending": [
+      "production continuation of an existing Gemini conversation",
+      "production continuation of an existing Claude conversation"
+    ]
   }
 }

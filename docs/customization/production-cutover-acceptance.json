@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-09",
+  "requirement": "R78",
+  "prototype": "P63",
+  "feature": "F18",
+  "application_source": "15c01e6e7c0b7d87f2d83db4210dd1fe4d4a59a3",
+  "deployment": "production_on_restored_copy",
+  "verified": [
+    "encrypted backup restored and original tables compared",
+    "migrated copy retains original business data",
+    "attachment retrieved through application storage provider",
+    "production HTTPS and WebSocket handshake",
+    "signed-in administrator inspected model and connection settings"
+  ],
+  "pending": [
+    "production continuation of an existing Gemini conversation",
+    "production continuation of an existing Claude conversation"
+  ]
+}
