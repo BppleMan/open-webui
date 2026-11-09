@@ -38,7 +38,8 @@ def catalog_rows(body):
             if any(
                 isinstance(route := endpoints.get(t), dict)
                 and route.get('method') == 'POST'
-                and route.get('path') in CHAT_PATHS
+                and isinstance(route.get('path'), str)
+                and route['path'] in CHAT_PATHS
                 for t in types
             ):
                 data['chat'] = True

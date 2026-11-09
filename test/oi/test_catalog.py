@@ -189,13 +189,14 @@ async def test_new_api_enrichment_joins_only_authorized_models_and_preserves_ove
             assert req.headers['authorization'] == 'Bearer synthetic-token'
             return httpx.Response(
                 200,
+                headers={'Set-Cookie': 'test=synthetic; Path=/'},
                 json={
                     'success': success,
                     'data': [{'id': 'same-model', 'supported_endpoint_types': ['openai']}, {'id': 'no-capacity'}],
                 },
             )
         assert req.url.path == '/gateway/api/pricing'
-        assert 'authorization' not in req.headers
+        assert 'authorization' not in req.headers and 'cookie' not in req.headers
         return httpx.Response(pricing_status, json=catalog)
 
     transport = httpx.MockTransport(respond)
@@ -214,3 +215,52 @@ async def test_new_api_enrichment_joins_only_authorized_models_and_preserves_ove
     await discover(db, c, transport)
     assert 'context_window_label' not in capabilities(b)
     assert capabilities(b)['tools'] is False
+
+
+@pytest.mark.asyncio
+async def test_changing_model_or_connection_invalidates_catalog_metadata(db):
+    from open_webui.routers.customization import BindingForm, ConnectionForm, save_binding, save_connection
+
+    c = connection()
+    b = binding(c.id, 'oi:changing')
+    prior = {
+        'catalog_metadata': {'description': 'A', 'tags': ['1M']},
+        'discovered': {'context_window_label': '1M', 'tools': True},
+        'overrides': {'vision': False},
+        'legacy_model_id': 'prior',
+    }
+    b.capabilities = prior
+    db.add_all([c, b])
+    await db.flush()
+    user = SimpleNamespace(role='admin', id='u')
+    result = await save_binding(
+        db,
+        user,
+        BindingForm(connection_id=c.id, name='B', upstream_id='B', capability_overrides={'vision': False}),
+        b.id,
+    )
+    assert not result['catalog_metadata']
+    assert result['capabilities'] == {'vision': False} and b.capabilities['legacy_model_id'] == 'prior'
+    b.capabilities = prior
+    await db.commit()
+    await save_connection(
+        db,
+        user,
+        ConnectionForm(name='Changed', template='openai', base_url='https://other.test', revision=c.revision),
+        row=c,
+    )
+    await db.refresh(b)
+    assert 'catalog_metadata' not in b.capabilities
+    assert b.capabilities['discovered'] == {} and b.capabilities['overrides'] == {'vision': False}
+
+
+def test_malformed_endpoint_path_does_not_break_catalog():
+    from open_webui.utils.oi.new_api_catalog import catalog_rows
+
+    result = catalog_rows(
+        {
+            'data': [{'model_name': 'm', 'tags': '工具', 'supported_endpoint_types': ['odd']}],
+            'supported_endpoint': {'odd': {'method': 'POST', 'path': []}},
+        }
+    )
+    assert result['m']['tags'] == '工具' and 'chat' not in result['m']

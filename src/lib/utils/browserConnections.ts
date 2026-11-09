@@ -142,7 +142,12 @@ async function newApiPricing(url: string, models: any[], protocol: string) {
 					tags,
 					supported_endpoint_types
 				})),
-			pricing_endpoints: body.supported_endpoint ?? {}
+			pricing_endpoints:
+				body.supported_endpoint &&
+				typeof body.supported_endpoint === 'object' &&
+				!Array.isArray(body.supported_endpoint)
+					? body.supported_endpoint
+					: {}
 		};
 	} catch {
 		return {};

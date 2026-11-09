@@ -436,7 +436,9 @@ async def fetch_models(connection, transport=None):
                 catalog_url = new_api_catalog.pricing_url(url) if new_api and models else None
                 if catalog_url:
                     try:
-                        catalog_response = await client.get(catalog_url, timeout=8)
+                        public_request = client.build_request('GET', catalog_url, timeout=8)
+                        public_request.headers.pop('cookie', None)
+                        catalog_response = await client.send(public_request)
                         catalog_response.raise_for_status()
                         records = new_api_catalog.catalog_rows(catalog_response.json())
                     except (httpx.HTTPError, ValueError):

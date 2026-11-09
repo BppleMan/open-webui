@@ -244,6 +244,7 @@ describe('native browser protocols', () => {
 			)
 			.mockResolvedValueOnce(
 				Response.json({
+					supported_endpoint: [],
 					data: [
 						{ model_name: 'allowed', tags: '1M' },
 						{ model_name: 'not-allowed', tags: '500K' }
@@ -256,6 +257,7 @@ describe('native browser protocols', () => {
 		expect(fetch.mock.calls[2][1]).not.toHaveProperty('headers');
 		expect(vi.mocked(oiApi).mock.calls[0][2]).toMatchObject({
 			new_api_catalog: true,
+			pricing_endpoints: {},
 			pricing_records: [{ model_name: 'allowed', tags: '1M' }]
 		});
 	});

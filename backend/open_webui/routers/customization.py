@@ -415,6 +415,13 @@ async def restore_connection(
     return await set_connection_removed(db, user, connection_id, revision, False)
 
 
+def discard_discovery(capabilities):
+    retained = dict(capabilities or {})
+    retained.pop('catalog_metadata', None)
+    retained['discovered'] = {}
+    return retained
+
+
 async def save_connection(db, user, form, row=None):
     if row is not None and form.transport != (row.transport or 'server'):
         raise HTTPException(409, 'Use the explicit transport migration flow to change request execution')
@@ -430,6 +437,7 @@ async def save_connection(db, user, form, row=None):
         secrets = catalog.credentials(row) if row else {}
     except ValueError as error:
         raise HTTPException(422, str(error)) from None
+    original_secrets = dict(secrets)
     if form.api_key is not None:
         secrets['api_key'] = form.api_key.get_secret_value()
     if form.headers is not None:
@@ -453,6 +461,11 @@ async def save_connection(db, user, form, row=None):
         )
         if result.scalar_one_or_none() is None:
             raise HTTPException(409, 'Connection changed; reload before saving')
+        if row.base_url != url or row.template != form.template or original_secrets != secrets:
+            bindings = await db.scalars(select(ModelBinding).where(ModelBinding.connection_id == row.id))
+            for binding in bindings:
+                if 'catalog_metadata' in (binding.capabilities or {}):
+                    binding.capabilities = discard_discovery(binding.capabilities)
         await db.refresh(row)
     await db.commit()
     return catalog.connection_json(row, user)
@@ -746,11 +759,15 @@ async def save_binding(db, user, form, binding_id=None):
             accounting.money(rate)
         except ValueError as error:
             raise HTTPException(422, str(error)) from None
-    row = await db.get(ModelBinding, binding_id) if binding_id else None
+    await db.execute(update(Connection).where(Connection.id == connection.id).values(updated_at=Connection.updated_at))
+    row = await db.get(ModelBinding, binding_id, populate_existing=True) if binding_id else None
     if binding_id and (row is None or row.connection_id != connection.id):
         raise HTTPException(404, 'Model binding unavailable')
     overrides = form.capability_overrides if form.capability_overrides is not None else form.capabilities
-    effective_caps = {**(row.capabilities or {}).get('discovered', {}), **overrides} if row else overrides
+    prior = (row.capabilities or {}) if row else {}
+    if row and row.upstream_id != form.upstream_id:
+        prior = discard_discovery(prior)
+    effective_caps = {**prior.get('discovered', {}), **overrides}
     from types import SimpleNamespace
 
     try:
@@ -769,7 +786,6 @@ async def save_binding(db, user, form, binding_id=None):
     mode = override or connection.protocol
     if connection.transport == 'browser' and mode not in COMMON_PROTOCOLS:
         raise HTTPException(422, 'This extension protocol does not support browser transport')
-    await db.execute(update(Connection).where(Connection.id == connection.id).values(updated_at=Connection.updated_at))
     existing = (
         (
             await db.execute(
@@ -794,8 +810,8 @@ async def save_binding(db, user, form, binding_id=None):
     for key in ('upstream_id', 'name', 'enabled', 'pricing', 'params'):
         setattr(row, key, getattr(form, key))
     row.capabilities = {
-        **(row.capabilities or {}),  # Preserve immutable migration/ACL provenance.
-        'discovered': (row.capabilities or {}).get('discovered', {}),
+        **prior,  # Preserve immutable migration/ACL provenance.
+        'discovered': prior.get('discovered', {}),
         'overrides': form.capability_overrides if form.capability_overrides is not None else form.capabilities,
         'manual': manual,
     }

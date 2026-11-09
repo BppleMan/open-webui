@@ -32,6 +32,13 @@ log = logging.getLogger(__name__)
 BASE_MODELS_CACHE_KEY = f'{REDIS_KEY_PREFIX}:models:base'
 
 
+def inherit_model_description(info, base_info):
+    meta = info.setdefault('meta', {})
+    description = (base_info.get('meta') or {}).get('description')
+    if meta.get('description') is None and description is not None:
+        meta['description'] = description
+
+
 def public_model_params(params):
     controls = params.get('model_controls', {})
     public = (
@@ -234,6 +241,7 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
                         model['info']['params'] = merge_model_params(
                             native_info.get('params', {}), custom_model.params.model_dump(exclude_unset=True)
                         )
+                        inherit_model_description(model['info'], native_info)
                         model['info'].setdefault('meta', {})['capabilities'] = {
                             **native_info.get('meta', {}).get('capabilities', {}),
                             **(model['info'].get('meta', {}).get('capabilities') or {}),
@@ -323,6 +331,7 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
                     copy.deepcopy(base_model.get('info', {}).get('params', {})),
                     custom_model.params.model_dump(exclude_unset=True),
                 )
+                inherit_model_description(info, base_model.get('info') or {})
                 info.setdefault('meta', {})['capabilities'] = {
                     **base_model.get('capabilities', {}),
                     **(info.get('meta', {}).get('capabilities') or {}),
