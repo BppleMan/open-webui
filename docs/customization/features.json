@@ -4067,7 +4067,10 @@
       "F02"
     ],
     "implementation": "implemented",
-    "verification": "focused catalog and frontend tests passed",
-    "deployment": "candidate"
+    "verification": "focused regressions, independent review, CI, browser component, preview discovery and database readback passed",
+    "deployment": "verified_on_staging",
+    "application_commit": "d3e5e3a2a831c420d74880cbd2c335de00d246b8",
+    "image_digest": "sha256:ebfecb6ef5095ab7a64e35c79dfa2d5a676e776c6897739a0f9d56955aec605e",
+    "ci": "https://github.com/BppleMan/open-webui/actions/runs/42577070711"
   }
 }
