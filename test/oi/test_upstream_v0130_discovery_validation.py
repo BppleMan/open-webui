@@ -128,7 +128,8 @@ async def test_legacy_discovered_reasoning_isolated(db, monkeypatch, reasoning):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('custom', [None, 'My description'])
-async def test_directory_keeps_catalog_description_for_overrides_and_presets(db, monkeypatch, custom):
+@pytest.mark.parametrize('reverse', [False, True])
+async def test_directory_keeps_catalog_description_for_overrides_and_presets(db, monkeypatch, custom, reverse):
     async with client_for(db) as client:
         _, item = await create(client)
     binding = await db.get(ModelBinding, item['id'])
@@ -140,6 +141,8 @@ async def test_directory_keeps_catalog_description_for_overrides_and_presets(db,
         ModelModel(id='preset', base_model_id=binding.id, meta={'description': 'Preset description'}, **fields),
         ModelModel(id='inherited', base_model_id=binding.id, meta={}, **fields),
     ]
+    if reverse:
+        records.reverse()
     result = {m['id']: m['info']['meta'].get('description') for m in await directory(db, monkeypatch, records)}
     assert result[binding.id] == (custom or 'From gateway')
     assert result['preset'] == 'Preset description'

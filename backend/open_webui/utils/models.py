@@ -32,9 +32,8 @@ log = logging.getLogger(__name__)
 BASE_MODELS_CACHE_KEY = f'{REDIS_KEY_PREFIX}:models:base'
 
 
-def inherit_model_description(info, base_info):
+def inherit_model_description(info, description):
     meta = info.setdefault('meta', {})
-    description = (base_info.get('meta') or {}).get('description')
     if meta.get('description') is None and description is not None:
         meta['description'] = description
 
@@ -214,6 +213,11 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
         enabled_filter_ids = set()
 
     custom_models = await Models.get_all_models()
+    workspace_descriptions = {
+        model.id: model.meta.description
+        for model in custom_models
+        if model.base_model_id is None and model.is_active and model.meta and model.meta.description is not None
+    }
 
     # Single O(1) lookup: Ollama base names first, then exact IDs (exact wins).
     base_model_lookup = {}
@@ -241,7 +245,7 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
                         model['info']['params'] = merge_model_params(
                             native_info.get('params', {}), custom_model.params.model_dump(exclude_unset=True)
                         )
-                        inherit_model_description(model['info'], native_info)
+                        inherit_model_description(model['info'], (native_info.get('meta') or {}).get('description'))
                         model['info'].setdefault('meta', {})['capabilities'] = {
                             **native_info.get('meta', {}).get('capabilities', {}),
                             **(model['info'].get('meta', {}).get('capabilities') or {}),
@@ -331,7 +335,12 @@ async def get_all_models(request, refresh: bool = False, user: UserModel = None)
                     copy.deepcopy(base_model.get('info', {}).get('params', {})),
                     custom_model.params.model_dump(exclude_unset=True),
                 )
-                inherit_model_description(info, base_model.get('info') or {})
+                inherit_model_description(
+                    info,
+                    workspace_descriptions.get(
+                        base_model['id'], (base_model.get('info', {}).get('meta') or {}).get('description')
+                    ),
+                )
                 info.setdefault('meta', {})['capabilities'] = {
                     **base_model.get('capabilities', {}),
                     **(info.get('meta', {}).get('capabilities') or {}),
